@@ -33,7 +33,41 @@
   <a href="https://render.com/deploy?repo=https://github.com/lunar-proxy/lunar-v2"><img src="https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/main/buttons/remade/render.svg" alt="Deploy to Render"></a>
   &nbsp;
   <a href="https://app.koyeb.com/services/deploy?type=git&repository=github.com/lunar-proxy/lunar-v2&builder=dockerfile&instance_type=free&regions=was&ports=8080%3Bhttp%3B%2F"><img src="https://binbashbanana.github.io/deploy-buttons/buttons/remade/koyeb.svg" alt="Deploy to Koyeb"></a>
+  &nbsp;
+  <a href="https://railway.com/new/template?template=https://github.com/Trackertheweasel/xenapsis"><img src="https://binbashbanana.github.io/deploy-buttons/buttons/remade/railway.svg" alt="Deploy to Railway"></a>
+  &nbsp;
+  <a href="https://heroku.com/deploy?template=https://github.com/Trackertheweasel/xenapsis"><img src="https://binbashbanana.github.io/deploy-buttons/buttons/remade/heroku.svg" alt="Deploy to Heroku"></a>
+  &nbsp;
+  <a href="https://codespaces.new/Trackertheweasel/xenapsis"><img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces" height="32"></a>
 </p>
+
+| Platform          | Config file                       | Notes                                                   |
+| ----------------- | --------------------------------- | ------------------------------------------------------- |
+| Render            | `render.yaml`                     | Free plan, builds from the `Dockerfile`.                |
+| Koyeb             | `Dockerfile`                      | Free instance, exposes port `8080`.                     |
+| Railway           | `railway.json`                    | Builds from the `Dockerfile`; `PORT` is set by Railway. |
+| Heroku            | `app.json`, `heroku.yml`          | Container stack. Heroku has no free tier.               |
+| Fly.io            | `fly.toml`                        | Deploy from the terminal (see below).                   |
+| GitHub Codespaces | `.devcontainer/devcontainer.json` | Run `pnpm start`, then open the forwarded port `6060`.  |
+| Docker / VPS      | `Dockerfile`                      | Any host that can run a container (see below).          |
+
+### Fly.io
+
+Install [flyctl](https://fly.io/docs/flyctl/install/), then from the repository root:
+
+```bash
+fly launch --copy-config --no-deploy   # pick a unique app name when prompted
+fly deploy
+```
+
+### Docker
+
+```bash
+docker build -t lunar .
+docker run -d -p 8080:8080 --restart unless-stopped --name lunar lunar
+```
+
+Lunar will be available at `http://localhost:8080`.
 
 ---
 
@@ -101,4 +135,4 @@ Huge thanks to everyone who has contributed to Lunar.
   <a href="https://github.com/lunar-proxy/lunar-v2/graphs/contributors"><img src="https://contrib.rocks/image?repo=lunar-proxy/lunar-v2" alt="Contributors"></a>
 </p>
 
-Lunar is a suborganisation of [Night Network](https://github.com/Night-N3twork/).  
+Lunar is a suborganisation of [Night Network](https://github.com/Night-N3twork/).

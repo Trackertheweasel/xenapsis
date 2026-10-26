@@ -1,0 +1,14 @@
+{
+  "name": "Lunar",
+  "description": "A modern, browser-inspired tabbed web proxy.",
+  "repository": "https://github.com/Trackertheweasel/xenapsis",
+  "logo": "https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/lunar.svg",
+  "keywords": ["proxy", "astro", "fastify"],
+  "stack": "container",
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  }
+}
