@@ -1,4 +1,6 @@
 ---
+// Static page: built once at deploy time instead of rendered on every request.
+export const prerender = true;
 import '@/main.css';
 import ImportLucide from '../layouts/lucide.astro';
 ---
@@ -99,6 +101,20 @@ import ImportLucide from '../layouts/lucide.astro';
             </h2>
 
             <div class="space-y-3">
+              <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
+                <h3 class="mb-2 font-medium">Clear site data</h3>
+                <p class="text-text-secondary mb-3 text-sm">
+                  Sites you open in Persec can read each other's cookies. Clear them after logging in anywhere, and
+                  before visiting sites you don't trust. Your Persec settings are kept.
+                </p>
+                <button
+                  data-clear-site-data
+                  class="flex items-center gap-2 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 py-2 text-sm hover:bg-[#6366f1]/25"
+                >
+                  <i data-lucide="trash-2" class="h-4 w-4"></i>Clear cookies and site data
+                </button>
+              </div>
+
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
                 <h3 class="mb-2 font-medium">About:Blank Cloak</h3>
                 <p class="text-text-secondary mb-3 text-sm">Opens Persec in a blank tab to hide from history</p>

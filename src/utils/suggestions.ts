@@ -1,8 +1,9 @@
-import { createIcons, icons } from 'lucide';
+import { renderIcons } from './icons';
+import { looksLikeDomain } from './url';
 
-createIcons({ icons });
+renderIcons();
 ['astro:page-load', 'astro:after-swap'].forEach(evt => {
-  document.addEventListener(evt, () => createIcons({ icons }));
+  document.addEventListener(evt, () => renderIcons());
 });
 
 const urlbar = document.getElementById('urlbar') as HTMLInputElement | null;
@@ -17,6 +18,8 @@ const quick: Record<string, string> = {
 let timer: number | null = null;
 let open = false;
 let prev = '';
+// Bumped on Enter so a pending or in-flight update can't reopen the dropdown after navigating.
+let generation = 0;
 
 function isQuick(str: string): boolean {
   return str.startsWith('persec://');
@@ -27,8 +30,14 @@ function filterQuick(str: string): [string, string][] {
   return Object.entries(quick).filter(([k]) => k.toLowerCase().includes(lc));
 }
 
+// Web addresses (typed, or the current page's address shown when the bar is focused)
+// are never sent to the suggestion service.
+function isAddress(str: string): boolean {
+  return isQuick(str) || /^([a-z][a-z\d+.-]*:\/\/|(about|data|blob|javascript|mailto):)/i.test(str) || looksLikeDomain(str);
+}
+
 async function fetchSugg(q: string): Promise<string[]> {
-  if (!q) return [];
+  if (!q || isAddress(q)) return [];
   try {
     const r = await fetch(`/api/query?q=${encodeURIComponent(q)}`);
     if (!r.ok) return [];
@@ -164,7 +173,7 @@ function render(sugg: string[], qm: [string, string][], math: string | null, sq:
       if (v) select(v);
     });
   });
-  createIcons({ icons });
+  renderIcons();
   show(dd);
 }
 
@@ -176,11 +185,12 @@ async function update(): Promise<void> {
     return;
   }
   prev = cur;
+  const gen = generation;
   const [sugg, math] = await Promise.all([
     fetchSugg(cur),
     isMath(cur) ? calc(cur) : Promise.resolve(null),
   ]);
-  if (urlbar.value.trim() !== prev) return;
+  if (gen !== generation || urlbar.value.trim() !== prev) return;
   const qr = isQuick(cur) ? filterQuick(cur) : [];
   render(sugg, qr, math, cur);
 }
@@ -219,6 +229,9 @@ if (urlbar) {
       e.preventDefault();
       close();
     } else if (e.key === 'Enter') {
+      generation++;
+      if (timer) clearTimeout(timer);
+      timer = null;
       close();
     }
   });

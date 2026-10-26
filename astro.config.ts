@@ -10,7 +10,6 @@ import { defineConfig } from 'astro/config';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
-import obfuscatorPlugin from 'vite-plugin-javascript-obfuscator';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { version } from './package.json';
 
@@ -76,8 +75,6 @@ function searchBackend(): Plugin {
   };
 }
 
-const OBFUSCATOR_SEED = Math.floor(Math.random() * 9999999);
-
 export default defineConfig({
   integrations: [
     playformCompress({
@@ -113,11 +110,9 @@ export default defineConfig({
           decodeEntities: true,
           collapseBooleanAttributes: true,
           removeOptionalTags: true,
-          removeEmptyElements: true,
           minifyURLs: true,
           removeScriptTypeAttributes: true,
           processConditionalComments: true,
-          removeTagWhitespace: true,
         },
       },
       Image: true,
@@ -127,6 +122,8 @@ export default defineConfig({
     }),
   ],
   output: 'server',
+  // Prerendered pages are written as st.html etc. and served by fastify-static (see index.ts).
+  build: { format: 'file' },
   adapter: node({ mode: 'middleware' }),
   prefetch: { prefetchAll: true, defaultStrategy: 'load' },
   vite: {
@@ -145,53 +142,6 @@ export default defineConfig({
       tailwindcss(),
       WispServer(),
       searchBackend(),
-      obfuscatorPlugin({
-        exclude: [
-          'tmp/**',
-          'data/**',
-          '**/tmp/**',
-          '**/data/**',
-          'node_modules/**',
-          '**/node_modules/**',
-        ],
-        apply: 'build',
-        debugger: false,
-        options: {
-          compact: true,
-          simplify: true,
-          target: 'browser',
-          sourceMap: false,
-          seed: OBFUSCATOR_SEED,
-          log: false,
-          identifierNamesGenerator: 'hexadecimal',
-          renameGlobals: false,
-          renameProperties: false,
-          transformObjectKeys: false,
-          ignoreImports: true,
-          stringArray: false,
-          stringArrayThreshold: 0.6,
-          splitStrings: false,
-          splitStringsChunkLength: 14,
-          stringArrayEncoding: [],
-          stringArrayIndexShift: false,
-          stringArrayRotate: false,
-          stringArrayShuffle: false,
-          stringArrayWrappersCount: 1,
-          stringArrayWrappersType: 'variable',
-          stringArrayWrappersChainedCalls: false,
-          stringArrayWrappersParametersMaxCount: 2,
-          stringArrayCallsTransform: false,
-          controlFlowFlattening: false,
-          controlFlowFlatteningThreshold: 0.3,
-          deadCodeInjection: false,
-          deadCodeInjectionThreshold: 0.3,
-          selfDefending: true,
-          debugProtection: false,
-          disableConsoleOutput: false,
-          numbersToExpressions: false,
-          unicodeEscapeSequence: false,
-        },
-      }),
       viteStaticCopy({
         targets: [
           { src: normalizePath(`${libcurlPath}/**/*.mjs`), dest: 'lc', overwrite: false },

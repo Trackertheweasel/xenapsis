@@ -35,18 +35,23 @@ let prevHref = '';
 let onUrlChange: ((href: string) => void) | null = null;
 let tabBar: HTMLDivElement | null = null;
 let frameContainer: HTMLDivElement | null = null;
-const faviconCache = new Map<string, string>();
+// Keyed by site origin, so each site's icon is fetched once rather than on every page.
+const faviconCache = new Map<string, Promise<string>>();
 
 function nextId() {
   return idCounter++;
 }
 
-function decodeProxyUrl(path: string): string {
+export function decodeProxyUrl(path: string): string {
   const scPrefix = scramjetWrapper.getConfig().prefix;
   const uvPrefix = vWrapper.getConfig().prefix;
   if (path.startsWith(scPrefix)) {
-    const encoded = path.slice(scPrefix.length);
-    return decodeURIComponent(scramjetWrapper.getConfig().codec.decode(encoded) || '');
+    // The codec already decodes; decoding twice corrupts URLs containing escapes like %2B.
+    try {
+      return scramjetWrapper.getConfig().codec.decode(path.slice(scPrefix.length)) || '';
+    } catch {
+      return '';
+    }
   }
   if (path.startsWith(uvPrefix)) {
     return vWrapper.getConfig().decodeUrl(path.slice(uvPrefix.length));
@@ -71,33 +76,37 @@ function truncate(str: string, len = 12): string {
   return str.length > len ? str.slice(0, len) + '…' : str;
 }
 
-async function fetchFavicon(url: string): Promise<string> {
-  if (faviconCache.has(url)) return faviconCache.get(url)!;
+async function loadFavicon(origin: string): Promise<string> {
   try {
     const transport = await bmConnection.getTransport();
     if (transport !== `/lc/index.mjs`) {
       const wisp = await ConfigAPI.get('wispUrl');
       await bmConnection.setTransport(`/lc/index.mjs`, [{ wisp }]);
     }
-    const cleanUrl = decodeURIComponent(url);
-    const res = await bmClient.fetch(faviconApi + encodeURIComponent(cleanUrl));
-    if (!res.ok) {
-      faviconCache.set(url, defaultIcon);
-      return defaultIcon;
-    }
+    // Only the site's origin is sent to the favicon service, never the page's full URL.
+    const res = await bmClient.fetch(faviconApi + encodeURIComponent(origin));
+    if (!res.ok) return defaultIcon;
     const blob = await res.blob();
     return await new Promise(r => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        faviconCache.set(url, reader.result as string);
-        r(reader.result as string);
-      };
+      reader.onloadend = () => r(reader.result as string);
+      reader.onerror = () => r(defaultIcon);
       reader.readAsDataURL(blob);
     });
   } catch {
-    faviconCache.set(url, defaultIcon);
     return defaultIcon;
   }
+}
+
+function fetchFavicon(url: string): Promise<string> {
+  let origin: string;
+  try {
+    origin = new URL(url).origin;
+  } catch {
+    return Promise.resolve(defaultIcon);
+  }
+  if (!faviconCache.has(origin)) faviconCache.set(origin, loadFavicon(origin));
+  return faviconCache.get(origin)!;
 }
 
 function updateTabEl(tab: Tab, field: 'title' | 'icon') {
@@ -191,6 +200,7 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
     'sandbox',
     'allow-scripts allow-popups allow-modals allow-top-navigation allow-pointer-lock allow-same-origin allow-forms',
   );
+  scramjetWrapper.tagFrame(frame);
   frame.addEventListener('load', () => {
     try {
       const win = frame.contentWindow;
@@ -526,6 +536,9 @@ window.addEventListener('unload', cleanup);
 export const TabManager = {
   get activeTabId() {
     return activeId;
+  },
+  get activeFavicon() {
+    return tabs.find(t => t.id === activeId)?.favicon ?? defaultIcon;
   },
   set activeTabId(id: number | null) {
     if (id !== null) switchTab(id);

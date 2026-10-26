@@ -39,9 +39,20 @@ class ScramjetWrapper {
     };
   }
 
+  controller() {
+    this.instance ??= new ScramjetController(this.getConfig());
+    return this.instance;
+  }
+
+  // Scramjet only works in iframes it has registered as frames. In a plain iframe its
+  // page script crashes while walking up to Persec's own (unproxied) pages, which also
+  // leaves the cookie dump it injects (window.COOKIE) readable by the site.
+  tagFrame(frame: HTMLIFrameElement) {
+    this.controller().createFrame(frame);
+  }
+
   async init() {
-    this.instance = new ScramjetController(this.getConfig());
-    await this.instance.init();
+    await this.controller().init();
     return this.instance;
   }
 }
