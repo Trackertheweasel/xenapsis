@@ -1,0 +1,27 @@
+---
+import '@/main.css';
+import Tabs from '../layouts/tab.astro';
+import SideBar from '../layouts/side.astro';
+---
+
+<head>
+  <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-DQZPCVEF89"></script>
+  <script is:inline>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      window.dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'G-DQZPCVEF89');
+  </script>
+</head>
+<body class="h-screen text-white">
+  <Tabs />
+  <script is:inline src="/bm/index.js"></script>
+  <script is:inline src="/data/all.js"></script>
+  <script is:inline src="/tmp/config.js"></script>
+  <script is:inline src="/tmp/bundle.js"></script>
+  <script src="@scripts/navigation"></script>
+
+  <SideBar />
+</body>

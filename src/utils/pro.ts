@@ -1,0 +1,51 @@
+// @ts-ignore
+const { ScramjetController } = $scramjetLoadController();
+
+class VWrapper {
+  getConfig() {
+    return tmpConfig;
+  }
+}
+
+class ScramjetWrapper {
+  instance: any;
+
+  getConfig() {
+    return {
+      prefix: '/v1/data/',
+      files: {
+        wasm: '/data/wasm.wasm',
+        all: '/data/all.js',
+        sync: '/data/sync.js',
+      },
+      flags: {
+        captureErrors: false,
+        cleanErrors: true,
+        rewriterLogs: false,
+        serviceworkers: false,
+        strictRewrites: false,
+        syncxhr: false,
+      },
+      codec: {
+        // @ts-ignore
+        encode: (url) => {
+         return encodeURIComponent(url);
+        },
+        // @ts-ignore
+        decode: (url) => {
+         return decodeURIComponent(url);
+        }
+      },
+    };
+  }
+
+  async init() {
+    this.instance = new ScramjetController(this.getConfig());
+    await this.instance.init();
+    return this.instance;
+  }
+}
+
+const scramjetWrapper = new ScramjetWrapper();
+const vWrapper = new VWrapper();
+export { scramjetWrapper, vWrapper };
