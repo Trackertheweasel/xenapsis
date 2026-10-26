@@ -13,6 +13,18 @@ import { createServer } from 'node:http';
 import { constants as zlibConstants } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  ACCESS_COOKIE,
+  accessCookie,
+  checkCode,
+  createToken,
+  enterPage,
+  loadAccess,
+  readCookie,
+  recordFailure,
+  tooManyAttempts,
+  verifyToken,
+} from 'serverlib/access';
 import { updateChecker } from 'serverlib/check';
 import { findProvider } from 'serverlib/provider';
 import { version } from './package.json' with { type: 'json' };
@@ -51,6 +63,10 @@ async function ensureBuild() {
   }
 }
 
+const access = loadAccess();
+const hasAccess = (cookieHeader: string | undefined) =>
+  !access || verifyToken(access, readCookie(cookieHeader, ACCESS_COOKIE));
+
 const app = Fastify({
   logger: false,
   serverFactory: handler => {
@@ -64,7 +80,7 @@ const app = Fastify({
   });
     const requestHandler = (req: any, res: any) => handler(req, res);
     const upgradeHandler = (req: any, socket: any, head: any) => {
-      if (req.url?.endsWith('/w/')) {
+      if (req.url?.endsWith('/w/') && hasAccess(req.headers.cookie)) {
         wisp.routeRequest(req, socket, head);
       } else {
         socket.destroy();
@@ -92,6 +108,47 @@ await app.register(fastifyCompress, {
   // Default brotli quality (11) is far too slow to run per request on multi-MB files.
   brotliOptions: { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } },
 });
+
+if (access) {
+  const OPEN_PATHS = new Set(['/enter', '/favicon.ico', '/robots.txt']);
+
+  app.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'string', bodyLimit: 1024 },
+    (_req, body, done) => done(null, new URLSearchParams(body as string)),
+  );
+
+  app.addHook('onRequest', async (req, reply) => {
+    const { pathname } = new URL(req.url, 'http://localhost');
+    if (OPEN_PATHS.has(pathname) || hasAccess(req.headers.cookie)) return;
+    if (req.method === 'GET' && req.headers.accept?.includes('text/html')) {
+      return reply.redirect('/enter');
+    }
+    return reply.code(401).type('text/plain').send('Invite required');
+  });
+
+  app.get('/enter', (_req, reply) => {
+    reply.header('Cache-Control', 'no-store').type('text/html').send(enterPage());
+  });
+
+  app.post('/enter', (req, reply) => {
+    const ip = (req.headers['cf-connecting-ip'] as string) || req.ip;
+    reply.header('Cache-Control', 'no-store').type('text/html');
+    if (tooManyAttempts(ip)) {
+      return reply.code(429).send(enterPage('Too many attempts. Try again in 15 minutes.'));
+    }
+    const code = (req.body as URLSearchParams | undefined)?.get('code') ?? '';
+    const name = checkCode(access, code);
+    if (!name) {
+      recordFailure(ip);
+      return reply.code(401).send(enterPage('That code is not valid.'));
+    }
+    const secure =
+      req.headers['x-forwarded-proto'] === 'https' || !!(req.raw.socket as any).encrypted;
+    reply.header('Set-Cookie', accessCookie(createToken(access, name), secure));
+    return reply.redirect('/');
+  });
+}
 
 await app.register(fastifyMiddie);
 
@@ -222,6 +279,16 @@ app.listen({ host: '0.0.0.0', port }, err => {
       chalk.hex(status.color)(`${status.icon} ${status.text}`),
   );
   if (status.extra) console.log('       ' + status.extra);
+  console.log();
+  console.log(
+    chalk.hex('#bdc3c7')('   Access: ') +
+      chalk.hex('#ecf0f1')(
+        access ? `invite-only (${access.codes.size} code${access.codes.size === 1 ? '' : 's'})` : 'open to everyone',
+      ),
+  );
+  if (access && !process.env.PERSEC_SECRET) {
+    console.log(chalk.hex('#f1c40f')('   Set PERSEC_SECRET so people stay signed in across restarts.'));
+  }
   console.log();
   console.log(chalk.hex('#00b894')('Access Information:'));
   if (deploymentURL) {
