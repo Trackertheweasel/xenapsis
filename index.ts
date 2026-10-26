@@ -192,6 +192,8 @@ app.use('/api/query', async (req: any, res: any) => {
   try {
     const response = await fetch(`https://duckduckgo.com/ac/?q=${encodeURIComponent(search)}`, {
       headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' },
+      // Without a timeout, a slow DuckDuckGo leaves requests hanging until the client gives up.
+      signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) {
       res.statusCode = response.status;
@@ -283,11 +285,16 @@ app.listen({ host: '0.0.0.0', port }, err => {
   console.log(
     chalk.hex('#bdc3c7')('   Access: ') +
       chalk.hex('#ecf0f1')(
-        access ? `invite-only (${access.codes.size} code${access.codes.size === 1 ? '' : 's'})` : 'open to everyone',
+        access
+          ? `invite-only (${access.codes.size} code${access.codes.size === 1 ? '' : 's'}${access.minted ? ', minted invites on' : ''})`
+          : 'open to everyone',
       ),
   );
-  if (access && !process.env.PERSEC_SECRET) {
+  if (access && !access.minted) {
     console.log(chalk.hex('#f1c40f')('   Set PERSEC_SECRET so people stay signed in across restarts.'));
+    if (!access.codes.size) {
+      console.log(chalk.hex('#e74c3c')('   No invite codes and no PERSEC_SECRET: nobody can sign in.'));
+    }
   }
   console.log();
   console.log(chalk.hex('#00b894')('Access Information:'));

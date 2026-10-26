@@ -115,6 +115,20 @@ Most hosting providers forbid public proxies but allow private ones. In invite-o
 
 People enter their code once and stay signed in for 30 days. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
 
+### Handing out invites without restarting
+
+With `PERSEC_SECRET` set, you can also mint invites on your own computer. They need no restart or redeploy and stop working on their own:
+
+```bash
+PERSEC_SECRET="<your secret>" pnpm invite sam 30   # prints a code that works for 30 days
+```
+
+- A minted invite signs someone in for 30 days, or until the invite expires if that comes first.
+- To cancel one early, add the name to `PERSEC_REVOKED` (for example `PERSEC_REVOKED="sam,lee"`) and restart. This works for listed codes too.
+- Give each person their own name: revoking a name cancels every invite minted with it.
+- To use only minted invites, set `PERSEC_INVITE_ONLY=true` instead of `PERSEC_INVITE_CODES`.
+- Anyone with `PERSEC_SECRET` can mint invites, so keep it as private as the codes. Changing it signs everyone out and cancels every minted invite.
+
 Share codes privately (in person or an encrypted messenger), never on a public page. After 10 wrong codes, an address has to wait 15 minutes.
 
 ---

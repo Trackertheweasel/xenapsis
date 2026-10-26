@@ -1,10 +1,13 @@
-FROM node:20
+# Node 20 reached end of life in April 2026.
+FROM node:22
 ENV NODE_ENV=production
 ENV PORT=8080
 WORKDIR /app
-COPY ["package.json", "pnpm-lock.yaml*", "./"]
+RUN npm i -g pnpm@10
+# Install before copying the source so code changes don't redo the install layer.
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN npm i -g pnpm && pnpm install --no-cache
 RUN pnpm build
 EXPOSE 8080
 CMD ["pnpm", "start"]

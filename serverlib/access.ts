@@ -2,39 +2,68 @@ import crypto from 'node:crypto';
 
 // Invite-only mode. Set PERSEC_INVITE_CODES to "name:code,name:code" to require a code
 // before anyone can use Persec. Removing someone's entry revokes their access.
+//
+// With PERSEC_SECRET set, the owner can also mint invites offline (`pnpm invite <name> <days>`).
+// Those expire on their own and need no restart; PERSEC_REVOKED="name,name" cancels one early.
 
 export const ACCESS_COOKIE = 'persec_access';
 const MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+// Prefix for people signed in with a minted invite. Static names can't contain ':'.
+const MINTED = 'invite:';
+const NAME_RE = /^[\w-]{1,32}$/;
 
 export interface AccessConfig {
   codes: Map<string, string>; // code -> name
+  names: Set<string>;
+  revoked: Set<string>;
   secret: string;
+  // Only with a fixed PERSEC_SECRET: a random one would invalidate every minted invite on restart.
+  minted: boolean;
 }
 
-export function loadAccess(env: NodeJS.ProcessEnv = process.env): AccessConfig | null {
-  const raw = env.PERSEC_INVITE_CODES?.trim();
-  if (!raw) return null;
-
-  const codes = new Map<string, string>();
-  raw
+const truthy = (v: string | undefined) => /^(1|true|yes|on)$/i.test(v?.trim() ?? '');
+const list = (v: string | undefined) =>
+  (v ?? '')
     .split(',')
     .map(e => e.trim())
-    .filter(Boolean)
-    .forEach((entry, i) => {
-      const sep = entry.indexOf(':');
-      const name = sep > 0 ? entry.slice(0, sep).trim() : `invite${i + 1}`;
-      const code = sep > 0 ? entry.slice(sep + 1).trim() : entry;
-      if (code) codes.set(code, name);
-    });
-  if (!codes.size) return null;
+    .filter(Boolean);
 
+export function loadAccess(env: NodeJS.ProcessEnv = process.env): AccessConfig | null {
+  const codes = new Map<string, string>();
+  for (const entry of list(env.PERSEC_INVITE_CODES)) {
+    const sep = entry.indexOf(':');
+    const code = sep > 0 ? entry.slice(sep + 1).trim() : entry;
+    // Unnamed codes are named after the code itself, so removing one never shifts another's name.
+    const name =
+      sep > 0
+        ? entry.slice(0, sep).trim()
+        : `invite-${crypto.createHash('sha256').update(code).digest('hex').slice(0, 8)}`;
+    if (code) codes.set(code, name);
+  }
+  if (!codes.size && !truthy(env.PERSEC_INVITE_ONLY)) return null;
+
+  const fixedSecret = env.PERSEC_SECRET?.trim();
   // Without a fixed secret, everyone has to re-enter their code whenever the server restarts.
-  const secret = env.PERSEC_SECRET?.trim() || crypto.randomBytes(32).toString('hex');
-  return { codes, secret };
+  const secret = fixedSecret || crypto.randomBytes(32).toString('hex');
+  return {
+    codes,
+    names: new Set(codes.values()),
+    revoked: new Set(list(env.PERSEC_REVOKED)),
+    secret,
+    minted: !!fixedSecret,
+  };
 }
 
 const sign = (secret: string, data: string) =>
   crypto.createHmac('sha256', secret).update(data).digest('base64url');
+// Domain-separated from cookie signatures so a cookie can never be used as an invite code.
+const signInvite = (secret: string, data: string) =>
+  crypto
+    .createHmac('sha256', secret)
+    .update(`invite.${data}`)
+    .digest()
+    .subarray(0, 16)
+    .toString('base64url');
 
 function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a);
@@ -42,11 +71,46 @@ function safeEqual(a: string, b: string): boolean {
   return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
 }
 
-export function checkCode(config: AccessConfig, code: string): string | null {
+// Creates an invite code for `name` that stops working after `days`.
+export function mintInvite(secret: string, name: string, days: number, now = Date.now()): string {
+  if (!NAME_RE.test(name))
+    throw new Error('Names may only use letters, numbers, - and _ (max 32).');
+  if (!(days > 0)) throw new Error('Days must be a positive number.');
+  const data = `${Buffer.from(name).toString('base64url')}.${Math.floor(now / 1000 + days * 86400)}`;
+  return `${data}.${signInvite(secret, data)}`;
+}
+
+function checkMinted(config: AccessConfig, code: string, now: number): string | null {
+  if (!config.minted) return null;
+  const parts = code.split('.');
+  if (parts.length !== 3) return null;
+  const [encodedName, expiry, sig] = parts;
+  if (!safeEqual(signInvite(config.secret, `${encodedName}.${expiry}`), sig)) return null;
+  const name = Buffer.from(encodedName, 'base64url').toString();
+  if (!NAME_RE.test(name) || !(Number(expiry) * 1000 > now)) return null;
+  return `${MINTED}${name}:${expiry}`;
+}
+
+// Returns who the code belongs to (stored in their cookie), or null.
+export function checkCode(config: AccessConfig, code: string, now = Date.now()): string | null {
+  code = code.trim();
+  if (!code) return null;
+  let subject: string | null = null;
   for (const [valid, name] of config.codes) {
-    if (safeEqual(valid, code.trim())) return name;
+    if (safeEqual(valid, code)) subject = name;
   }
-  return null;
+  subject ??= checkMinted(config, code, now);
+  return subject && isAllowed(config, subject, now) ? subject : null;
+}
+
+function isAllowed(config: AccessConfig, subject: string, now: number): boolean {
+  if (subject.startsWith(MINTED)) {
+    const [name, expiry] = subject.slice(MINTED.length).split(':');
+    // The cookie lasts 30 days, but never longer than the invite it came from.
+    return config.minted && !config.revoked.has(name) && Number(expiry) * 1000 > now;
+  }
+  // The name must still be on the invite list, so removing an entry revokes access.
+  return config.names.has(subject) && !config.revoked.has(subject);
 }
 
 export function createToken(config: AccessConfig, name: string, now = Date.now()): string {
@@ -65,9 +129,7 @@ export function verifyToken(
   const [encodedName, expiry, sig] = parts;
   if (!safeEqual(sign(config.secret, `${encodedName}.${expiry}`), sig)) return false;
   if (Number(expiry) * 1000 < now) return false;
-  // The name must still be on the invite list, so removing an entry revokes access.
-  const name = Buffer.from(encodedName, 'base64url').toString();
-  return [...config.codes.values()].includes(name);
+  return isAllowed(config, Buffer.from(encodedName, 'base64url').toString(), now);
 }
 
 export function readCookie(header: string | undefined, name: string): string | undefined {
@@ -89,6 +151,10 @@ export function tooManyAttempts(ip: string, now = Date.now()): boolean {
   return !!f && f.reset > now && f.count >= 10;
 }
 export function recordFailure(ip: string, now = Date.now()) {
+  // Drop expired entries now and then so random addresses can't grow the map forever.
+  if (failures.size >= 10_000) {
+    for (const [key, f] of failures) if (f.reset <= now) failures.delete(key);
+  }
   const f = failures.get(ip);
   if (!f || f.reset <= now) failures.set(ip, { count: 1, reset: now + 15 * 60 * 1000 });
   else f.count++;

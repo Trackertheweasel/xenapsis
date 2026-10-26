@@ -4,6 +4,7 @@ import {
 	checkCode,
 	createToken,
 	loadAccess,
+	mintInvite,
 	readCookie,
 	recordFailure,
 	tooManyAttempts,
@@ -48,4 +49,40 @@ test('Cookies are parsed and guessing is rate limited', () => {
 	for (let i = 0; i < 10; i++) recordFailure(ip);
 	assert.ok(tooManyAttempts(ip));
 	assert.ok(!tooManyAttempts(ip, Date.now() + 16 * 60 * 1000));
+});
+
+test('Removing an unnamed code does not hand its name to another code', () => {
+	const before = loadAccess({ PERSEC_INVITE_CODES: 'aaa,bbb,ccc', PERSEC_SECRET: 's' })!;
+	const after = loadAccess({ PERSEC_INVITE_CODES: 'aaa,ccc', PERSEC_SECRET: 's' })!;
+	const bToken = createToken(before, checkCode(before, 'bbb')!);
+	assert.ok(!verifyToken(after, bToken), 'removed code stays revoked');
+	assert.ok(verifyToken(after, createToken(before, checkCode(before, 'ccc')!)), 'others keep working');
+});
+
+test('Minted invites work without being listed, expire, and can be revoked', () => {
+	const day = 86400 * 1000;
+	const access = loadAccess(env)!;
+	const code = mintInvite('test-secret', 'sam', 7);
+	const subject = checkCode(access, code)!;
+	assert.ok(subject);
+	assert.ok(verifyToken(access, createToken(access, subject)));
+	assert.equal(checkCode(access, code, Date.now() + 8 * day), null, 'expired invite');
+	assert.ok(!verifyToken(access, createToken(access, subject), Date.now() + 8 * day), 'cookie ends with the invite');
+	assert.equal(checkCode(access, mintInvite('other-secret', 'sam', 7)), null, 'wrong secret');
+	assert.equal(checkCode(access, code.replace('.', 'x.')), null, 'tampered');
+
+	const revoked = loadAccess({ ...env, PERSEC_REVOKED: 'sam' })!;
+	assert.equal(checkCode(revoked, code), null);
+	assert.ok(!verifyToken(revoked, createToken(access, subject)));
+	assert.throws(() => mintInvite('test-secret', 'bad:name', 7));
+});
+
+test('Minted invites need a fixed secret and cookies are not invites', () => {
+	const access = loadAccess(env)!;
+	assert.equal(checkCode(access, createToken(access, 'alice')), null);
+	const noSecret = loadAccess({ PERSEC_INVITE_CODES: 'abc123' })!;
+	assert.equal(checkCode(noSecret, mintInvite(noSecret.secret, 'sam', 7)), null);
+	const mintedOnly = loadAccess({ PERSEC_INVITE_ONLY: 'true', PERSEC_SECRET: 'k' })!;
+	assert.ok(mintedOnly && checkCode(mintedOnly, mintInvite('k', 'sam', 1)));
+	assert.equal(loadAccess({ PERSEC_SECRET: 'k' }), null, 'secret alone does not lock the site');
 });
