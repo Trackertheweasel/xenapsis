@@ -88,6 +88,37 @@ pnpm dev
 
 ---
 
+## Invite-only mode
+
+Most hosting providers forbid public proxies but allow private ones. In invite-only mode, nobody can use Persec (pages, files or the proxy connection) until they enter an invite code. Each person gets their own code, so you can remove one person without affecting the rest.
+
+1. Make a code for each person (run once per person):
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(12).toString('base64url'))"
+   ```
+
+2. Make a secret that keeps people signed in across server restarts:
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+3. Start Persec with both set. Codes are `name:code` pairs separated by commas; the names are only for you.
+
+   ```bash
+   docker run -d -p 8080:8080 --restart unless-stopped --name persec \
+     -e PERSEC_INVITE_CODES="sam:Xq3...,lee:9fT..." \
+     -e PERSEC_SECRET="<your secret>" \
+     persec
+   ```
+
+People enter their code once and stay signed in for 30 days. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
+
+Share codes privately (in person or an encrypted messenger), never on a public page. After 10 wrong codes, an address has to wait 15 minutes.
+
+---
+
 ## Sponsors (ads)
 
 Persec shows at most one sponsor card on the new tab page. Ads are plain images and links served from your own server: no ad network, no scripts and no tracking.
