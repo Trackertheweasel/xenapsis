@@ -48,7 +48,7 @@ const defaults: ConfigDefaults = {
 };
 
 const store = localForage.createInstance({
-  name: 'LunarDB',
+  name: 'PersecDB',
   storeName: 'Settings',
 });
 

@@ -7,10 +7,11 @@ createIcons({ icons });
 
 const urlbar = document.getElementById('urlbar') as HTMLInputElement | null;
 const quick: Record<string, string> = {
-  'lunar://settings': 'Settings',
-  'lunar://new': 'New Page',
-  'lunar://games': 'Games',
-  'lunar://apps': 'Apps',
+  'persec://settings': 'Settings',
+  'persec://new': 'New Page',
+  'persec://games': 'Games',
+  'persec://apps': 'Apps',
+  'persec://privacy': 'Privacy & Safety',
 };
 
 let timer: number | null = null;
@@ -18,7 +19,7 @@ let open = false;
 let prev = '';
 
 function isQuick(str: string): boolean {
-  return str.startsWith('lunar://');
+  return str.startsWith('persec://');
 }
 
 function filterQuick(str: string): [string, string][] {
@@ -145,7 +146,7 @@ function render(sugg: string[], qm: [string, string][], math: string | null, sq:
 
   if (showq && qm.length) {
     html.push(
-      `<div class="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-(--text-secondary) border-t border-[#3a3758]">Lunar Links</div>`,
+      `<div class="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-(--text-secondary) border-t border-[#3a3758]">Persec Links</div>`,
     );
     qm.forEach(([link, desc]) => {
       html.push(

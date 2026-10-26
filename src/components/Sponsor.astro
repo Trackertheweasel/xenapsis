@@ -1,0 +1,28 @@
+---
+import sponsors from '@assets/json/sponsors.json';
+
+// Self-served ads: only a local image and a plain link, no third-party scripts.
+const active = sponsors.filter(s => s.enabled);
+const sponsor = active[Math.floor(Math.random() * active.length)];
+---
+
+{
+  sponsor && (
+    <a
+      href={sponsor.url}
+      target="_blank"
+      rel="sponsored noopener noreferrer"
+      title="Opens the sponsor's site outside Persec"
+      class="border-border-default/20 bg-background-overlay/40 relative z-10 mt-8 flex max-w-md items-center gap-3 rounded-2xl border px-4 py-3 text-left transition hover:bg-white/5"
+    >
+      {sponsor.image && <img src={sponsor.image} alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover" />}
+      <span class="flex flex-col">
+        <span class="text-sm font-semibold text-white/80">{sponsor.name}</span>
+        {sponsor.text && <span class="text-xs text-white/50">{sponsor.text}</span>}
+      </span>
+      <span class="ml-auto self-start rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white/50 uppercase">
+        Ad
+      </span>
+    </a>
+  )
+}

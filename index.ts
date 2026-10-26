@@ -32,7 +32,7 @@ Object.assign(wisp.options, {
 
 async function ensureBuild() {
   if (!fs.existsSync('dist')) {
-    console.log(chalk.hex('#f39c12')('🚀 Building Lunar...'));
+    console.log(chalk.hex('#f39c12')('🚀 Building Persec...'));
     try {
       execSync('npm run build', { stdio: 'inherit' });
       console.log(chalk.hex('#2ecc71')('✅ Build completed successfully!'));
@@ -41,7 +41,7 @@ async function ensureBuild() {
       process.exit(1);
     }
   } else {
-    console.log(chalk.hex('#3498db')('Lunar is already built, skipping...'));
+    console.log(chalk.hex('#3498db')('Persec is already built, skipping...'));
   }
 }
 
@@ -162,7 +162,7 @@ app.listen({ host: '0.0.0.0', port }, err => {
       icon: '❌',
       text: `Update available (${updateStatus.commitId})`,
       color: '#f1c40f',
-      extra: chalk.hex('#95a5a6')('→ https://github.com/lunar-proxy/lunar-v2/wiki'),
+      extra: chalk.hex('#95a5a6')('→ https://github.com/Trackertheweasel/xenapsis'),
     },
     f: { icon: '❌', text: 'Failed to check for updates', color: '#e74c3c' },
   };
@@ -176,8 +176,8 @@ app.listen({ host: '0.0.0.0', port }, err => {
   console.log(chalk.hex('#8e44ad').bold('╭────────────────────────────────────────────╮'));
   console.log(
     chalk.hex('#8e44ad').bold('│ ') +
-      chalk.hex('#f39c12').bold('🌙 Lunar v2 Server Started') +
-      '                │',
+      chalk.hex('#f39c12').bold('🔒 Persec Server Started') +
+      '                  │',
   );
   console.log(chalk.hex('#8e44ad').bold('╰────────────────────────────────────────────╯'));
   console.log();

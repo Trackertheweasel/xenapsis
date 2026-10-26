@@ -10,7 +10,7 @@ export function updateChecker() {
 
     return { status: '?????', commitId };
   } catch {
-    console.error('[ERROR] To see if lunar is updated, please install git.');
+    console.error('[ERROR] To see if Persec is updated, please install git.');
     return { status: '-', commitId: 'unknown' };
   }
 }

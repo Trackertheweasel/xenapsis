@@ -1,14 +1,6 @@
-![Lunar](./lunar.svg)
+![Persec](./persec.svg)
 
-<p align="left">
-  <a href="https://discord.gg/fuPtWjYuf8"><img src="https://skillicons.dev/icons?i=discord" alt="Join our Discord"></a>
-  &nbsp;
-  <a href="https://github.com/lunar-proxy/lunar-v2"><img src="https://skillicons.dev/icons?i=github" alt="View on GitHub"></a>
-</p>
-
-#
-
-**Lunar v2** is a feature-packed, modern, browser-inspired tabbed web proxy designed to bypass censorship while maintaining a familiar, browser-like experience.
+**Persec** is a free, browser-like tabbed web proxy for people living under internet censorship. It runs in any modern browser, with nothing to install.
 
 ---
 
@@ -18,6 +10,8 @@
 - Fast performance
 - `about:blank` cloaking
 - Built in ad blocking
+- No analytics or third-party trackers
+- Self-served, tracking-free sponsor slot
 - Tab system
 - Keyboard shortcuts
 - And much more
@@ -27,7 +21,7 @@
 ## Deployment Options
 
 > **Note**  
-> Lunar **cannot** be deployed to Netlify, Vercel, GitHub Pages, or any other static hosting platform.
+> Persec **cannot** be deployed to Netlify, Vercel, GitHub Pages, or any other static hosting platform.
 
 <p>
   <a href="https://render.com/deploy?repo=https://github.com/Trackertheweasel/xenapsis"><img src="https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/main/buttons/remade/render.svg" alt="Deploy to Render"></a>
@@ -46,11 +40,11 @@ All of these options are free to use.
 ### Docker
 
 ```bash
-docker build -t lunar .
-docker run -d -p 8080:8080 --restart unless-stopped --name lunar lunar
+docker build -t persec .
+docker run -d -p 8080:8080 --restart unless-stopped --name persec persec
 ```
 
-Lunar will be available at `http://localhost:8080`.
+Persec will be available at `http://localhost:8080`.
 
 ---
 
@@ -73,8 +67,8 @@ Lunar will be available at `http://localhost:8080`.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/lunar-proxy/lunar-v2
-   cd lunar-v2
+   git clone https://github.com/Trackertheweasel/xenapsis
+   cd xenapsis
    ```
 
 2. Install dependencies and start the server:
@@ -85,7 +79,7 @@ Lunar will be available at `http://localhost:8080`.
 
 ### Development
 
-If you are actively developing Lunar v2, use the development server to avoid constant rebuilds:
+If you are actively developing Persec, use the development server to avoid constant rebuilds:
 
 ```bash
 pnpm install
@@ -94,28 +88,47 @@ pnpm dev
 
 ---
 
+## Sponsors (ads)
+
+Persec shows at most one sponsor card on the new tab page. Ads are plain images and links served from your own server: no ad network, no scripts and no tracking.
+
+To add a sponsor:
+
+1. Put the sponsor's image (square, at least 80×80) in `public/a/images/sponsors/`.
+2. Add an entry to `public/a/json/sponsors.json` and set `"enabled": true`:
+
+   ```json
+   {
+     "enabled": true,
+     "name": "Sponsor name",
+     "text": "One short line about the sponsor.",
+     "url": "https://sponsor.example",
+     "image": "/a/images/sponsors/sponsor.png"
+   }
+   ```
+
+When more than one sponsor is enabled, each page load picks one at random. If none are enabled, no card is shown. Keep image URLs local (starting with `/`): the tests fail if a sponsor image is loaded from another site.
+
+---
+
+## Privacy
+
+Users can read what Persec collects at `persec://privacy` (also linked from the new tab page and Settings → About). If you change what the server logs or add anything that contacts a third party, update `src/pages/privacy.astro` so the page stays accurate.
+
+---
+
 ## Contributing
 
-Interested in contributing?  
 Please read the [Contributing Guide](CONTRIBUTING.md) before submitting changes.
 
 ---
 
 ## Support
 
-Need help or ran into an issue?
-
-- Open a [GitHub Issue](https://github.com/lunar-proxy/lunar-v2/issues)
-- Ask for help in our [Discord server](https://discord.gg/fuPtWjYuf8)
+Found a bug? Open a [GitHub Issue](https://github.com/Trackertheweasel/xenapsis/issues).
 
 ---
 
-## Credits
+## Credits and license
 
-Huge thanks to everyone who has contributed to Lunar.
-
-<p>
-  <a href="https://github.com/lunar-proxy/lunar-v2/graphs/contributors"><img src="https://contrib.rocks/image?repo=lunar-proxy/lunar-v2" alt="Contributors"></a>
-</p>
-
-Lunar is a suborganisation of [Night Network](https://github.com/Night-N3twork/).
+Persec is based on [Lunar v2](https://github.com/lunar-proxy/lunar-v2) by Bearcattt and the Lunar contributors, and is licensed under the [GNU AGPL-3.0](LICENSE). Because Persec runs as a network service, the AGPL requires that its users can get the source code; the app links to this repository from Settings → About and from the privacy page.

@@ -1,5 +1,5 @@
 services:
   - type: web
-    name: clasdb
+    name: persec
     env: docker
     plan: free

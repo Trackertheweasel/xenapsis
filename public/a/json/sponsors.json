@@ -1,0 +1,9 @@
+[
+  {
+    "enabled": false,
+    "name": "Example Sponsor",
+    "text": "Short line about the sponsor, under 80 characters.",
+    "url": "https://example.com",
+    "image": "/a/images/sponsors/example.png"
+  }
+]

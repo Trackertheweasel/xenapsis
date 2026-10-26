@@ -13,12 +13,13 @@ interface Tab {
 }
 
 const internalRoutes: Record<string, string> = {
-  'lunar://settings': '/st',
-  'lunar://new': '/new',
-  'lunar://games': '/math',
-  'lunar://apps': '/sci',
+  'persec://settings': '/st',
+  'persec://new': '/new',
+  'persec://games': '/math',
+  'persec://apps': '/sci',
+  'persec://privacy': '/privacy',
 };
-const defaultIcon = '/a/moon.svg';
+const defaultIcon = '/a/persec.svg';
 const faviconApi =
   'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&size=64&url=';
 const bmConnection = new baremux.BareMuxConnection(`/bm/worker.js`);
