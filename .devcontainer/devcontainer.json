@@ -1,3 +1,5 @@
 {
-  "forwardPorts": [4321, 8080]
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "npm install -g pnpm && pnpm install",
+  "forwardPorts": [4321, 6060, 8080]
 }
