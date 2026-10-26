@@ -30,9 +30,9 @@
 > Lunar **cannot** be deployed to Netlify, Vercel, GitHub Pages, or any other static hosting platform.
 
 <p>
-  <a href="https://render.com/deploy?repo=https://github.com/lunar-proxy/lunar-v2"><img src="https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/main/buttons/remade/render.svg" alt="Deploy to Render"></a>
+  <a href="https://render.com/deploy?repo=https://github.com/Trackertheweasel/xenapsis"><img src="https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/main/buttons/remade/render.svg" alt="Deploy to Render"></a>
   &nbsp;
-  <a href="https://app.koyeb.com/services/deploy?type=git&repository=github.com/lunar-proxy/lunar-v2&builder=dockerfile&instance_type=free&regions=was&ports=8080%3Bhttp%3B%2F"><img src="https://binbashbanana.github.io/deploy-buttons/buttons/remade/koyeb.svg" alt="Deploy to Koyeb"></a>
+  <a href="https://app.koyeb.com/services/deploy?type=git&repository=github.com/Trackertheweasel/xenapsis&builder=dockerfile&instance_type=free&regions=was&ports=8080%3Bhttp%3B%2F"><img src="https://binbashbanana.github.io/deploy-buttons/buttons/remade/koyeb.svg" alt="Deploy to Koyeb"></a>
   &nbsp;
   <a href="https://railway.com/new/template?template=https://github.com/Trackertheweasel/xenapsis"><img src="https://binbashbanana.github.io/deploy-buttons/buttons/remade/railway.svg" alt="Deploy to Railway"></a>
   &nbsp;
