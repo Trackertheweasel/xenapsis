@@ -10,6 +10,7 @@ import { execSync } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import { createServer } from 'node:http';
+import { constants as zlibConstants } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { updateChecker } from 'serverlib/check';
@@ -24,8 +25,13 @@ const port = Number(process.env.PORT) || 6060;
 logging.set_level(logging.ERROR);
 Object.assign(wisp.options, {
   dns_method: 'resolve',
-  dns_servers: ['1.1.1.3', '1.0.0.3'],
+  // Cloudflare DNS with malware blocking only (1.1.1.3 would also block adult content).
+  dns_servers: ['1.1.1.2', '1.0.0.2'],
   dns_result_order: 'ipv4first',
+  // Browsing only needs TCP to web ports. Blocking UDP and low ports (SMTP, SSH, ...)
+  // stops the server being used for spam or attacks; 2525 is a common alternate SMTP port.
+  allow_udp_streams: false,
+  port_whitelist: [80, 443, [1024, 2524], [2526, 65535]],
   wisp_version: 2,
   wisp_motd: 'wisp server',
 });
@@ -82,28 +88,38 @@ await app.register(fastifyHelmet, {
 });
 
 await app.register(fastifyCompress, {
-  encodings: ['gzip', 'deflate', 'br'],
+  encodings: ['br', 'gzip', 'deflate'],
+  // Default brotli quality (11) is far too slow to run per request on multi-MB files.
+  brotliOptions: { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } },
 });
 
 await app.register(fastifyMiddie);
 
+const clientRoot = path.join(__dirname, 'dist', 'client');
+
+function cacheControlFor(filePath: string): string {
+  const rel = path.relative(clientRoot, filePath).split(path.sep).join('/');
+  if (/\.(html?|astro)$/i.test(rel)) return 'no-cache, no-store, must-revalidate';
+  // Astro puts content-hashed files in _astro/, so they never change.
+  if (rel.startsWith('_astro/')) return 'public, max-age=31536000, immutable';
+  // The service worker and the proxy runtime it imports must update together, so always revalidate.
+  if (rel === 'sw.js' || /^(data|tmp|lc|bm)\//.test(rel)) return 'no-cache';
+  return 'public, max-age=3600';
+}
+
 const staticFileOptions: FastifyStaticOptions = {
   decorateReply: true,
+  // Let setHeaders decide Cache-Control instead of the plugin's default "max-age=0".
+  cacheControl: false,
   setHeaders(res: SetHeadersResponse, filePath: string) {
-    if (/\.(html?|astro)$/i.test(filePath)) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    } else {
-      const hashed = /[.\-_][a-f0-9]{8,}\.(js|css|woff2?|png|jpe?g|svg|webp|gif)$/i.test(filePath);
-      res.setHeader(
-        'Cache-Control',
-        hashed ? 'public, max-age=31536000, immutable' : 'public, max-age=3600',
-      );
-    }
+    res.setHeader('Cache-Control', cacheControlFor(filePath));
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   },
-  root: path.join(__dirname, 'dist', 'client'),
+  root: clientRoot,
+  // Serves prerendered pages (dist/client/st.html) at their clean URLs (/st).
+  extensions: ['html'],
 };
 await app.register(fastifyStatic, staticFileOptions);
 
@@ -138,11 +154,24 @@ app.use('/api/query', async (req: any, res: any) => {
 
 // @ts-ignore
 const { handler } = await import('./dist/server/entry.mjs');
-app.use(handler);
+
+// Astro's middleware would try (and fail) to render prerendered pages itself, so send
+// those straight to fastify-static, which serves dist/client/<page>.html.
+const prerendered = new Set(
+  fs
+    .readdirSync(clientRoot)
+    .filter(f => f.endsWith('.html'))
+    .map(f => (f === 'index.html' ? '/' : `/${f.slice(0, -'.html'.length)}`)),
+);
+app.use((req: any, res: any, next: any) => {
+  const { pathname } = new URL(req.url ?? '/', 'http://localhost');
+  if (prerendered.has(pathname)) return next();
+  return handler(req, res, next);
+});
 
 app.setNotFoundHandler((_, reply) => {
   const notFoundText = fs.existsSync('404') ? fs.readFileSync('404', 'utf8') : '404 Not Found';
-  reply.type('text/plain').send(notFoundText);
+  reply.code(404).type('text/plain').send(notFoundText);
 });
 
 app.listen({ host: '0.0.0.0', port }, err => {

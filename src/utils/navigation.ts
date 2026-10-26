@@ -1,6 +1,6 @@
 import ConfigAPI from './config';
 import { scramjetWrapper, vWrapper } from './pro';
-import { TabManager } from './tb';
+import { TabManager, decodeProxyUrl } from './tb';
 import { validateUrl } from './url';
 
 const reloadBtn = document.getElementById('refresh') as HTMLButtonElement | null;
@@ -95,32 +95,15 @@ function fwd() {
   nav(h.stack[h.idx], false);
 }
 
-function strip(url: string): string {
+// The real URL of the page in the active tab, decoded by whichever engine loaded it
+// (not the current setting, which may have changed since the page was opened).
+function currentUrl(f: HTMLIFrameElement): string {
   try {
-    const u = new URL(url, location.origin);
-    let p = u.pathname + u.search;
-    
-    if (p.startsWith(sc.prefix)) {
-      return p.slice(sc.prefix.length);
-    }
-    if (p.startsWith(uv.prefix)) {
-      return p.slice(uv.prefix.length);
-    }
-    
-    return p;
+    const href = f.contentWindow?.location.href || f.src;
+    return decodeProxyUrl(new URL(href, location.origin).pathname);
   } catch {
-    return url;
+    return '';
   }
-}
-
-async function decode(enc: string): Promise<string> {
-  const backend = await ConfigAPI.get('backend');
-  
-  if (backend === 'u' && typeof uv.decodeUrl === 'function') {
-    return uv.decodeUrl(enc);
-  }
-  
-  return sc.codec.decode(enc);
 }
 
 function norm(url: string): string {
@@ -137,8 +120,7 @@ async function sync() {
   
   record(f.src);
   
-  const s = strip(f.src);
-  const d = await decode(s);
+  const d = currentUrl(f);
   const bm = (await ConfigAPI.get('bm')) || [];
   const active = bm.some((b: any) => norm(b.redir) === norm(d));
   
@@ -155,8 +137,8 @@ async function toggleFav() {
   const f = frame();
   if (!f || routes[urlbar.value]) return;
   
-  const s = strip(f.src);
-  const d = await decode(s);
+  const d = currentUrl(f);
+  if (!d) return;
   const bm = (await ConfigAPI.get('bm')) || [];
   
   const i = bm.findIndex((b: any) => norm(b.redir) === norm(d));
@@ -164,14 +146,9 @@ async function toggleFav() {
   if (i !== -1) {
     bm.splice(i, 1);
   } else {
-    let domain = d;
-    try {
-      domain = new URL(d).hostname;
-    } catch {}
-    
     bm.push({
       name: f.contentDocument?.title || d,
-      logo: `/api/icon/?url=https://${domain}`,
+      logo: TabManager.activeFavicon,
       redir: d,
     });
   }

@@ -1,131 +1,133 @@
 importScripts('/data/all.js', '/tmp/config.js', '/tmp/bundle.js', '/tmp/sw.js');
 
-let adblockEnabled = false;
 let playgroundData = null;
 
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
 const v = new UVServiceWorker();
 
+// null until read from settings. The browser stops idle service workers, so the setting is
+// re-read from storage on restart instead of silently falling back to "off".
+let adblockEnabled = null;
+
 self.addEventListener('message', event => {
   const { type, data } = event.data || {};
   if (type === 'playgroundData') playgroundData = event.data;
   if (type === 'ADBLOCK') adblockEnabled = !!data?.enabled;
+  if (type === 'CLEAR_SITE_DATA') {
+    // Scramjet keeps its cookie jar in memory as well as in IndexedDB.
+    scramjet.cookieStore.load('{}');
+    event.ports[0]?.postMessage('done');
+  }
 });
 
-const BLOCK_RULES = [
-  '**://pagead2.googlesyndication.com/**',
-  '**://pagead2.googleadservices.com/**',
-  '**://afs.googlesyndication.com/**',
-  '**://stats.g.doubleclick.net/**',
-  '**://*.doubleclick.net/**',
-  '**://*.googlesyndication.com/**',
-  '**://adservice.google.com/**',
-  '**://*.media.net/**',
-  '**://adservetx.media.net/**',
-  '**://*.amazon-adsystem.com/**',
-  '**://*.adcolony.com/**',
-  '**://*.unityads.unity3d.com/**',
-  '**://*.facebook.com/**',
-  '**://*.facebook.net/**',
-  '**://*.ads-twitter.com/**',
-  '**://ads-api.twitter.com/**',
-  '**://*.linkedin.com/**',
-  '**://*.pinterest.com/**',
-  '**://*.reddit.com/**',
-  '**://*.redditmedia.com/**',
-  '**://*.tiktok.com/**',
-  '**://*.byteoversea.com/**',
-  '**://*.yahoo.com/**',
-  '**://*.yahooinc.com/**',
-  '**://*.yandex.ru/**',
-  '**://*.yandex.net/**',
-  '**://*.hotjar.com/**',
-  '**://*.hotjar.io/**',
-  '**://*.mouseflow.com/**',
-  '**://*.freshmarketer.com/**',
-  '**://*.luckyorange.com/**',
-  '**://stats.wp.com/**',
-  '**://*.bugsnag.com/**',
-  '**://*.sentry.io/**',
-  '**://*.sentry-cdn.com/**',
-  '**://*.realme.com/**',
-  '**://*.realmemobile.com/**',
-  '**://*.xiaomi.com/**',
-  '**://*.miui.com/**',
-  '**://*.oppomobile.com/**',
-  '**://*.hicloud.com/**',
-  '**://*.oneplus.net/**',
-  '**://*.oneplus.cn/**',
-  '**://*.samsung.com/**',
-  '**://*.2o7.net/**',
-  '**://*.apple.com/**',
-  '**://*.icloud.com/**',
-  '**/cdn-cgi/**',
-  '**://*.mzstatic.com/**',
-  '**://*.google-analytics.com/**',
-  '**://analytics.google.com/**',
-  '**://ssl.google-analytics.com/**',
-  '**://click.googleanalytics.com/**',
-  '**/ads.js',
-  '**/ad.js',
-  '**/analytics.js',
-  '**/ga.js',
-  '**/gtag.js',
-  '**/gtm.js',
-  '**/fbevents.js',
-  '**/pixel.js',
-];
-
-function wildcardToRegex(p) {
-  return new RegExp(
-    '^' +
-      p
-        .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-        .replace(/\*\*/g, '.*')
-        .replace(/\*/g, '[^/]*') +
-      '$',
-    'i'
-  );
+// Reads Persec's adBlock setting without creating the settings database if it doesn't exist yet.
+function readAdblockSetting() {
+  return new Promise(resolve => {
+    const req = indexedDB.open('PersecDB');
+    req.onupgradeneeded = () => req.transaction.abort();
+    req.onerror = () => resolve(true);
+    req.onsuccess = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('Settings')) {
+        db.close();
+        return resolve(true);
+      }
+      const get = db.transaction('Settings').objectStore('Settings').get('adBlock');
+      get.onsuccess = () => {
+        db.close();
+        resolve(get.result !== 'off');
+      };
+      get.onerror = () => {
+        db.close();
+        resolve(true);
+      };
+    };
+  });
 }
 
-const BLOCK_REGEX = BLOCK_RULES.map(wildcardToRegex);
+// Ad and tracker hosts, matched against the host and all its subdomains.
+const AD_HOSTS = [
+  'doubleclick.net',
+  'googlesyndication.com',
+  'googleadservices.com',
+  'adservice.google.com',
+  'google-analytics.com',
+  'analytics.google.com',
+  'media.net',
+  'amazon-adsystem.com',
+  'adcolony.com',
+  'unityads.unity3d.com',
+  'ads-twitter.com',
+  'ads-api.twitter.com',
+  'hotjar.com',
+  'hotjar.io',
+  'mouseflow.com',
+  'freshmarketer.com',
+  'luckyorange.com',
+  '2o7.net',
+  'stats.wp.com',
+  'mc.yandex.ru',
+  'mc.yandex.com',
+  'static.cloudflareinsights.com',
+  'bugsnag.com',
+  'sentry.io',
+  'sentry-cdn.com',
+];
 
-function isAdRequest(url, request) {
-  if (BLOCK_REGEX.some(r => r.test(url))) return true;
+// Ad and tracking script paths that are safe to block on any host.
+const AD_PATHS = [
+  /\/(ads|ad|adsbygoogle|analytics|ga|gtm|fbevents|pixel)\.js$/i,
+  /\/gtag\/js$/i,
+  /\/cdn-cgi\/rum$/i,
+];
+const AD_SCRIPT_SEGMENTS = new Set(['ads', 'adserver', 'adservice', 'pagead']);
 
+// Returns the real URL a proxied request is for, or null for Persec's own requests.
+function targetUrl(requestUrl) {
   try {
-    const p = new URL(url);
-
-    if (
-      p.hostname === 'pagead2.googlesyndication.com' ||
-      p.hostname.endsWith('.googlesyndication.com') ||
-      p.hostname.endsWith('.doubleclick.net') ||
-      p.hostname.endsWith('.media.net')
-    )
-      return true;
-
-    if (request?.destination === 'script') {
-      if (/ads|adservice|pagead|doubleclick|googlesyndication|analytics/i.test(p.pathname))
-        return true;
+    const u = new URL(requestUrl);
+    if (u.origin !== self.location.origin) return null;
+    const scPrefix = scramjet.config?.prefix || '/v1/data/';
+    if (u.pathname.startsWith(scPrefix)) {
+      return new URL(decodeURIComponent(u.pathname.slice(scPrefix.length)));
     }
-
-    if (request?.destination === 'ping') return true;
-
-    if (p.search && /(utm_|gclid|fbclid|ad|ads|tracking|pixel)/i.test(p.search)) {
-      return true;
+    const uv = self.__uv$config;
+    if (uv && u.pathname.startsWith(uv.prefix)) {
+      return new URL(uv.decodeUrl(u.pathname.slice(uv.prefix.length) + u.search));
     }
   } catch {}
+  return null;
+}
 
+function isAdRequest(target, request) {
+  // Never block a page the user is opening, only the things it loads.
+  if (
+    request?.mode === 'navigate' ||
+    ['document', 'iframe', 'frame'].includes(request?.destination)
+  ) {
+    return false;
+  }
+  if (request?.destination === 'ping') return true;
+
+  const host = target.hostname.toLowerCase();
+  if (AD_HOSTS.some(h => host === h || host.endsWith('.' + h))) return true;
+  if (AD_PATHS.some(r => r.test(target.pathname))) return true;
+  if (request?.destination === 'script') {
+    return target.pathname.split('/').some(s => AD_SCRIPT_SEGMENTS.has(s.toLowerCase()));
+  }
   return false;
 }
 
 async function handleFetch(event) {
   await scramjet.loadConfig();
-  const url = event.request.url;
-  const cdnCgiRegex = /\/cdn-cgi\//i;
-  if ((adblockEnabled && isAdRequest(url, event.request)) || cdnCgiRegex.test(url)) {
-    return new Response(null, { status: 204 });
+
+  const target = targetUrl(event.request.url);
+  if (target) {
+    if (adblockEnabled === null) adblockEnabled = await readAdblockSetting();
+    if (adblockEnabled && isAdRequest(target, event.request)) {
+      return new Response(null, { status: 204 });
+    }
   }
 
   if (scramjet.route(event)) return scramjet.fetch(event);

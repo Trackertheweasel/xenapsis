@@ -1,4 +1,6 @@
 ---
+// Static page: built once at deploy time instead of rendered on every request.
+export const prerender = true;
 import '@/main.css';
 ---
 
@@ -36,9 +38,10 @@ import '@/main.css';
             removes them.
           </li>
           <li>
-            For search suggestions, what you type in the address bar is sent to DuckDuckGo by the Persec server, not by
-            your browser.
+            For search suggestions, words you type in the address bar are sent to DuckDuckGo by the Persec server, not
+            by your browser. Web addresses you type or visit are never sent.
           </li>
+          <li>The Persec server finds websites using Cloudflare's DNS, which blocks known malware sites.</li>
           <li>
             The company that hosts the server may keep its own connection logs, such as your IP address and the time you
             connected.
@@ -62,6 +65,13 @@ import '@/main.css';
           </li>
           <li>The Persec server handles your traffic, so you are trusting whoever runs it.</li>
           <li>If you log in to an account through Persec, that site knows it is you.</li>
+          <li>
+            <strong class="text-white/80"
+              >Sites you open in Persec can read each other's cookies, including logins.</strong
+            >
+            Avoid logging in to important accounts through Persec. If you do log in, go to Settings → Privacy &amp; Cloaking
+            → Clear site data when you're done.
+          </li>
         </ul>
       </section>
 

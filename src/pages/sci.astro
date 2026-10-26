@@ -1,4 +1,6 @@
 ---
+// Static page: built once at deploy time instead of rendered on every request.
+export const prerender = true;
 import '@/main.css';
 import AppLayout from '../components/asset.astro';
 import apList from '@assets/json/lists.json';

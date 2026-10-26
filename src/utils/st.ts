@@ -1,4 +1,5 @@
 import ConfigAPI from './config';
+import { clearSiteData } from './sitedata';
 
 export const SettingsAPI = {
   async enable(key: string) {
@@ -113,6 +114,19 @@ export class SettingsManager {
       await ConfigAPI.reset();
       parent.location.reload();
     }
+  }
+
+  static initClearSiteData() {
+    const btn = document.querySelector<HTMLButtonElement>('[data-clear-site-data]');
+    btn?.addEventListener('click', async () => {
+      if (
+        !confirm('Clear cookies and data saved by all sites? You will be logged out of every site.')
+      )
+        return;
+      btn.disabled = true;
+      await clearSiteData();
+      parent.location.reload();
+    });
   }
 
   static initNav() {
@@ -804,6 +818,7 @@ export class SettingsManager {
     this.initPresets();
     this.initProxyBackend();
     this.initPanicKey();
+    this.initClearSiteData();
 
     const resetBtn = document.querySelector('[data-reset="reset"]');
     resetBtn?.addEventListener('click', () => this.reset());
