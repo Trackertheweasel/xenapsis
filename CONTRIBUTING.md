@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Thank you for your interest in contributing to Lunar.
+Thank you for your interest in Contributing to Persec.
 
 ### What you need
 

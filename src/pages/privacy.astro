@@ -1,0 +1,109 @@
+---
+import '@/main.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy &amp; Safety</title>
+  </head>
+  <body class="bg-background font-linux text-text-header min-h-screen">
+    <main class="mx-auto max-w-2xl space-y-8 px-6 py-10 leading-relaxed">
+      <header class="flex items-center gap-3">
+        <img src="/a/persec.svg" alt="" class="h-8 w-8" />
+        <h1 class="text-2xl font-bold">Privacy &amp; Safety</h1>
+      </header>
+
+      <section class="space-y-2">
+        <h2 class="text-lg font-semibold">What Persec is</h2>
+        <p class="text-text-secondary">
+          Persec is a web proxy. Your browser connects to the Persec server, and the server fetches websites for you.
+          This gets you past many website blocks, but it is not a VPN and it does not make you anonymous.
+        </p>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-lg font-semibold">What we collect</h2>
+        <ul class="text-text-secondary list-disc space-y-1 pl-5">
+          <li>Persec does not keep logs of the sites you visit.</li>
+          <li>There are no analytics, trackers or third-party ad scripts.</li>
+          <li>
+            Fonts and icons are served from this server, so loading Persec does not contact Google or other companies.
+          </li>
+          <li>
+            Your settings and bookmarks are stored only in your own browser. Clearing this site's data in your browser
+            removes them.
+          </li>
+          <li>
+            For search suggestions, what you type in the address bar is sent to DuckDuckGo by the Persec server, not by
+            your browser.
+          </li>
+          <li>
+            The company that hosts the server may keep its own connection logs, such as your IP address and the time you
+            connected.
+          </li>
+        </ul>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-lg font-semibold">Ads</h2>
+        <p class="text-text-secondary">
+          Ads on Persec are plain images and links served from this server. They don't track you. Clicking an ad opens
+          the advertiser's site directly, outside Persec, so the advertiser and your network can see that visit.
+        </p>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-lg font-semibold">What Persec cannot hide</h2>
+        <ul class="text-text-secondary list-disc space-y-1 pl-5">
+          <li>
+            Your internet provider can see that you connect to Persec, though not which pages you open through it.
+          </li>
+          <li>The Persec server handles your traffic, so you are trusting whoever runs it.</li>
+          <li>If you log in to an account through Persec, that site knows it is you.</li>
+        </ul>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-lg font-semibold">If your safety is at risk</h2>
+        <p class="text-text-secondary">
+          If you could be harmed for what you read or say online, use a tool built for that alongside or instead of
+          Persec:
+        </p>
+        <ul class="text-text-secondary list-disc space-y-1 pl-5">
+          <li>
+            <a
+              class="text-[#60a5fa] underline"
+              href="https://www.torproject.org/download/"
+              target="_blank"
+              rel="noreferrer">Tor Browser</a
+            >
+            hides who you are and what you visit. Where Tor is blocked, choose the Snowflake connection when it starts. If
+            the Tor website is blocked, send an email to gettor@torproject.org to get a download link.
+          </li>
+          <li>
+            <a class="text-[#60a5fa] underline" href="https://psiphon.ca/" target="_blank" rel="noreferrer">Psiphon</a> is
+            a free app that gets around censorship on phones and computers.
+          </li>
+          <li>
+            <a class="text-[#60a5fa] underline" href="https://getoutline.org/" target="_blank" rel="noreferrer"
+              >Outline</a
+            >
+            lets someone you trust run a private VPN server for you.
+          </li>
+        </ul>
+      </section>
+
+      <p class="text-text-secondary text-sm">
+        Persec is free software (AGPL-3.0), based on Lunar v2.
+        <a
+          class="text-[#60a5fa] underline"
+          href="https://github.com/Trackertheweasel/xenapsis"
+          target="_blank"
+          rel="noreferrer">Read the source code</a
+        >.
+      </p>
+    </main>
+  </body>
+</html>

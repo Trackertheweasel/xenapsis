@@ -262,7 +262,7 @@ export class SettingsManager {
       }
       link.href = icon || 'https://www.google.com/favicon.ico';
     } else {
-      doc.title = 'Lunar v2';
+      doc.title = 'Persec';
 
       let link = doc.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (link) link.href = '/favicon.ico';

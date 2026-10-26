@@ -12,10 +12,11 @@ const homeBtn = document.getElementById('home') as HTMLElement | null;
 const sidebar = document.querySelector('aside');
 
 const routes: Record<string, string> = {
-  'lunar://settings': '/st',
-  'lunar://new': '/new',
-  'lunar://games': '/math',
-  'lunar://apps': '/sci',
+  'persec://settings': '/st',
+  'persec://new': '/new',
+  'persec://games': '/math',
+  'persec://apps': '/sci',
+  'persec://privacy': '/privacy',
 };
 
 const reverseRoutes = Object.fromEntries(
@@ -219,7 +220,7 @@ function clickSide(e: MouseEvent) {
   
   let r = reverseRoutes[url];
   if (!r && url === '/') {
-    r = 'lunar://new';
+    r = 'persec://new';
   }
   
   urlbar.value = r || url;
