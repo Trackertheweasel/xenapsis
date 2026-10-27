@@ -89,6 +89,17 @@ EOF
     sed -i '/^PERSEC_INVITE_CODES=/d' "$env"
     echo "PERSEC_INVITE_CODES=$PERSEC_INVITE_CODES" >>"$env"
   fi
+  # Optional: serve the proxy tunnel on a hard-to-guess path instead of the well-known /w/, so the
+  # server can't be confirmed as a proxy by probing one URL. Baked into the client at build time,
+  # so it takes effect on the rebuild below. Can be set on first install or added later by rerunning.
+  if [ -n "${PUBLIC_PERSEC_WISP_PATH:-}" ]; then
+    if ! [[ "$PUBLIC_PERSEC_WISP_PATH" =~ ^/?[A-Za-z0-9._-]+/?$ ]]; then
+      echo "PUBLIC_PERSEC_WISP_PATH may only use letters, numbers and - _ . (e.g. /r8Fk2p/)." >&2
+      exit 1
+    fi
+    sed -i '/^PUBLIC_PERSEC_WISP_PATH=/d' "$env"
+    echo "PUBLIC_PERSEC_WISP_PATH=$PUBLIC_PERSEC_WISP_PATH" >>"$env"
+  fi
   local domain
   domain=$(sed -n 's/^DOMAIN=//p' "$env")
 

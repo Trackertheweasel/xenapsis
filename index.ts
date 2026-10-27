@@ -34,6 +34,18 @@ EventEmitter.defaultMaxListeners = 0;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 6060;
 
+// The WebSocket tunnel listens here. Must stay in sync with the client, which bakes the same
+// value in at build time from PUBLIC_PERSEC_WISP_PATH (see astro.config.ts / src/utils/config.ts).
+// A hard-to-guess path means a network filter can't confirm the server is a proxy by probing it.
+function normalizeWispPath(raw: string | undefined): string {
+  let p = (raw ?? '').trim();
+  if (!p) return '/w/';
+  if (!p.startsWith('/')) p = '/' + p;
+  if (!p.endsWith('/')) p = p + '/';
+  return p;
+}
+const WISP_PATH = normalizeWispPath(process.env.PUBLIC_PERSEC_WISP_PATH);
+
 logging.set_level(logging.ERROR);
 Object.assign(wisp.options, {
   dns_method: 'resolve',
@@ -84,7 +96,7 @@ const app = Fastify({
   });
     const requestHandler = (req: any, res: any) => handler(req, res);
     const upgradeHandler = (req: any, socket: any, head: any) => {
-      if (req.url?.endsWith('/w/') && hasAccess(req.headers.cookie)) {
+      if (req.url?.endsWith(WISP_PATH) && hasAccess(req.headers.cookie)) {
         wisp.routeRequest(req, socket, head);
       } else {
         socket.destroy();

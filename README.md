@@ -69,6 +69,18 @@ Extra names all point at one server, so if its **IP address** is blocked (not ju
 
 Keep the `export` command private: anyone with the secret can mint invites. Minted invites (`persec invite`) work on every server sharing the secret automatically; codes added with `persec add` must be added on each server.
 
+#### Hiding the proxy endpoint
+
+The proxy's traffic flows through a WebSocket at a fixed path, `/w/`. Because that path is the same on every install, a network that suspects your server is a proxy can confirm it just by probing that one URL. You can move the tunnel to a hard-to-guess path so there is nothing constant to probe — to anything that doesn't already have an invite, the server then looks like an ordinary website.
+
+Set `PUBLIC_PERSEC_WISP_PATH` when you first install, for example:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | PUBLIC_PERSEC_WISP_PATH=/$(openssl rand -hex 6)/ bash
+```
+
+The value is built into the app, so set it at install time (changing it later means rebuilding, which `persec update` does). Leave it unset to keep the default `/w/`. This hides the endpoint from probing; it does not change the server's IP address or domain name, so pair it with a spare domain and a backup server (above) for blocks at those levels.
+
 ### Other options
 
 <p>
