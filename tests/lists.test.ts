@@ -40,6 +40,15 @@ test('Apps are listed once and none point at shut-down services', () => {
 	}
 });
 
+test('No game points at a site that has gone offline', () => {
+	// Checked 2026-10-27: no DNS, or the whole site returns 404.
+	const gone = ['1v1.lol', '247backgammon.com', '3kh0.net', 'krunker.zip', 'paper-io.com', 'nowgg.fun', 'narwhale.io', 'ubg77.github.io', 'tylerpalko.github.io'];
+	for (const { name, url } of lists.gms) {
+		const host = new URL(url).hostname;
+		assert.ok(!gone.some(g => host === g || host.endsWith('.' + g)), `${name} is offline`);
+	}
+});
+
 test('Apps open with the engine chosen in Settings', async () => {
 	const src = await read('src/utils/assets.ts');
 	// Settings stores Ultraviolet as 'u' (see src/utils/st.ts), and each engine encodes addresses its own way.
