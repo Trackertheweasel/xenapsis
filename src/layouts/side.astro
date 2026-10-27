@@ -2,22 +2,31 @@
 import '@/main.css';
 ---
 
-<div class="group/sidebar fixed inset-y-0 left-0 z-50 flex items-center">
-  <div
-    class="fixed top-1/2 left-0 z-60 -translate-y-1/2 cursor-pointer transition-opacity duration-300 ease-in-out group-hover/sidebar:opacity-0"
-    style="height: calc(100% - 88px); max-height: 400px; width: 24px;"
+<!-- Opens on hover, or on tap for touch screens. On phones the handle is kept small so it doesn't
+     cover the page underneath. -->
+<div id="sidebar" class="group/sidebar fixed inset-y-0 left-0 z-50 flex items-center">
+  <button
+    type="button"
+    id="sidebar-handle"
+    aria-label="Show navigation"
+    aria-controls="sidebar-panel"
+    aria-expanded="false"
+    class="fixed top-1/2 left-0 z-60 h-24 w-5 -translate-y-1/2 cursor-pointer transition-opacity duration-300 ease-in-out group-hover/sidebar:opacity-0 group-data-open/sidebar:pointer-events-none group-data-open/sidebar:opacity-0 sm:h-[calc(100%-88px)] sm:max-h-[400px] sm:w-6"
   >
     <div
-      class="absolute top-1/2 left-0 h-20 w-1.5 -translate-y-1/2 rounded-r-md bg-linear-to-b from-[#6b63ff] to-[#3e3b70] opacity-40"
+      class="absolute top-1/2 left-0 h-20 w-1.5 -translate-y-1/2 rounded-r-md bg-linear-to-b from-[#6b63ff] to-[#3e3b70] opacity-40 max-sm:opacity-70"
     >
     </div>
-  </div>
+  </button>
   <aside
-    class="fixed top-1/2 left-8 z-50 mt-11 flex -translate-x-[120%] -translate-y-1/2 transform flex-col items-center rounded-4xl border border-[#2a2740]/60 bg-[#1f1d2e]/95 p-3 shadow-[0_12px_28px_rgba(0,0,0,0.5)] backdrop-blur-md transition-transform duration-300 ease-in-out group-hover/sidebar:-translate-x-[30%]"
+    id="sidebar-panel"
+    aria-label="Navigation"
+    class="fixed top-1/2 left-8 z-50 mt-11 flex -translate-x-[150%] -translate-y-1/2 transform flex-col items-center rounded-4xl border border-[#2a2740]/60 bg-[#1f1d2e]/95 p-3 shadow-[0_12px_28px_rgba(0,0,0,0.5)] backdrop-blur-md transition-transform duration-300 ease-in-out group-hover/sidebar:-translate-x-[30%] group-data-open/sidebar:-translate-x-[30%]"
   >
     <div class="group relative my-2">
       <button
         data-url="/"
+        aria-label="Home"
         class="flex h-12 w-12 transform items-center justify-center rounded-full bg-linear-to-b from-[#2b2940] to-[#23212d] shadow-md transition-transform duration-200 ease-in-out hover:-translate-y-1 hover:shadow-2xl focus:ring-2 focus:ring-indigo-500/30 focus:outline-none active:translate-y-0"
       >
         <img src="/a/persec.svg" alt="Logo" class="h-6 w-6 object-contain transition-transform duration-300" />
@@ -32,6 +41,7 @@ import '@/main.css';
       <div class="group relative">
         <button
           data-url="/math"
+          aria-label="Games"
           class="flex h-12 w-12 transform items-center justify-center rounded-full bg-linear-to-b from-[#2b2940] to-[#23212d] shadow-md transition-transform duration-200 ease-in-out hover:-translate-y-1 hover:shadow-lg focus:ring-2 focus:ring-indigo-500/20 focus:outline-none active:translate-y-0"
         >
           <i
@@ -48,6 +58,7 @@ import '@/main.css';
       <div class="group relative">
         <button
           data-url="/sci"
+          aria-label="Apps"
           class="flex h-12 w-12 transform items-center justify-center rounded-full bg-linear-to-b from-[#2b2940] to-[#23212d] shadow-md transition-transform duration-200 ease-in-out hover:-translate-y-1 hover:shadow-lg focus:ring-2 focus:ring-indigo-500/20 focus:outline-none active:translate-y-0"
         >
           <i
@@ -65,6 +76,7 @@ import '@/main.css';
     <div class="group relative my-2">
       <button
         data-url="/st"
+        aria-label="Settings"
         class="flex h-12 w-12 transform items-center justify-center rounded-full bg-linear-to-b from-[#2b2940] to-[#23212d] shadow-md transition-transform duration-200 ease-in-out hover:-translate-y-1 hover:shadow-lg focus:ring-2 focus:ring-indigo-500/20 focus:outline-none active:translate-y-0"
       >
         <i
@@ -80,3 +92,21 @@ import '@/main.css';
     </div>
   </aside>
 </div>
+<script>
+  const sidebar = document.getElementById('sidebar')!;
+  const handle = document.getElementById('sidebar-handle')!;
+  const setOpen = (open: boolean) => {
+    sidebar.toggleAttribute('data-open', open);
+    handle.setAttribute('aria-expanded', String(open));
+  };
+  handle.addEventListener('click', () => setOpen(!sidebar.hasAttribute('data-open')));
+  // Close after picking a page, tapping elsewhere, or tapping into a tab (which blurs this window).
+  sidebar.querySelector('aside')?.addEventListener('click', () => setOpen(false));
+  document.addEventListener('pointerdown', e => {
+    if (!sidebar.contains(e.target as Node)) setOpen(false);
+  });
+  window.addEventListener('blur', () => setOpen(false));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') setOpen(false);
+  });
+</script>

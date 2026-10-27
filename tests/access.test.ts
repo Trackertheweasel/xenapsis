@@ -7,6 +7,8 @@ import {
 	mintInvite,
 	readCookie,
 	recordFailure,
+	renewToken,
+	tokenSubject,
 	tooManyAttempts,
 	verifyToken,
 } from '../serverlib/access.ts';
@@ -85,4 +87,26 @@ test('Minted invites need a fixed secret and cookies are not invites', () => {
 	const mintedOnly = loadAccess({ PERSEC_INVITE_ONLY: 'true', PERSEC_SECRET: 'k' })!;
 	assert.ok(mintedOnly && checkCode(mintedOnly, mintInvite('k', 'sam', 1)));
 	assert.equal(loadAccess({ PERSEC_SECRET: 'k' }), null, 'secret alone does not lock the site');
+});
+
+test('Sign-in cookies renew when people come back, at most once a day', () => {
+	const day = 86400 * 1000;
+	const now = Date.now();
+	const access = loadAccess(env)!;
+	assert.equal(renewToken(access, createToken(access, 'alice', now - 3600 * 1000), now), null, 'not within a day');
+	const renewed = renewToken(access, createToken(access, 'alice', now - 2 * day), now)!;
+	assert.equal(tokenSubject(access, renewed, now + 29 * day), 'alice', 'good for another 30 days');
+	assert.equal(renewToken(access, 'not.a.token', now), null);
+	const withoutBob = loadAccess({ ...env, PERSEC_INVITE_CODES: 'alice:abc123' })!;
+	assert.equal(renewToken(withoutBob, createToken(access, 'bob', now - 2 * day), now), null, 'revoked people stay out');
+});
+
+test('Renewing never outlives a minted invite', () => {
+	const day = 86400 * 1000;
+	const now = Date.now();
+	const access = loadAccess(env)!;
+	const subject = checkCode(access, mintInvite('test-secret', 'sam', 7, now), now)!;
+	const renewed = renewToken(access, createToken(access, subject, now - 2 * day), now)!;
+	assert.ok(verifyToken(access, renewed, now + 6 * day));
+	assert.equal(tokenSubject(access, renewed, now + 8 * day), null);
 });

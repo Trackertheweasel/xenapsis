@@ -6,6 +6,7 @@ import type { FastifyStaticOptions, SetHeadersResponse } from '@fastify/static';
 import { logging, server as wisp } from '@mercuryworkshop/wisp-js/server';
 import chalk from 'chalk';
 import Fastify from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import { execSync } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
@@ -22,10 +23,13 @@ import {
   loadAccess,
   readCookie,
   recordFailure,
+  renewToken,
+  tokenSubject,
   tooManyAttempts,
   verifyToken,
 } from 'serverlib/access';
 import { updateChecker } from 'serverlib/check';
+import { BackupStore, MAX_BACKUP_BYTES } from 'serverlib/logins';
 import { findProvider } from 'serverlib/provider';
 import { version } from './package.json' with { type: 'json' };
 
@@ -82,6 +86,8 @@ async function ensureBuild() {
 const access = loadAccess();
 const hasAccess = (cookieHeader: string | undefined) =>
   !access || verifyToken(access, readCookie(cookieHeader, ACCESS_COOKIE));
+const isSecure = (req: FastifyRequest) =>
+  req.headers['x-forwarded-proto'] === 'https' || !!(req.raw.socket as any).encrypted;
 
 const app = Fastify({
   logger: false,
@@ -136,10 +142,17 @@ if (access) {
 
   app.addHook('onRequest', async (req, reply) => {
     const { pathname } = new URL(req.url, 'http://localhost');
-    if (OPEN_PATHS.has(pathname) || hasAccess(req.headers.cookie)) return;
-    if (req.method === 'GET' && req.headers.accept?.includes('text/html')) {
-      return reply.redirect('/enter');
+    if (OPEN_PATHS.has(pathname)) return;
+    const isPage = req.method === 'GET' && !!req.headers.accept?.includes('text/html');
+    const token = readCookie(req.headers.cookie, ACCESS_COOKIE);
+    if (verifyToken(access, token)) {
+      // Only on pages, which are never cached, so a shared cache can't hand the cookie to others.
+      // Set on the raw response because Astro writes some pages without going through reply.
+      const renewed = isPage && renewToken(access, token);
+      if (renewed) reply.raw.setHeader('Set-Cookie', accessCookie(renewed, isSecure(req)));
+      return;
     }
+    if (isPage) return reply.redirect('/enter');
     return reply.code(401).type('text/plain').send('Invite required');
   });
 
@@ -159,10 +172,54 @@ if (access) {
       recordFailure(ip);
       return reply.code(401).send(enterPage('That code is not valid.'));
     }
-    const secure =
-      req.headers['x-forwarded-proto'] === 'https' || !!(req.raw.socket as any).encrypted;
-    reply.header('Set-Cookie', accessCookie(createToken(access, name), secure));
+    reply.header('Set-Cookie', accessCookie(createToken(access, name), isSecure(req)));
     return reply.redirect('/');
+  });
+
+  // Saved logins (see serverlib/logins.ts). Each person can only reach their own backup.
+  const backups = new BackupStore(
+    process.env.PERSEC_DATA_DIR
+      ? path.join(process.env.PERSEC_DATA_DIR, 'logins')
+      : path.join(__dirname, 'data', 'logins'),
+  );
+  const subjectOf = (req: FastifyRequest): string => {
+    const subject = tokenSubject(access, readCookie(req.headers.cookie, ACCESS_COOKIE));
+    if (subject === null) throw Object.assign(new Error('Invite required'), { statusCode: 401 });
+    return subject;
+  };
+  backups.prune().catch(() => {});
+  setInterval(() => backups.prune().catch(() => {}), 24 * 3600 * 1000).unref();
+
+  app.addContentTypeParser(
+    'application/octet-stream',
+    { parseAs: 'buffer', bodyLimit: MAX_BACKUP_BYTES },
+    (_req, body, done) => done(null, body),
+  );
+
+  app.get('/api/logins/status', async (req, reply) => {
+    const backup = await backups.get(subjectOf(req));
+    reply.header('Cache-Control', 'no-store');
+    return { saved: !!backup, updated: backup?.updated ?? null };
+  });
+
+  app.get('/api/logins', async (req, reply) => {
+    const backup = await backups.get(subjectOf(req));
+    reply.header('Cache-Control', 'no-store');
+    if (!backup) return reply.code(204).send();
+    return reply.type('application/octet-stream').send(backup.data);
+  });
+
+  app.put('/api/logins', async (req, reply) => {
+    if (!Buffer.isBuffer(req.body) || !req.body.length) {
+      return reply.code(400).type('text/plain').send('Expected an encrypted backup');
+    }
+    await backups.put(subjectOf(req), req.body);
+    return reply.code(204).send();
+  });
+
+  app.delete('/api/logins', async (req, reply) => {
+    await backups.delete(subjectOf(req));
+    return reply.code(204).send();
   });
 }
 

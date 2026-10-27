@@ -236,6 +236,16 @@ if (fwdBtn) {
   });
 }
 
+// Phones show Forward in the menu (src/layouts/tab.astro).
+document.getElementById('menu-forward')?.addEventListener('click', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('menu')?.classList.add('hidden');
+  document.getElementById('menubtn')?.setAttribute('aria-expanded', 'false');
+  spin();
+  fwd();
+});
+
 if (homeBtn) {
   homeBtn.addEventListener('click', (e) => {
     e.preventDefault();

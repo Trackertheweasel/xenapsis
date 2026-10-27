@@ -7,9 +7,12 @@ import ImportLucide from '../layouts/lucide.astro';
 
 <html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Settings</title>
     <style>
-      .toggle {
+      .toggle,
+      .switch {
         width: 40px;
         height: 22px;
         background: var(--background-overlay);
@@ -18,7 +21,8 @@ import ImportLucide from '../layouts/lucide.astro';
         position: relative;
         border: 1px solid rgba(255, 255, 255, 0.08);
       }
-      .toggle::after {
+      .toggle::after,
+      .switch::after {
         content: '';
         position: absolute;
         top: 2px;
@@ -29,13 +33,22 @@ import ImportLucide from '../layouts/lucide.astro';
         border-radius: 50%;
         transition: 0.15s;
       }
-      .toggle.active {
+      .toggle.active,
+      .switch[aria-checked='true'] {
         background: #6366f1;
         border-color: #6366f1;
       }
-      .toggle.active::after {
+      .toggle.active::after,
+      .switch[aria-checked='true']::after {
         left: 20px;
         background: #fff;
+      }
+      /* A bigger tap area than the switch itself, for fingers. */
+      .toggle::before,
+      .switch::before {
+        content: '';
+        position: absolute;
+        inset: -12px -8px;
       }
       .toast {
         animation: toast 0.2s ease;
@@ -53,7 +66,7 @@ import ImportLucide from '../layouts/lucide.astro';
     </style>
   </head>
 
-  <body class="bg-background font-linux text-text-header min-h-screen p-6 md:p-8">
+  <body class="bg-background font-linux text-text-header min-h-screen p-4 sm:p-6 md:p-8">
     <div class="mx-auto max-w-5xl">
       <div class="flex gap-8">
         <nav class="hidden w-48 shrink-0 lg:block">
@@ -105,13 +118,59 @@ import ImportLucide from '../layouts/lucide.astro';
                 <h3 class="mb-2 font-medium">Clear site data</h3>
                 <p class="text-text-secondary mb-3 text-sm">
                   Sites you open in Persec can read each other's cookies. Clear them after logging in anywhere, and
-                  before visiting sites you don't trust. Your Persec settings are kept.
+                  before visiting sites you don't trust. This also deletes your saved-logins backup. Your Persec settings
+                  are kept.
                 </p>
                 <button
                   data-clear-site-data
                   class="flex items-center gap-2 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 py-2 text-sm hover:bg-[#6366f1]/25"
                 >
                   <i data-lucide="trash-2" class="h-4 w-4"></i>Clear cookies and site data
+                </button>
+              </div>
+
+              <div data-logins hidden class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 id="logins-title" class="font-medium">Saved logins</h3>
+                    <p class="text-text-secondary text-sm">
+                      Keep an encrypted backup of your site logins with your invite code, so you're still signed in when
+                      you come back on any device. Anyone with your invite code can unlock it, including whoever runs
+                      this server. Turning this off deletes the backup.
+                    </p>
+                    <p data-logins-status class="text-text-secondary mt-2 text-xs"></p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked="false"
+                    aria-labelledby="logins-title"
+                    data-logins-toggle
+                    class="switch mt-1 shrink-0"></button>
+                </div>
+                <form data-logins-code hidden class="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <label for="logins-code" class="sr-only">Invite code</label>
+                  <input
+                    id="logins-code"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="Enter your invite code to turn this on"
+                    class="bg-background/80 min-w-0 flex-1 rounded-lg border border-white/6 px-4 py-2.5 text-base focus:border-[#6366f1]/40 focus:outline-none sm:text-sm"
+                  />
+                  <button
+                    type="submit"
+                    class="rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 py-2.5 text-sm hover:bg-[#6366f1]/25"
+                  >
+                    Turn on
+                  </button>
+                </form>
+                <button
+                  type="button"
+                  data-logins-restore
+                  hidden
+                  class="mt-3 flex items-center gap-2 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 py-2 text-sm hover:bg-[#6366f1]/25"
+                >
+                  <i data-lucide="refresh-cw" class="h-4 w-4"></i>Restore saved logins here
                 </button>
               </div>
 
@@ -262,7 +321,7 @@ import ImportLucide from '../layouts/lucide.astro';
 
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
                 <h3 class="mb-3 font-medium">Search Engine</h3>
-                <div class="mb-4 grid grid-cols-4 gap-2">
+                <div class="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <button
                     data-engine="https://duckduckgo.com/?q="
                     class="engine-button bg-background/60 relative flex items-center justify-center gap-2 rounded-lg border border-white/6 py-2.5 text-xs hover:bg-[#6366f1]/10"
@@ -407,7 +466,7 @@ import ImportLucide from '../layouts/lucide.astro';
         </main>
       </div>
 
-      <div data-notification class="toast fixed right-6 bottom-6 hidden">
+      <div data-notification role="status" class="toast fixed right-4 bottom-4 hidden sm:right-6 sm:bottom-6">
         <div class="flex items-center gap-2 rounded-lg border border-[#10b981]/40 bg-[#10b981]/20 px-4 py-3 text-sm">
           <i data-lucide="check" class="h-4 w-4 text-[#10b981]"></i>
           <span>Settings saved</span>
@@ -427,8 +486,12 @@ import ImportLucide from '../layouts/lucide.astro';
           }
           if (!win) return;
 
+          const viewport = win.document.createElement('meta');
+          viewport.name = 'viewport';
+          viewport.content = 'width=device-width, initial-scale=1';
+          win.document.head.appendChild(viewport);
           const iframe = win.document.createElement('iframe');
-          iframe.style.cssText = 'width:100%;height:100vh;border:0;margin:0;padding:0';
+          iframe.style.cssText = 'width:100%;height:100vh;height:100dvh;border:0;margin:0;padding:0;display:block';
           iframe.src = location.origin + '/';
 
           win.document.body.style.margin = '0';

@@ -60,3 +60,18 @@
     @apply bg-background;
   }
 }
+
+/* Outside the layers so it wins over text-sm and friends. Phones zoom the page into any field
+   with text smaller than 16px when it's focused, which breaks Persec's layout. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}

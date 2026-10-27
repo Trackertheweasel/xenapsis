@@ -1,4 +1,14 @@
 import ConfigAPI from './config';
+import {
+  backUpNow,
+  deleteBackup,
+  getConsent,
+  getStatus,
+  hasKey,
+  keepKeyFromCode,
+  restore,
+  setConsent,
+} from './loginsync';
 import { clearSiteData } from './sitedata';
 
 export const SettingsAPI = {
@@ -127,6 +137,85 @@ export class SettingsManager {
       await clearSiteData();
       parent.location.reload();
     });
+  }
+
+  // Only shown on an invite-only Persec, where there's somewhere to keep the backup.
+  static async initSavedLogins() {
+    const card = document.querySelector<HTMLElement>('[data-logins]');
+    const status = await getStatus();
+    if (!card || !status) return;
+    const toggle = card.querySelector<HTMLButtonElement>('[data-logins-toggle]')!;
+    const label = card.querySelector<HTMLElement>('[data-logins-status]')!;
+    const codeForm = card.querySelector<HTMLFormElement>('[data-logins-code]')!;
+    const codeInput = codeForm.querySelector('input')!;
+    const restoreBtn = card.querySelector<HTMLButtonElement>('[data-logins-restore]')!;
+    card.hidden = false;
+
+    const show = async (message?: string) => {
+      const [on, current] = await Promise.all([getConsent().then(c => c === 'saved'), getStatus()]);
+      toggle.setAttribute('aria-checked', String(on));
+      restoreBtn.hidden = !current?.saved;
+      label.textContent =
+        message ??
+        (on && current?.updated
+          ? `On. Last backed up ${new Date(current.updated).toLocaleString()}.`
+          : on
+            ? 'On.'
+            : current?.saved
+              ? 'Off in this browser. You have a backup from another device.'
+              : 'Off.');
+    };
+
+    const turnOn = async () => {
+      await setConsent('saved');
+      await backUpNow();
+      codeForm.hidden = true;
+      await show();
+    };
+
+    toggle.addEventListener('click', async () => {
+      if (toggle.getAttribute('aria-checked') === 'true') {
+        if (!confirm('Turn off saved logins? Your backup on this server will be deleted.')) return;
+        await setConsent('essential');
+        await deleteBackup();
+        return show();
+      }
+      if (await hasKey()) return turnOn();
+      codeForm.hidden = false;
+      codeInput.focus();
+    });
+
+    codeForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      label.textContent = 'Checking your code…';
+      const error = await keepKeyFromCode(codeInput.value);
+      codeInput.value = '';
+      if (error) return show(error);
+      await turnOn();
+    });
+
+    restoreBtn.addEventListener('click', async () => {
+      if (!(await hasKey())) {
+        codeForm.hidden = false;
+        codeInput.focus();
+        return show('Enter your invite code first.');
+      }
+      if (
+        !confirm('Restore your saved logins in this browser? Only do this on a device you trust.')
+      ) {
+        return;
+      }
+      const result = await restore();
+      if (result === 'locked') {
+        return show(
+          'Your backup was saved with a different invite code, so it can’t be unlocked here.',
+        );
+      }
+      await setConsent('saved');
+      await show(result === 'restored' ? 'Restored. Sites you open now will use them.' : undefined);
+    });
+
+    await show();
   }
 
   static initNav() {
@@ -819,6 +908,7 @@ export class SettingsManager {
     this.initProxyBackend();
     this.initPanicKey();
     this.initClearSiteData();
+    this.initSavedLogins();
 
     const resetBtn = document.querySelector('[data-reset="reset"]');
     resetBtn?.addEventListener('click', () => this.reset());

@@ -16,6 +16,9 @@ services:
     # Not published to the internet: only Caddy can reach it.
     expose:
       - "8080"
+    # Saved-login backups (encrypted in the browser), kept across updates.
+    volumes:
+      - persec_data:/app/data
 
   caddy:
     image: caddy:2
@@ -34,5 +37,6 @@ services:
       - persec
 
 volumes:
+  persec_data:
   caddy_data:
   caddy_config:

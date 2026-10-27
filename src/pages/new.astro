@@ -18,7 +18,7 @@ const randomQuote = quotes[randomIndex]?.quote || '';
   </head>
 
   <body
-    class="font-linux bg-background relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden text-white"
+    class="font-linux bg-background relative flex min-h-dvh w-full flex-col items-center justify-center overflow-x-hidden px-4 py-8 text-white sm:px-0 sm:py-24"
   >
     <div
       class="absolute inset-0 opacity-[0.02]"
@@ -26,7 +26,7 @@ const randomQuote = quotes[randomIndex]?.quote || '';
     >
     </div>
 
-    <div class="relative z-10 flex flex-col items-center space-y-8">
+    <div class="relative z-10 flex flex-col items-center space-y-5 sm:space-y-8">
       <div id="clock" class="flex items-baseline space-x-1 select-none">
         <span
           id="hours"
@@ -50,8 +50,8 @@ const randomQuote = quotes[randomIndex]?.quote || '';
         >
       </div>
 
-      <div class="max-w-xl px-6 text-center">
-        <span class="text-lg font-medium tracking-wide text-white/70">
+      <div class="max-w-xl px-2 text-center sm:px-6">
+        <span class="text-base font-medium tracking-wide text-white/70 sm:text-lg">
           {randomQuote}
         </span>
       </div>
@@ -60,8 +60,10 @@ const randomQuote = quotes[randomIndex]?.quote || '';
     <Shortcuts />
     <Sponsor />
 
+    <!-- Pinned to the corners on larger screens; on phones they sit below the shortcuts instead of over them. -->
+    <footer class="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-3 sm:contents">
     <div
-      class="border-border-default/20 bg-background-overlay/40 fixed right-5 bottom-5 z-50 flex items-center gap-2 rounded-full border px-4 py-2 shadow-xl backdrop-blur-md"
+      class="border-border-default/20 bg-background-overlay/40 z-50 flex items-center gap-2 rounded-full border px-4 py-2 shadow-xl backdrop-blur-md sm:fixed sm:right-5 sm:bottom-5"
     >
       <span class="text-[12px] font-medium text-white/50 transition hover:text-white/80">v{VERSION}</span>
       <span class="h-3 w-px bg-white/20"></span>
@@ -70,12 +72,13 @@ const randomQuote = quotes[randomIndex]?.quote || '';
       </a>
     </div>
     <div
-      class="border-border-default/20 bg-background-overlay/50 fixed bottom-5 left-5 z-50 flex items-center gap-3 rounded-full border px-4 py-2 shadow-xl backdrop-blur-md"
+      class="border-border-default/20 bg-background-overlay/50 z-50 flex items-center gap-3 rounded-full border px-4 py-2 shadow-xl backdrop-blur-md sm:fixed sm:bottom-5 sm:left-5"
     >
       <span id="sl" class="text-xs font-medium text-white/60 tabular-nums">...</span>
       <div class="h-4 w-px bg-white/20"></div>
       <button
         id="refresh"
+        aria-label="Check server speed again"
         class="text-white/40 transition-all duration-200 hover:rotate-180 hover:text-white/80 focus:outline-none"
       >
         <svg
@@ -90,6 +93,7 @@ const randomQuote = quotes[randomIndex]?.quote || '';
         </svg>
       </button>
     </div>
+    </footer>
 
     <script src="@scripts/new"></script>
   </body>
