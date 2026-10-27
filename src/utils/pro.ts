@@ -14,7 +14,7 @@ class ScramjetWrapper {
 
   getConfig() {
     return {
-      prefix: '/v1/data/',
+      prefix: SC_PREFIX,
       files: {
         wasm: '/data/wasm.wasm',
         all: '/data/all.js',

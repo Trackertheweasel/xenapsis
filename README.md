@@ -105,6 +105,8 @@ The value is built into the app, so set it at install time (changing it later me
 
 Proxied pages don't show the site's address in Persec's own URLs either: instead of `/v1/data/https%3A%2F%2Fexample.com`, the address is scrambled with a key that is new on every build. The key ships with the app, so this keeps URLs from giving the proxy away at a glance; it is not encryption. A rebuild (`persec update`) changes the key, so proxied tabs left open from before need reopening. To keep one key across builds or backup servers, set `PUBLIC_PERSEC_URL_KEY` in `deploy/.env`.
 
+The path those URLs start with is randomised too. A fixed prefix like `/v1/data/` is the same on every Persec install, so a filter could match it to recognise the proxy; each build instead picks two random prefixes. They change on every rebuild along with the URL key, so the same caveat applies (open proxied tabs need reopening after an update). To keep them stable across builds or backup servers, set `PUBLIC_PERSEC_URL_KEY` and `PUBLIC_PERSEC_PROXY_KEY` in `deploy/.env`. This only defeats a filter matching on the path; it can't hide that the page runs a service worker, which a scanner that executes the page's scripts can still see.
+
 #### Hiding which site you're visiting (Encrypted Client Hello)
 
 Even over HTTPS, the domain name your browser asks for is sent in the clear at the start of every connection (the TLS "SNI"). This is how many filters block a site: they never see the page, only the name, and drop the connection. **Encrypted Client Hello (ECH)** encrypts that name too, so a network watching the connection can't tell which site is being reached from the handshake.

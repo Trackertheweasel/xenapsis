@@ -7,7 +7,7 @@ import playformCompress from '@playform/compress';
 import tailwindcss from '@tailwindcss/vite';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import { defineConfig } from 'astro/config';
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
@@ -33,6 +33,22 @@ const WISP_PATH = normalizeWispPath(process.env.PUBLIC_PERSEC_WISP_PATH);
 // Key for the proxied-URL codec (src/utils/codec.ts). Random per build, so URLs look different on
 // every deployment; set PUBLIC_PERSEC_URL_KEY to keep one across builds or servers.
 const URL_KEY = process.env.PUBLIC_PERSEC_URL_KEY?.trim() || randomBytes(16).toString('base64url');
+
+// The URL path prefix each proxy engine uses (the defaults were /v1/data/ and /v1/tmp/). A fixed
+// prefix is the same on every Persec install, so a filter can match it to spot the proxy. Derive
+// two distinct prefixes per build instead, or keep them stable across builds/servers by setting
+// PUBLIC_PERSEC_PROXY_KEY. They are client-side only; the server never routes these paths.
+function proxyPrefixes(seed: string): [string, string] {
+  const h = createHash('sha256').update(seed).digest('hex');
+  const sc = `/${h.slice(0, 8)}/`;
+  const uv = `/${h.slice(8, 16)}/`;
+  // Same length, so neither can be a prefix of the other; equal only on an impossible hash clash.
+  if (sc === uv) throw new Error('proxy prefixes collided; set a different PUBLIC_PERSEC_PROXY_KEY');
+  return [sc, uv];
+}
+const [SC_PREFIX, UV_PREFIX] = proxyPrefixes(
+  process.env.PUBLIC_PERSEC_PROXY_KEY?.trim() || randomBytes(16).toString('hex'),
+);
 
 function WispServer(): Plugin {
   return {
@@ -158,6 +174,8 @@ export default defineConfig({
       VERSION: JSON.stringify(version),
       WISP_PATH: JSON.stringify(WISP_PATH),
       URL_KEY: JSON.stringify(URL_KEY),
+      SC_PREFIX: JSON.stringify(SC_PREFIX),
+      UV_PREFIX: JSON.stringify(UV_PREFIX),
     },
     plugins: [
       tailwindcss(),

@@ -8,7 +8,7 @@ export const uvConfigSource = () => `const encode = ${encodeUrl};
 const decode = ${decodeUrl};
 
 tmpConfig = {
-  prefix: '/v1/tmp/',
+  prefix: ${JSON.stringify(UV_PREFIX)},
   encodeUrl: encode,
   decodeUrl: decode,
   handler: '/tmp/handler.js',
