@@ -11,6 +11,7 @@ services:
       # Interpolated from deploy/.env so the client bundle and the server agree on the path.
       args:
         PUBLIC_PERSEC_WISP_PATH: ${PUBLIC_PERSEC_WISP_PATH:-}
+        PUBLIC_PERSEC_URL_KEY: ${PUBLIC_PERSEC_URL_KEY:-}
     restart: unless-stopped
     env_file: .env
     # Not published to the internet: only Caddy can reach it.

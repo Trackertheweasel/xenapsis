@@ -93,6 +93,8 @@ curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/de
 
 The value is built into the app, so set it at install time (changing it later means rebuilding, which `persec update` does). Leave it unset to keep the default `/w/`. This hides the endpoint from probing; it does not change the server's IP address or domain name, so pair it with a spare domain and a backup server (above) for blocks at those levels.
 
+Proxied pages don't show the site's address in Persec's own URLs either: instead of `/v1/data/https%3A%2F%2Fexample.com`, the address is scrambled with a key that is new on every build. The key ships with the app, so this keeps URLs from giving the proxy away at a glance; it is not encryption. A rebuild (`persec update`) changes the key, so proxied tabs left open from before need reopening. To keep one key across builds or backup servers, set `PUBLIC_PERSEC_URL_KEY` in `deploy/.env`.
+
 #### Hiding which site you're visiting (Encrypted Client Hello)
 
 Even over HTTPS, the domain name your browser asks for is sent in the clear at the start of every connection (the TLS "SNI"). This is how many filters block a site: they never see the page, only the name, and drop the connection. **Encrypted Client Hello (ECH)** encrypts that name too, so a network watching the connection can't tell which site is being reached from the handshake.

@@ -11,6 +11,8 @@ COPY . .
 # Baked into the client bundle at build time; the running server reads the same value at runtime.
 ARG PUBLIC_PERSEC_WISP_PATH=""
 ENV PUBLIC_PERSEC_WISP_PATH=${PUBLIC_PERSEC_WISP_PATH}
+ARG PUBLIC_PERSEC_URL_KEY=""
+ENV PUBLIC_PERSEC_URL_KEY=${PUBLIC_PERSEC_URL_KEY}
 RUN pnpm build
 EXPOSE 8080
 CMD ["pnpm", "start"]
