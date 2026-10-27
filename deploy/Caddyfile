@@ -6,10 +6,11 @@
 # behind Cloudflare, which turns ECH on automatically. Uncomment and adapt:
 #
 # {
-# 	# Public (outer) name clients connect to; point it at this server.
-# 	ech {$DOMAIN}
 # 	# Caddy needs DNS access to publish the ECH config, e.g. the Cloudflare DNS module:
-# 	# acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+# 	dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+# 	# Public (outer) name sent in the clear instead of the real one. Use a bland name that is
+# 	# NOT {$DOMAIN} (that would expose the very name ECH hides), and point its DNS at this server.
+# 	ech ech.example.net
 # }
 
 {$DOMAIN} {
