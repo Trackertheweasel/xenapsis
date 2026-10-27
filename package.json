@@ -13,11 +13,11 @@
     "precommit": "npx astro check && npm run format"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.6",
+    "@astrojs/check": "^0.9.12",
     "@astrojs/node": "^9.5.2",
     "@fastify/compress": "^8.3.0",
     "@fastify/helmet": "^13.0.2",
-    "@fastify/middie": "^9.1.0",
+    "@fastify/middie": "^9.3.6",
     "@fastify/static": "^9.0.0",
     "@fontsource/outfit": "^5.3.0",
     "@fontsource/prompt": "^5.3.0",
@@ -31,7 +31,7 @@
     "astro": "^5.18.0",
     "chalk": "^5.6.2",
     "esbuild": "^0.27.2",
-    "fastify": "^5.7.3",
+    "fastify": "^5.12.7",
     "localforage": "^1.10.0",
     "lucide": "^0.562.0",
     "node-fetch": "^3.3.2",
