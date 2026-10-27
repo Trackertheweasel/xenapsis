@@ -71,6 +71,16 @@ Filters and some browsers block entire free dynamic-DNS providers at once — al
 
 A spare domain is still worth keeping pre-added — but make it a registered domain (ideally at a different registrar), not another dynamic-DNS name. For a server whose **IP** is blocked, or to hide the IP, see below; putting the domain behind a free CDN such as Cloudflare (proxying on, SSL/TLS set to Full) also moves visitors onto the CDN's addresses and gives the name normal reputation.
 
+#### Putting the domain behind Cloudflare
+
+1. Add the domain to a free Cloudflare account and switch the registrar's nameservers to the two Cloudflare gives you.
+2. Add an **A record** for the domain pointing at your server's IP, with the proxy **off** (grey cloud) for now.
+3. Run `persec domain add yourdomain.com` and open `https://yourdomain.com` to check that Caddy got its certificate.
+4. Turn the proxy **on** (orange cloud). Under **SSL/TLS**, choose **Full (strict)**.
+5. Leave **Always Use HTTPS** off: Caddy already redirects to HTTPS, and leaving plain HTTP alone keeps its certificate renewals simple. Turn off **Rocket Loader** and **Bot Fight Mode**, which break the proxy's scripts and WebSocket.
+
+Persec reads the visitor's real address from Cloudflare (only from Cloudflare's own address ranges), so the invite-code attempt limit still counts each visitor separately.
+
 #### Surviving a blocked server
 
 Extra names all point at one server, so if its **IP address** is blocked (not just a name), every name goes down at once. The fix is a second server on a different provider or region. Because logins are signed with your `PERSEC_SECRET`, a second server that shares it accepts the same invite codes — and people's existing logins — with nothing to keep in sync.
