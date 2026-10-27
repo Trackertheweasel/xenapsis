@@ -29,6 +29,7 @@ import {
   verifyToken,
 } from 'serverlib/access';
 import { updateChecker } from 'serverlib/check';
+import { wispPath } from 'serverlib/env';
 import { BackupStore, MAX_BACKUP_BYTES } from 'serverlib/logins';
 import { findProvider } from 'serverlib/provider';
 import { version } from './package.json' with { type: 'json' };
@@ -38,17 +39,8 @@ EventEmitter.defaultMaxListeners = 0;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 6060;
 
-// The WebSocket tunnel listens here. Must stay in sync with the client, which bakes the same
-// value in at build time from PUBLIC_PERSEC_WISP_PATH (see astro.config.ts / src/utils/config.ts).
-// A hard-to-guess path means a network filter can't confirm the server is a proxy by probing it.
-function normalizeWispPath(raw: string | undefined): string {
-  let p = (raw ?? '').trim();
-  if (!p) return '/w/';
-  if (!p.startsWith('/')) p = '/' + p;
-  if (!p.endsWith('/')) p = p + '/';
-  return p;
-}
-const WISP_PATH = normalizeWispPath(process.env.PUBLIC_PERSEC_WISP_PATH);
+// The client bakes the same value in at build time (serverlib/env.ts is shared with astro.config.ts).
+const WISP_PATH = wispPath();
 
 logging.set_level(logging.ERROR);
 Object.assign(wisp.options, {
