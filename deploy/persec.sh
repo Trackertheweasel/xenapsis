@@ -96,8 +96,30 @@ case "${1:-}" in
   logs)
     compose logs --tail 100 -f persec
     ;;
+  export)
+    # Prints a ready-to-paste command for standing up a backup server that shares this one's
+    # invites. Because logins are signed with PERSEC_SECRET, a second server with the same
+    # secret accepts the same minted invite codes (and existing logins) with nothing to sync.
+    # Give people the backup's address too, so one blocked IP doesn't cut everyone off.
+    secret=$(sed -n 's/^PERSEC_SECRET=//p' "$env")
+    if [ -z "$secret" ]; then
+      echo "This server has no PERSEC_SECRET set, so its invites aren't portable to another server." >&2
+      exit 1
+    fi
+    codes=$(sed -n 's/^PERSEC_INVITE_CODES=//p' "$env")
+    revoked=$(sed -n 's/^PERSEC_REVOKED=//p' "$env")
+    echo "On a second server (ideally a different provider or region), open its console and paste:"
+    echo
+    line="curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | PERSEC_SECRET=$secret"
+    [ -n "$codes" ] && line="$line PERSEC_INVITE_CODES=$codes"
+    [ -n "$revoked" ] && line="$line PERSEC_REVOKED=$revoked"
+    echo "  $line bash"
+    echo
+    echo "Then 'persec domain add' a name for that server and share it as a backup."
+    echo "Keep this command private: anyone with the secret can mint invites."
+    ;;
   *)
-    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | update | logs" >&2
+    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | export | update | logs" >&2
     exit 1
     ;;
 esac

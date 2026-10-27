@@ -15,12 +15,26 @@ import { version } from './package.json';
 
 wisp.options.wisp_version = 2;
 
+// The path the proxy's WebSocket tunnel listens on. A fixed, well-known path (the usual "/w/")
+// lets a network filter confirm the server is a proxy just by probing that one URL. A deployment
+// can set PUBLIC_PERSEC_WISP_PATH to a hard-to-guess value so there is nothing constant to probe.
+// This value is baked into the client at build time, so the server (index.ts) must read the same
+// env var at runtime. Normalized here once; the client uses the injected WISP_PATH below.
+function normalizeWispPath(raw: string | undefined): string {
+  let p = (raw ?? '').trim();
+  if (!p) return '/w/';
+  if (!p.startsWith('/')) p = '/' + p;
+  if (!p.endsWith('/')) p = p + '/';
+  return p;
+}
+const WISP_PATH = normalizeWispPath(process.env.PUBLIC_PERSEC_WISP_PATH);
+
 function WispServer(): Plugin {
   return {
     name: 'vite-wisp-server',
     configureServer(server: any) {
       server.httpServer?.on('upgrade', (req: IncomingMessage, socket: any, head: any) => {
-        if (req.url?.endsWith('/w/')) {
+        if (req.url?.endsWith(WISP_PATH)) {
           wisp.routeRequest(req, socket, head);
         }
       });
@@ -137,6 +151,7 @@ export default defineConfig({
     },
     define: {
       VERSION: JSON.stringify(version),
+      WISP_PATH: JSON.stringify(WISP_PATH),
     },
     plugins: [
       tailwindcss(),

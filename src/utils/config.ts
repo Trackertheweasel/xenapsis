@@ -29,7 +29,10 @@ const isBrowser = typeof location !== 'undefined';
 function wispUrl(): string {
   if (!isBrowser) return '';
   const isHttps = location.protocol === 'https:';
-  return `${isHttps ? 'wss' : 'ws'}://${location.host}/w/`;
+  // WISP_PATH is injected at build time (see astro.config.ts) and must match the path the
+  // server listens on. Defaults to '/w/' when PUBLIC_PERSEC_WISP_PATH is unset.
+  const path = typeof WISP_PATH === 'string' && WISP_PATH ? WISP_PATH : '/w/';
+  return `${isHttps ? 'wss' : 'ws'}://${location.host}${path}`;
 }
 
 const defaults: ConfigDefaults = {

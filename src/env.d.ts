@@ -2,6 +2,7 @@
 
 declare const LAST_UPDATED: string;
 declare const VERSION: string;
+declare const WISP_PATH: string;
 declare const BareMux: any;
 
 interface Bookmark {
