@@ -45,7 +45,11 @@ Object.assign(wisp.options, {
   allow_udp_streams: false,
   port_whitelist: [80, 443, [1024, 2524], [2526, 65535]],
   wisp_version: 2,
-  wisp_motd: 'wisp server',
+  // The MOTD is returned to anyone who completes the WebSocket handshake. The usual
+  // "wisp server" string is a fixed value that lets automated fingerprinting identify the
+  // endpoint as a Wisp proxy at a glance, so default to an empty, non-identifying value.
+  // A deployment can set PERSEC_WISP_MOTD if it wants a custom string.
+  wisp_motd: process.env.PERSEC_WISP_MOTD ?? '',
 });
 
 async function ensureBuild() {
