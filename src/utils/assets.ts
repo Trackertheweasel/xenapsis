@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const img = new Image();
     img.onload = () => {
       el.classList.remove('card-loading');
+      el.querySelector('.card-tile')?.remove();
       const div = el.querySelector<HTMLElement>('.card-bg');
       if (div) div.style.backgroundImage = `url('${bg}')`;
     };
@@ -94,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const p = el.querySelector<HTMLElement>('p');
       if (p) p.style.display = '';
     }
-    box.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
+    box.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4';
     setActive(this);
   });
 
@@ -129,12 +130,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         await conn.setTransport(`/lc/index.mjs`, [{ wisp }]);
       }
 
-      const backend = await ConfigAPI.get('backend');
-      const encoded = sc.codec.encode(url);
-      const targetUrl =
-        backend === 'v' ? vWrapper.getConfig().prefix + encoded : sc.prefix + encoded;
-
-      window.location.href = targetUrl;
+      // Opens with whichever engine is chosen in Settings ('u' is Ultraviolet), each with its own encoding.
+      const uv = vWrapper.getConfig();
+      window.location.href =
+        (await ConfigAPI.get('backend')) === 'u'
+          ? uv.prefix + uv.encodeUrl(url)
+          : sc.prefix + sc.codec.encode(url);
+    });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        el.click();
+      }
     });
   }
 

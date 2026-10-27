@@ -6,8 +6,14 @@ interface Game {
   name: string;
   desc: string;
   url: string;
+  // Picture filling the card. Optional: cards without one show their logo or first letter instead.
   icon: string;
+  // Small square logo bundled with Persec, shown on the tile.
+  logo?: string;
 }
+
+// A steady colour per name, so letter tiles are easy to tell apart.
+const hue = (name: string) => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 
 const { list = [] }: { list?: Game[] } = Astro.props;
 const { type = '' }: { type?: string } = Astro.props;
@@ -81,16 +87,30 @@ const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
         </div>
       </div>
 
-      <div data-container class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div data-container class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {
           sorted.map(g => (
             <div
               data-href={g.url}
               data-name={g.name}
-              data-bg={g.icon}
-              class="card card-loading group bg-background-overlay relative flex h-44 cursor-pointer flex-col justify-end overflow-hidden rounded-lg transition-transform hover:scale-[1.02]"
+              data-bg={g.icon || undefined}
+              role="link"
+              tabindex="0"
+              aria-label={`Open ${g.name}`}
+              class="card card-loading group bg-background-overlay relative flex h-44 cursor-pointer flex-col justify-end overflow-hidden rounded-lg transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-[#6366f1] focus-visible:outline-none"
               style="animation: fadeIn 0.3s ease-out"
             >
+              <div
+                class="card-tile absolute inset-0 flex items-start justify-center pt-6"
+                style={`background: linear-gradient(135deg, hsl(${hue(g.name)} 45% 30%), hsl(${(hue(g.name) + 40) % 360} 40% 18%))`}
+                aria-hidden="true"
+              >
+                {g.logo ? (
+                  <img src={g.logo} alt="" class="h-14 w-14 rounded-xl bg-white/90 object-contain p-2" />
+                ) : (
+                  <span class="text-5xl leading-none font-black text-white/80">{g.name.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
               <div class="card-bg absolute inset-0 bg-cover bg-center opacity-70 transition-opacity group-hover:opacity-80" />
               <div class="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
               <div class="relative z-10 p-4">
