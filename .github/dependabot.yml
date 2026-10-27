@@ -4,3 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+      # 0.5.1 breaks DNS resolution (resolve_with_fallback indexes the pending promise; see #12).
+      # Stay on 0.4.x until upstream fixes it.
+      - dependency-name: "@mercuryworkshop/wisp-js"
+        versions: [">=0.5.0"]
