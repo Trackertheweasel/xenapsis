@@ -1,0 +1,34 @@
+# Persec behind Caddy, which gets a free HTTPS certificate automatically.
+# HTTPS is required: the proxy's service workers don't run on plain http.
+# Settings live in deploy/.env, which setup.sh creates.
+
+name: persec
+
+services:
+  persec:
+    build: ..
+    restart: unless-stopped
+    env_file: .env
+    # Not published to the internet: only Caddy can reach it.
+    expose:
+      - "8080"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - persec
+
+volumes:
+  caddy_data:
+  caddy_config:

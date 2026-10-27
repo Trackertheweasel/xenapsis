@@ -23,6 +23,39 @@
 > **Note**  
 > Persec **cannot** be deployed to Netlify, Vercel, GitHub Pages, or any other static hosting platform.
 
+### Your own server (recommended)
+
+Hosting platforms often shut down proxies. A small server of your own (a VPS) doesn't sleep, has no platform rules against proxies, and costs about $4–6 a month. Any Ubuntu or Debian server with 1 GB of memory works, for example a DigitalOcean Basic Droplet.
+
+1. Create the server: choose **Ubuntu**, the 1 GB plan, and any region.
+2. Optional but more reliable: get a free name at [duckdns.org](https://www.duckdns.org) (sign in, pick a name, and put your server's IP address in the **current ip** box). Without one, Persec uses a free `<your-ip>.sslip.io` address.
+3. Open the server's console (on DigitalOcean: your Droplet → **Console**) and paste:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | bash
+   ```
+
+   With a DuckDNS name, paste this instead:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | PERSEC_DOMAIN=yourname.duckdns.org bash
+   ```
+
+4. After 5–10 minutes it prints your site's address and your own invite code (valid for a year).
+
+The site runs over HTTPS (needed for the proxy to work) and is invite-only. Manage it from the same console:
+
+| Command                       | What it does                                       |
+| ----------------------------- | -------------------------------------------------- |
+| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days) |
+| `persec revoke <name>`        | Cancels that person's invites right away           |
+| `persec update`               | Updates to the latest version                      |
+| `persec logs`                 | Shows what the server is doing                     |
+
+If the site shows a certificate error with the `sslip.io` address, get a DuckDNS name and run the DuckDNS command above again; your settings and invites are kept.
+
+### Other options
+
 <p>
   <a href="https://render.com/deploy?repo=https://github.com/Trackertheweasel/xenapsis"><img src="https://raw.githubusercontent.com/BinBashBanana/deploy-buttons/main/buttons/remade/render.svg" alt="Deploy to Render"></a>
   &nbsp;

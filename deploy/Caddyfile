@@ -1,0 +1,7 @@
+{$DOMAIN} {
+	reverse_proxy persec:8080 {
+		# Behind Caddy every request comes from the same address, so pass on the visitor's real one
+		# for the invite-code attempt limit. Overwriting it also stops visitors from faking it.
+		header_up Cf-Connecting-Ip {remote_host}
+	}
+}
