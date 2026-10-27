@@ -1,28 +1,39 @@
 ---
-import sponsors from '@assets/json/sponsors.json';
+import { getCurrentAd } from '@/utils/ads';
 
-// Self-served ads: only a local image and a plain link, no third-party scripts.
-const active = sponsors.filter(s => s.enabled);
-const sponsor = active[Math.floor(Math.random() * active.length)];
+// Self-served ads: only a local image and a plain link, no third-party scripts. A "network" ad is
+// fetched, cached and served entirely by this server (see src/utils/ads.ts); a "static" ad is a
+// sponsor from public/a/json/sponsors.json. Either way the browser only ever talks to this origin.
+const ad = await getCurrentAd();
+
+const cardClass =
+  'border-border-default/20 bg-background-overlay/40 relative z-10 mt-8 flex max-w-md items-center gap-3 rounded-2xl border px-4 py-3 text-left transition hover:bg-white/5';
+const imgClass = 'h-10 w-10 shrink-0 rounded-lg object-cover';
+const badgeClass =
+  'ml-auto self-start rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white/50 uppercase';
+
+const href = ad ? (ad.kind === 'network' ? `/a/ad/click/${ad.id}` : ad.url) : '#';
+const image = ad ? (ad.kind === 'network' ? `/a/ad/img/${ad.id}` : ad.image) : undefined;
 ---
 
 {
-  sponsor && (
+  ad && (
     <a
-      href={sponsor.url}
+      href={href}
       target="_blank"
       rel="sponsored noopener noreferrer"
       title="Opens the sponsor's site outside Persec"
-      class="border-border-default/20 bg-background-overlay/40 relative z-10 mt-8 flex max-w-md items-center gap-3 rounded-2xl border px-4 py-3 text-left transition hover:bg-white/5"
+      class={cardClass}
     >
-      {sponsor.image && <img src={sponsor.image} alt="" class="h-10 w-10 shrink-0 rounded-lg object-cover" />}
+      {image && <img src={image} alt="" class={imgClass} />}
       <span class="flex flex-col">
-        <span class="text-sm font-semibold text-white/80">{sponsor.name}</span>
-        {sponsor.text && <span class="text-xs text-white/50">{sponsor.text}</span>}
+        <span class="text-sm font-semibold text-white/80">{ad.name}</span>
+        {ad.text && <span class="text-xs text-white/50">{ad.text}</span>}
       </span>
-      <span class="ml-auto self-start rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white/50 uppercase">
-        Ad
-      </span>
+      <span class={badgeClass}>Ad</span>
+      {ad.kind === 'network' && (
+        <img src={`/a/ad/px/${ad.id}`} alt="" width="1" height="1" class="absolute h-px w-px opacity-0" loading="eager" />
+      )}
     </a>
   )
 }

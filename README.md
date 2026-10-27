@@ -217,9 +217,13 @@ On an invite-only Persec, a cookie notice on the first visit asks people whether
 
 ## Sponsors (ads)
 
-Persec shows at most one sponsor card on the new tab page. Ads are plain images and links served from your own server: no ad network, no scripts and no tracking.
+Persec shows at most one ad card on the new tab page. By default the card is a self-served sponsor: a plain image and link you add by hand, with no ad network, no scripts and no tracking.
 
-To add a sponsor:
+You can also connect a real ad network **without** exposing your visitors to it. Persec fetches the ad on its own server, copies the image, and serves the image, the view count and the click through Persec's own address. So the visitor's browser never runs an ad script, never loads anything from the network, and the network is never told who the visitor is — it only ever sees your server. This matters for people using Persec to get around censorship, and it keeps the ad working even where the network's own domain or scripts are blocked.
+
+### Self-served sponsors
+
+To add a sponsor by hand:
 
 1. Put the sponsor's image (square, at least 80×80) in `public/a/images/sponsors/`.
 2. Add an entry to `public/a/json/sponsors.json` and set `"enabled": true`:
@@ -235,6 +239,23 @@ To add a sponsor:
    ```
 
 When more than one sponsor is enabled, each page load picks one at random. If none are enabled, no card is shown. Keep image URLs local (starting with `/`): the tests fail if a sponsor image is loaded from another site.
+
+### Connecting an ad network (server-proxied)
+
+Set these environment variables on the server to serve ads from a network instead. It is off unless `PERSEC_AD_NETWORK` is set, and if a fetch ever fails Persec falls back to the self-served sponsors above, so the card never breaks.
+
+| Variable              | What it does                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| `PERSEC_AD_NETWORK`   | `ethicalads`, `generic`, or unset (off)                                                       |
+| `PERSEC_AD_API_KEY`   | Your network API key                                                                          |
+| `PERSEC_AD_PUBLISHER` | Your publisher/site id (EthicalAds)                                                           |
+| `PERSEC_AD_API_URL`   | API base. Optional for EthicalAds; for `generic`, the full URL of your JSON endpoint          |
+| `PERSEC_AD_TTL`       | Seconds to reuse a fetched ad before asking again (default 300, minimum 30)                   |
+
+- **`ethicalads`** uses [EthicalAds](https://www.ethicalads.io/)' server-to-server decision API — a good fit for a privacy-first, image-only ad.
+- **`generic`** points Persec at any URL that returns the JSON `{ "name", "text", "image", "click", "impression" }` (`impression` optional). Use it to connect any other network through a small shim of your own, or to serve a rotating house ad. `image` and `click` are the network's own URLs; Persec fetches them, never the visitor.
+
+Persec deliberately sends the network no visitor IP or user agent, so it cannot profile or target the people behind your server. With Docker Compose, pass these through in `deploy/.env`.
 
 ---
 
