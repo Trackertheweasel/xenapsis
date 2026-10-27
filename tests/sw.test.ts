@@ -6,6 +6,10 @@ import { uvConfigSource } from '../src/pages/tmp/config.js.ts';
 
 const origin = 'https://persec.test';
 
+// Build-time constant (see astro.config.ts): uvConfigSource() reads UV_PREFIX as it generates the
+// config source here in Node. URL_KEY, which the embedded codec reads, is set on the worker ctx below.
+(globalThis as any).UV_PREFIX = '/v1/tmp/';
+
 // Runs public/sw.js with the proxy engines stubbed out, exposing its functions.
 async function loadServiceWorker() {
 	const ctx: any = {

@@ -4,6 +4,8 @@ declare const LAST_UPDATED: string;
 declare const VERSION: string;
 declare const WISP_PATH: string;
 declare const URL_KEY: string;
+declare const SC_PREFIX: string;
+declare const UV_PREFIX: string;
 declare const BareMux: any;
 
 interface Bookmark {
