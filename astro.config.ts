@@ -2,25 +2,26 @@ import node from '@astrojs/node';
 import { baremuxPath } from '@mercuryworkshop/bare-mux/node';
 import { libcurlPath } from '@mercuryworkshop/libcurl-transport';
 import { scramjetPath } from '@mercuryworkshop/scramjet/path';
-import { server as wisp } from '@mercuryworkshop/wisp-js/server';
 import playformCompress from '@playform/compress';
 import tailwindcss from '@tailwindcss/vite';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import { defineConfig } from 'astro/config';
-import type { IncomingMessage, ServerResponse } from 'http';
+import type { IncomingMessage } from 'http';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { version } from './package.json';
 import { proxyPrefixes, urlKey, wispPath } from './serverlib/env';
-
-wisp.options.wisp_version = 2;
+import { handleQuery } from './serverlib/routes/query';
+import { wisp } from './serverlib/wisp';
 
 // Build-time values baked into the client; see serverlib/env.ts for what each one does.
 const WISP_PATH = wispPath();
 const URL_KEY = urlKey();
 const [SC_PREFIX, UV_PREFIX] = proxyPrefixes();
 
+// Dev server only (`pnpm dev`); production serves both from serverlib/app.ts. They share the same
+// Wisp settings and search handler so dev behaves like production.
 function WispServer(): Plugin {
   return {
     name: 'vite-wisp-server',
@@ -38,45 +39,7 @@ function searchBackend(): Plugin {
   return {
     name: 'search-suggestions-vite',
     configureServer({ middlewares }) {
-      middlewares.use('/api/query', async (req: IncomingMessage, res: ServerResponse) => {
-        const urlObj = new URL(req.url ?? '', 'http://localhost');
-        const query = urlObj.searchParams.get('q');
-
-        if (!query) {
-          res.statusCode = 400;
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Query parameter "q" is required.' }));
-          return;
-        }
-
-        try {
-          const response = await fetch(
-            `https://duckduckgo.com/ac/?q=${encodeURIComponent(query)}`,
-            {
-              headers: {
-                'User-Agent': 'Mozilla/5.0',
-                Accept: 'application/json',
-              },
-            },
-          );
-
-          if (!response.ok) {
-            res.statusCode = response.status;
-            res.end(JSON.stringify({ error: 'Failed to fetch suggestions.' }));
-            return;
-          }
-
-          const data = (await response.json()) as Array<{ phrase: string }>;
-          const suggestions = data.map(d => d.phrase).filter(Boolean);
-
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ suggestions }));
-        } catch (err) {
-          console.error('Backend suggestion error:', err);
-          res.statusCode = 500;
-          res.end(JSON.stringify({ error: 'Internal server error.' }));
-        }
-      });
+      middlewares.use('/api/query', handleQuery);
     },
   };
 }
