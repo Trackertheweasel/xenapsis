@@ -57,7 +57,17 @@ The site runs over HTTPS (needed for the proxy to work) and is invite-only. Mana
 | `persec update`               | Updates to the latest version                                         |
 | `persec logs`                 | Shows what the server is doing                                        |
 
-If the site shows a certificate error with the `sslip.io` address, or an address gets blocked, get a new DuckDNS name pointed at your server and run `persec domain add yourname.duckdns.org`. Your settings and invites are kept. It is worth keeping a spare name or two added so a block never cuts everyone off.
+If the site shows a certificate error with the `sslip.io` address, or a single name gets blocked, add another name with `persec domain add` (your settings and invites are kept) and share it. It is worth keeping a spare name or two added so a block never cuts everyone off.
+
+#### When a whole dynamic-DNS provider is blocked
+
+Filters and some browsers block entire free dynamic-DNS providers at once — all of `*.duckdns.org`, `*.sslip.io`, `*.nip.io`, `*.no-ip.*` — not just one name. If that happens, a *new* DuckDNS (or sslip.io) name does **not** help; it is in the same blocked category. Switch to a domain that isn't:
+
+1. Register a cheap domain from any registrar (the cheapest TLDs cost about $1–10 a year). A normal registered domain isn't in the dynamic-DNS category.
+2. Add a DNS **A record** pointing it at your server's IP address.
+3. Run `persec domain add yourdomain.com`, and once it works, `persec domain remove` the blocked one. Caddy fetches its HTTPS certificate automatically.
+
+A spare domain is still worth keeping pre-added — but make it a registered domain (ideally at a different registrar), not another dynamic-DNS name. For a server whose **IP** is blocked, or to hide the IP, see below; putting the domain behind a free CDN such as Cloudflare (proxying on, SSL/TLS set to Full) also moves visitors onto the CDN's addresses and gives the name normal reputation.
 
 #### Surviving a blocked server
 
