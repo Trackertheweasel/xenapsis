@@ -67,6 +67,12 @@
       "url": "https://www.coolmathgames.com/0-suika-watermelon-game/play"
     },
     {
+      "name": "Chess",
+      "desc": "Play chess against the computer or a friend.",
+      "icon": "/a/images/ga/chess.webp",
+      "url": "https://www.coolmathgames.com/0-chess"
+    },
+    {
       "name": "Cookie Clicker",
       "desc": "Bake cookies and unlock upgrades in this idle game.",
       "icon": "/a/images/ga/cc.webp",
@@ -115,10 +121,22 @@
       "url": "https://2048game.com/"
     },
     {
+      "name": "Stickman Hook",
+      "desc": "Swing your way to the finish!",
+      "icon": "/a/images/ga/stick.webp",
+      "url": "https://poki.com/en/g/stickman-hook"
+    },
+    {
       "name": "EmulatorJs",
       "desc": "Play retro console games online.",
       "icon": "/a/images/ga/emulatorjs.webp",
       "url": "https://demo.emulatorjs.org/"
+    },
+    {
+      "name": "Subway Surfers",
+      "desc": "Dodge trains and collect coins!",
+      "icon": "/a/images/ga/surfers.webp",
+      "url": "https://poki.com/en/g/subway-surfers"
     },
     {
       "name": "KourIo",
@@ -127,9 +145,9 @@
       "url": "https://www.kour.io/"
     },
     {
-      "name": "Nvidia GeForce Now",
-      "desc": "Play PC games via cloud streaming.",
-      "icon": "/a/images/ga/gfn.webp",
+      "name": "Fortnite",
+      "desc": "Battle royale building game.",
+      "icon": "/a/images/ga/fn.jpg",
       "url": "https://play.geforcenow.com/mall/"
     },
     {
@@ -157,10 +175,40 @@
       "url": "https://driftbossunblocked.github.io/"
     },
     {
+      "name": "Merge Round Racers",
+      "desc": "Merge cars and win races!",
+      "icon": "",
+      "url": "https://poki.com/en/g/merge-round-racers"
+    },
+    {
       "name": "Flappy Bird",
       "desc": "Classic bird-flying game in browser.",
       "icon": "/a/images/ga/fb.jpg",
       "url": "https://ellisonleao.github.io/clumsy-bird/"
+    },
+    {
+      "name": "Idle Dice",
+      "desc": "Clicker game based on rolling dice.",
+      "icon": "/a/images/ga/id.jpg",
+      "url": "https://www.crazygames.com/game/idle-dice"
+    },
+    {
+      "name": "Idle Miner",
+      "desc": "Run your mining operation and grow!",
+      "icon": "/a/images/ga/im.jpg",
+      "url": "https://www.crazygames.com/game/idle-miner"
+    },
+    {
+      "name": "Idle Mining Empire",
+      "desc": "Build your mining empire empire!",
+      "icon": "",
+      "url": "https://poki.com/en/g/idle-mining-empire"
+    },
+    {
+      "name": "Idle Startup Tycoon",
+      "desc": "Grow your tech startup into a giant.",
+      "icon": "/a/images/ga/ist.jpg",
+      "url": "https://poki.com/en/g/idle-startup-tycoon"
     },
     {
       "name": "Awesome Tanks 2",
@@ -169,10 +217,28 @@
       "url": "https://ubg98.github.io/AwesomeTanks2/"
     },
     {
+      "name": "BasketBall Random",
+      "desc": "Crazy physics-based basketball game.",
+      "icon": "",
+      "url": "https://www.crazygames.com/game/basket-random"
+    },
+    {
       "name": "Basketbros",
       "desc": "Multiplayer basketball with a twist.",
       "icon": "",
       "url": "https://basketbros.io/"
+    },
+    {
+      "name": "Adventure Drivers",
+      "desc": "Race across crazy tracks and terrains.",
+      "icon": "",
+      "url": "https://poki.com/en/g/adventure-drivers"
+    },
+    {
+      "name": "1v1.LOL",
+      "desc": "Build and battle in this competitive shooter.",
+      "icon": "/a/images/ga/1v1.jpg",
+      "url": "https://www.crazygames.com/game/1v1-lol"
     },
     {
       "name": "Shell Shockers",
@@ -181,10 +247,46 @@
       "url": "https://shellshock.io/"
     },
     {
+      "name": "Tunnel Rush",
+      "desc": "Dodge obstacles in a colorful tunnel.",
+      "icon": "/a/images/ga/tr.jpg",
+      "url": "https://poki.com/en/g/tunnel-rush"
+    },
+    {
+      "name": "Retro Bowl",
+      "desc": "Manage and play American football team.",
+      "icon": "/a/images/ga/rb.jpg",
+      "url": "https://poki.com/en/g/retro-bowl"
+    },
+    {
+      "name": "Drift Hunters",
+      "desc": "Drift racing with car customization.",
+      "icon": "",
+      "url": "https://poki.com/en/g/drift-hunters"
+    },
+    {
       "name": "Basketball Stars",
       "desc": "1v1 basketball multiplayer game.",
       "icon": "/a/images/ga/bstars.jpg",
       "url": "https://basketball-stars.io/"
+    },
+    {
+      "name": "Happy Wheels",
+      "desc": "Ragdoll physics obstacle course game.",
+      "icon": "/a/images/ga/hw.jpg",
+      "url": "https://poki.com/en/g/happy-wheels"
+    },
+    {
+      "name": "Temple Run 2",
+      "desc": "Endless running through ancient temples.",
+      "icon": "/a/images/ga/tr2.jpg",
+      "url": "https://poki.com/en/g/temple-run-2"
+    },
+    {
+      "name": "Crossy Road",
+      "desc": "Cross roads and rivers without dying.",
+      "icon": "/a/images/ga/cr.jpg",
+      "url": "https://poki.com/en/g/crossy-road"
     },
     {
       "name": "Duck Life",
@@ -211,6 +313,12 @@
       "url": "https://www.coolmathgames.com/0-vex-7/play"
     },
     {
+      "name": "Paper.io 2",
+      "desc": "Claim territory in this competitive game.",
+      "icon": "/a/images/ga/paper.jpg",
+      "url": "https://www.crazygames.com/game/paper-io-2"
+    },
+    {
       "name": "Agar.io",
       "desc": "Grow your cell and eat others.",
       "icon": "/a/images/ga/agar.jpg",
@@ -233,6 +341,12 @@
       "desc": "Feed candy to Om Nom by cutting ropes.",
       "icon": "/a/images/ga/ctr.jpg",
       "url": "https://www.crazygames.com/game/cut-the-rope"
+    },
+    {
+      "name": "Bad Ice Cream",
+      "desc": "Collect fruit while avoiding enemies.",
+      "icon": "/a/images/ga/bic.jpg",
+      "url": "https://poki.com/en/g/bad-ice-cream"
     },
     {
       "name": "Bob the Robber",
@@ -301,10 +415,52 @@
       "url": "https://tanktrouble.com/"
     },
     {
+      "name": "Monkey Mart",
+      "desc": "Run your own monkey supermarket.",
+      "icon": "",
+      "url": "https://poki.com/en/g/monkey-mart"
+    },
+    {
       "name": "Stickman Fighter",
       "desc": "Beat up enemies as a stickman.",
       "icon": "/a/images/ga/sf.jpg",
       "url": "https://www.crazygames.com/game/stickman-fighter-mega-brawl"
+    },
+    {
+      "name": "Time Shooter 2",
+      "desc": "Slow-motion FPS action game.",
+      "icon": "",
+      "url": "https://www.crazygames.com/game/time-shooter-2"
+    },
+    {
+      "name": "Rooftop Snipers",
+      "desc": "Two-button sniper duel game.",
+      "icon": "/a/images/ga/rts.jpg",
+      "url": "https://poki.com/en/g/rooftop-snipers"
+    },
+    {
+      "name": "BoxingRandom",
+      "desc": "Physics-based boxing with random events.",
+      "icon": "",
+      "url": "https://www.crazygames.com/game/boxing-random"
+    },
+    {
+      "name": "Soccer Random",
+      "desc": "Chaotic physics soccer game.",
+      "icon": "",
+      "url": "https://www.crazygames.com/game/soccer-random"
+    },
+    {
+      "name": "Volley Random",
+      "desc": "Random volleyball with physics.",
+      "icon": "",
+      "url": "https://www.crazygames.com/game/volley-random"
+    },
+    {
+      "name": "Getaway Shootout",
+      "desc": "Race and shoot to the extraction.",
+      "icon": "/a/images/ga/gs.jpg",
+      "url": "https://poki.com/en/g/getaway-shootout"
     },
     {
       "name": "Worlds Hardest Game",
@@ -355,6 +511,18 @@
       "url": "https://eaglercraft.com/"
     },
     {
+      "name": "Fancy Pants",
+      "desc": "Stickman platformer with style.",
+      "icon": "/a/images/ga/fp.jpg",
+      "url": "https://poki.com/en/g/fancy-pants"
+    },
+    {
+      "name": "Doodle Jump",
+      "desc": "Jump up platforms endlessly.",
+      "icon": "/a/images/ga/dj.jpg",
+      "url": "https://www.crazygames.com/game/doodle-jump"
+    },
+    {
       "name": "Geometry Dash Lite",
       "desc": "Rhythm platformer lite version.",
       "icon": "",
@@ -373,6 +541,12 @@
       "url": "https://bonk.io/"
     },
     {
+      "name": "Penalty Shooters 2",
+      "desc": "Soccer penalty shootout game.",
+      "icon": "",
+      "url": "https://poki.com/en/g/penalty-shooters-2"
+    },
+    {
       "name": "Stick War",
       "desc": "Strategy game with stick figures.",
       "icon": "/a/images/ga/sw.jpg",
@@ -389,6 +563,18 @@
       "desc": "Roll and jump through platformer.",
       "icon": "/a/images/ga/rb4.jpg",
       "url": "https://www.coolmathgames.com/0-red-ball-4/play"
+    },
+    {
+      "name": "Draw Climber",
+      "desc": "Draw legs to climb obstacles.",
+      "icon": "",
+      "url": "https://www.crazygames.com/game/draw-climber"
+    },
+    {
+      "name": "Elastic Man",
+      "desc": "Stretch a 3D face around.",
+      "icon": "",
+      "url": "https://poki.com/en/g/elastic-man"
     },
     {
       "name": "Learn to Fly",
@@ -487,6 +673,18 @@
       "url": "https://www.coolmathgames.com/0-checkers/play"
     },
     {
+      "name": "Four in a Row",
+      "desc": "Classic four-in-a-row game.",
+      "icon": "/a/images/ga/c4.jpg",
+      "url": "https://poki.com/en/g/four-in-a-row"
+    },
+    {
+      "name": "Backgammon",
+      "desc": "Ancient board game strategy.",
+      "icon": "",
+      "url": "https://www.coolmathgames.com/0-backgammon"
+    },
+    {
       "name": "8 Ball Pool",
       "desc": "Online billiards game.",
       "icon": "/a/images/ga/8ball.jpg",
@@ -497,6 +695,12 @@
       "desc": "Compete in archery competitions.",
       "icon": "",
       "url": "https://www.crazygames.com/game/archery-world-tour"
+    },
+    {
+      "name": "Drift Boss",
+      "desc": "Keep drifting without falling off.",
+      "icon": "",
+      "url": "https://poki.com/en/g/drift-boss"
     },
     {
       "name": "Mini Golf World",
@@ -535,10 +739,34 @@
       "url": "https://www.crazygames.com/game/table-tennis-world-tour"
     },
     {
+      "name": "Stunt Bike Extreme",
+      "desc": "Perform crazy bike stunts.",
+      "icon": "/a/images/ga/sbe.jpg",
+      "url": "https://poki.com/en/g/stunt-bike-extreme"
+    },
+    {
+      "name": "Thumb Fighter",
+      "desc": "Two-player thumb wrestling game.",
+      "icon": "/a/images/ga/tf.webp",
+      "url": "https://poki.com/en/g/thumb-fighter"
+    },
+    {
+      "name": "Football Legends",
+      "desc": "Play soccer with legendary players.",
+      "icon": "/a/images/ga/fl.jpg",
+      "url": "https://poki.com/en/g/football-legends"
+    },
+    {
       "name": "Basketball Legends",
       "desc": "Arcade basketball with NBA stars.",
       "icon": "/a/images/ga/bl.jpg",
       "url": "https://basketball-legends.io/"
+    },
+    {
+      "name": "Unicycle Hero",
+      "desc": "Balance on unicycle and fight.",
+      "icon": "/a/images/ga/uh.jpg",
+      "url": "https://poki.com/en/g/unicycle-hero"
     },
     {
       "name": "Riddle School",
@@ -647,6 +875,12 @@
       "desc": "Final Henry Stickmin adventure.",
       "icon": "/a/images/ga/ctm.jpg",
       "url": "https://www.newgrounds.com/portal/view/760076"
+    },
+    {
+      "name": "Duck Life 2: World Champion",
+      "desc": "Train your duck in new events.",
+      "icon": "/a/images/ga/dl2.jpg",
+      "url": "https://www.coolmathgames.com/0-duck-life-2-world-champion"
     },
     {
       "name": "Duck Life 3",
@@ -763,6 +997,12 @@
       "url": "https://www.gimkit.com/"
     },
     {
+      "name": "Slope Tunnel",
+      "desc": "Roll through 3D tunnel obstacles.",
+      "icon": "",
+      "url": "https://www.coolmathgames.com/0-slope-tunnel"
+    },
+    {
       "name": "Roller Coaster Builder",
       "desc": "Design and ride roller coasters.",
       "icon": "",
@@ -773,6 +1013,12 @@
       "desc": "Park in 3D environments.",
       "icon": "",
       "url": "https://www.crazygames.com/game/parking-fury-3d"
+    },
+    {
+      "name": "Car Drawing Game",
+      "desc": "Draw car and drive your creation.",
+      "icon": "",
+      "url": "https://www.coolmathgames.com/0-car-drawing-game"
     }
   ],
   "aps": [
