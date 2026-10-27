@@ -4,6 +4,8 @@
 #   curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | bash
 # With your own domain (point it at the server first):
 #   curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | PERSEC_DOMAIN=yourname.duckdns.org bash
+# PERSEC_INVITE_CODES="name:code,..." sets codes you choose yourself, which is easier than
+# copying a generated one when the console can't paste (it also works as a startup script).
 # Running it again updates Persec to the latest version and keeps your settings and invites.
 set -euo pipefail
 
@@ -14,12 +16,17 @@ main() {
   local dir=/opt/persec
   local env=$dir/deploy/.env
 
+  # Startup scripts run without HOME, which Docker needs.
+  export HOME=${HOME:-/root}
+
   if [ "$(id -u)" != 0 ]; then
     echo "Run this as root (put sudo in front of bash)." >&2
     exit 1
   fi
 
   echo "==> Installing Docker and Git"
+  # A new server is often still installing updates; wait for it instead of failing.
+  echo 'DPkg::Lock::Timeout "900";' >/etc/apt/apt.conf.d/99persec-wait-for-lock
   command -v git >/dev/null || { apt-get update -q && apt-get install -yq git; }
   command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh
 
@@ -63,6 +70,14 @@ EOF
   elif [ -n "${PERSEC_DOMAIN:-}" ]; then
     sed -i "s|^DOMAIN=.*|DOMAIN=$PERSEC_DOMAIN|" "$env"
   fi
+  if [ -n "${PERSEC_INVITE_CODES:-}" ]; then
+    if ! [[ "$PERSEC_INVITE_CODES" =~ ^[A-Za-z0-9_.,:-]+$ ]]; then
+      echo "Invite codes may only use letters, numbers and - _ . (as name:code,name:code)." >&2
+      exit 1
+    fi
+    sed -i '/^PERSEC_INVITE_CODES=/d' "$env"
+    echo "PERSEC_INVITE_CODES=$PERSEC_INVITE_CODES" >>"$env"
+  fi
   local domain
   domain=$(sed -n 's/^DOMAIN=//p' "$env")
 
@@ -79,7 +94,10 @@ EOF
   echo
   echo "Persec is running at https://$domain"
   echo "(The HTTPS certificate can take a minute to arrive after the first start.)"
-  if $first_install; then
+  if [ -n "${PERSEC_INVITE_CODES:-}" ]; then
+    echo
+    echo "Sign in with the invite code you chose."
+  elif $first_install; then
     local code
     code=$(persec invite owner 365)
     echo
