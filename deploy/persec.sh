@@ -50,7 +50,7 @@ case "${1:-}" in
       list) ;;
       add)
         if ! [[ "$name" =~ ^([a-z0-9-]+\.)+[a-z]{2,}$ ]]; then
-          echo "Usage: persec domain add <name>   (for example: persec domain add yourname.duckdns.org)" >&2
+          echo "Usage: persec domain add <name>   (for example: persec domain add yourdomain.com)" >&2
           exit 1
         fi
         if in_list; then
