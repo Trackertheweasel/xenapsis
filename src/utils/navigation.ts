@@ -19,9 +19,7 @@ const routes: Record<string, string> = {
   'persec://privacy': '/privacy',
 };
 
-const reverseRoutes = Object.fromEntries(
-  Object.entries(routes).map(([k, v]) => [v, k])
-);
+const reverseRoutes = Object.fromEntries(Object.entries(routes).map(([k, v]) => [v, k]));
 
 const sc = scramjetWrapper.getConfig();
 const uv = vWrapper.getConfig();
@@ -33,7 +31,7 @@ async function setup() {
   wisp = await ConfigAPI.get('wispUrl');
   scramjetWrapper.init();
   await navigator.serviceWorker.register('./sw.js');
-  
+
   const conn = new BareMux.BareMuxConnection('/bm/worker.js');
   const trans = await conn.getTransport();
   if (trans !== '/lc/index.mjs') {
@@ -65,7 +63,7 @@ function spin() {
 function record(url: string) {
   const h = history();
   if (h.stack[h.idx] === url) return;
-  
+
   h.stack = h.stack.slice(0, h.idx + 1);
   h.stack.push(url);
   h.idx++;
@@ -74,7 +72,7 @@ function record(url: string) {
 function nav(url: string, save = true) {
   const f = frame();
   if (!f) return;
-  
+
   if (save) record(url);
   f.src = url;
 }
@@ -82,7 +80,7 @@ function nav(url: string, save = true) {
 function back() {
   const h = history();
   if (h.idx <= 0) return;
-  
+
   h.idx--;
   nav(h.stack[h.idx], false);
 }
@@ -90,7 +88,7 @@ function back() {
 function fwd() {
   const h = history();
   if (h.idx >= h.stack.length - 1) return;
-  
+
   h.idx++;
   nav(h.stack[h.idx], false);
 }
@@ -117,13 +115,13 @@ function norm(url: string): string {
 async function sync() {
   const f = frame();
   if (!f) return;
-  
+
   record(f.src);
-  
+
   const d = currentUrl(f);
   const bm = (await ConfigAPI.get('bm')) || [];
   const active = bm.some((b: any) => norm(b.redir) === norm(d));
-  
+
   const svg = favBtn?.querySelector('svg');
   if (svg) {
     svg.style.fill = active ? '#a8a3c7' : 'none';
@@ -133,16 +131,16 @@ async function sync() {
 
 async function toggleFav() {
   if (!urlbar) return;
-  
+
   const f = frame();
   if (!f || routes[urlbar.value]) return;
-  
+
   const d = currentUrl(f);
   if (!d) return;
   const bm = (await ConfigAPI.get('bm')) || [];
-  
+
   const i = bm.findIndex((b: any) => norm(b.redir) === norm(d));
-  
+
   if (i !== -1) {
     bm.splice(i, 1);
   } else {
@@ -152,35 +150,34 @@ async function toggleFav() {
       redir: d,
     });
   }
-  
+
   await ConfigAPI.set('bm', bm);
   sync();
 }
 
 async function submit() {
   if (!urlbar) return;
-  
+
   const v = urlbar.value.trim();
-  
+
   if (routes[v]) {
     spin();
     nav(routes[v]);
     return;
   }
-  
+
   const conn = new BareMux.BareMuxConnection('/bm/worker.js');
   const trans = await conn.getTransport();
   if (trans !== '/lc/index.mjs') {
     await conn.setTransport('/lc/index.mjs', [{ wisp }]);
   }
-  
+
   const val = await validateUrl(v);
   const backend = await ConfigAPI.get('backend');
-  
-  const enc = backend === 'u'
-    ? `${uv.prefix}${uv.encodeUrl(val)}`
-    : `${sc.prefix}${sc.codec.encode(val)}`;
-  
+
+  const enc =
+    backend === 'u' ? `${uv.prefix}${uv.encodeUrl(val)}` : `${sc.prefix}${sc.codec.encode(val)}`;
+
   spin();
   nav(enc);
 }
@@ -188,27 +185,27 @@ async function submit() {
 function clickSide(e: MouseEvent) {
   const btn = (e.target as HTMLElement).closest('button');
   if (!btn) return;
-  
+
   e.preventDefault();
   e.stopPropagation();
-  
+
   const url = btn.dataset.url;
   if (!url || !urlbar) return;
-  
+
   let r = reverseRoutes[url];
   if (!r && url === '/') {
     r = 'persec://new';
   }
-  
+
   urlbar.value = r || url;
   const target = r ? routes[r] : url;
-  
+
   spin();
   nav(target);
 }
 
 if (reloadBtn) {
-  reloadBtn.addEventListener('click', (e) => {
+  reloadBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     const h = history();
@@ -219,7 +216,7 @@ if (reloadBtn) {
 }
 
 if (backBtn) {
-  backBtn.addEventListener('click', (e) => {
+  backBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     spin();
@@ -228,7 +225,7 @@ if (backBtn) {
 }
 
 if (fwdBtn) {
-  fwdBtn.addEventListener('click', (e) => {
+  fwdBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     spin();
@@ -247,7 +244,7 @@ document.getElementById('menu-forward')?.addEventListener('click', e => {
 });
 
 if (homeBtn) {
-  homeBtn.addEventListener('click', (e) => {
+  homeBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     spin();
@@ -256,7 +253,7 @@ if (homeBtn) {
 }
 
 if (favBtn) {
-  favBtn.addEventListener('click', (e) => {
+  favBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     toggleFav();
@@ -264,7 +261,7 @@ if (favBtn) {
 }
 
 if (urlbar) {
-  urlbar.addEventListener('keydown', (e) => {
+  urlbar.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
       submit();

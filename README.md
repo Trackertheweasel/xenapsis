@@ -63,7 +63,7 @@ If the site shows a certificate error with the `sslip.io` address, or a single n
 
 #### When a whole dynamic-DNS provider is blocked
 
-Filters and some browsers block entire free dynamic-DNS providers at once — all of `*.duckdns.org`, `*.sslip.io`, `*.nip.io`, `*.no-ip.*` — not just one name. If that happens, a *new* DuckDNS (or sslip.io) name does **not** help; it is in the same blocked category. Switch to a domain that isn't:
+Filters and some browsers block entire free dynamic-DNS providers at once — all of `*.duckdns.org`, `*.sslip.io`, `*.nip.io`, `*.no-ip.*` — not just one name. If that happens, a _new_ DuckDNS (or sslip.io) name does **not** help; it is in the same blocked category. Switch to a domain that isn't:
 
 1. Register a cheap domain from any registrar (the cheapest TLDs cost about $1–10 a year). A normal registered domain isn't in the dynamic-DNS category.
 2. Add a DNS **A record** pointing it at your server's IP address.
@@ -118,7 +118,7 @@ Two ways to get it:
 1. **Through Cloudflare (recommended, no server changes).** Put the domain behind Cloudflare — the same free step that hides the server's IP (proxying on, SSL/TLS set to Full). Cloudflare turns ECH on automatically for proxied domains and publishes the DNS record for you. Nothing to configure on the server.
 2. **In Caddy, on your own domain (advanced).** Caddy 2.10+ can do ECH itself, but it has to publish the key to your DNS, so it needs a Caddy build that includes **your DNS provider's module** plus an API token for it. The stock `caddy:2` image used here does not include DNS modules, so this means building a custom Caddy image. See the commented `ech` block in [`deploy/Caddyfile`](deploy/Caddyfile) for the shape of the config.
 
-> **Important, and region-dependent.** ECH helps where filtering is based on the domain name. But some censors respond by blocking **all** ECH traffic rather than reading it — Russia's filtering devices began dropping ECH connections to Cloudflare in late 2024. So ECH can *remove* a block in one country and *cause* one in another. Keep a non-ECH address available as a fallback, and test from the actual region before relying on it.
+> **Important, and region-dependent.** ECH helps where filtering is based on the domain name. But some censors respond by blocking **all** ECH traffic rather than reading it — Russia's filtering devices began dropping ECH connections to Cloudflare in late 2024. So ECH can _remove_ a block in one country and _cause_ one in another. Keep a non-ECH address available as a fallback, and test from the actual region before relying on it.
 
 ### Other options
 
@@ -130,11 +130,11 @@ Two ways to get it:
 
 All of these options are free to use.
 
-| Platform          | Config file                       | Notes                                                                                            |
-| ----------------- | --------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Render            | `render.yaml`                     | Free web service. Sleeps after 15 minutes without traffic and takes about a minute to wake up.   |
+| Platform          | Config file                       | Notes                                                                                                          |
+| ----------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Render            | `render.yaml`                     | Free web service. Sleeps after 15 minutes without traffic and takes about a minute to wake up.                 |
 | GitHub Codespaces | `.devcontainer/devcontainer.json` | Free monthly hours for personal accounts. Run `pnpm build && pnpm start`, then open the forwarded port `6060`. |
-| Docker            | `Dockerfile`                      | Run it on your own computer or server (see below).                                               |
+| Docker            | `Dockerfile`                      | Run it on your own computer or server (see below).                                                             |
 
 ### Docker
 
@@ -273,13 +273,13 @@ When more than one sponsor is enabled, each page load picks one at random. If no
 
 Set these environment variables on the server to serve ads from a network instead. It is off unless `PERSEC_AD_NETWORK` is set, and if a fetch ever fails Persec falls back to the self-served sponsors above, so the card never breaks.
 
-| Variable              | What it does                                                                                 |
-| --------------------- | -------------------------------------------------------------------------------------------- |
-| `PERSEC_AD_NETWORK`   | `ethicalads`, `generic`, or unset (off)                                                       |
-| `PERSEC_AD_API_KEY`   | Your network API key                                                                          |
-| `PERSEC_AD_PUBLISHER` | Your publisher/site id (EthicalAds)                                                           |
-| `PERSEC_AD_API_URL`   | API base. Optional for EthicalAds; for `generic`, the full URL of your JSON endpoint          |
-| `PERSEC_AD_TTL`       | Seconds to reuse a fetched ad before asking again (default 300, minimum 30)                   |
+| Variable              | What it does                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| `PERSEC_AD_NETWORK`   | `ethicalads`, `generic`, or unset (off)                                              |
+| `PERSEC_AD_API_KEY`   | Your network API key                                                                 |
+| `PERSEC_AD_PUBLISHER` | Your publisher/site id (EthicalAds)                                                  |
+| `PERSEC_AD_API_URL`   | API base. Optional for EthicalAds; for `generic`, the full URL of your JSON endpoint |
+| `PERSEC_AD_TTL`       | Seconds to reuse a fetched ad before asking again (default 300, minimum 30)          |
 
 - **`ethicalads`** uses [EthicalAds](https://www.ethicalads.io/)' server-to-server decision API — a good fit for a privacy-first, image-only ad.
 - **`generic`** points Persec at any URL that returns the JSON `{ "name", "text", "image", "click", "impression" }` (`impression` optional). Use it to connect any other network through a small shim of your own, or to serve a rotating house ad. `image` and `click` are the network's own URLs; Persec fetches them, never the visitor.

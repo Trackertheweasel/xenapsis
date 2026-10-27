@@ -80,14 +80,14 @@ class MenuHandler {
     document.addEventListener('click', this.handleDocumentClick.bind(this));
     document.addEventListener('mousedown', this.handleDocumentClick.bind(this));
     window.addEventListener('blur', this.handleWindowBlur.bind(this));
-    
+
     menuContainer.querySelectorAll<HTMLButtonElement>('.menu-item').forEach(item => {
       item.addEventListener('click', this.hideMenu.bind(this));
       item.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === 'Escape') this.hideMenu();
       });
     });
-    
+
     this.setupMenuActions();
     window.addEventListener('keydown', this.handleKeydown.bind(this), true);
     document.addEventListener('keydown', this.handleKeydown.bind(this), true);
@@ -107,9 +107,9 @@ class MenuHandler {
   private toggleMenu(e: MouseEvent): void {
     e.stopPropagation();
     e.preventDefault();
-    
+
     const wasHidden = this.elements.menuContainer.classList.contains('hidden');
-    
+
     if (wasHidden) {
       this.showMenu();
     } else {
@@ -165,7 +165,7 @@ class MenuHandler {
   private handleDarkMode(): void {
     const frame = this.getActiveFrame();
     if (!frame?.contentWindow || !frame.contentDocument) return;
-    
+
     const script = frame.contentDocument.createElement('script');
     script.textContent = `(() => {
       let style = document.getElementById('dark-mode');
@@ -191,13 +191,14 @@ class MenuHandler {
       const panicLoc = await this.getConfigValue('panicLoc', 'https://google.com');
       top.window.location.href = panicLoc;
     }
-    
+
     const viewport = newWindow.document.createElement('meta');
     viewport.name = 'viewport';
     viewport.content = 'width=device-width, initial-scale=1';
     newWindow.document.head.appendChild(viewport);
     const iframe = newWindow.document.createElement('iframe');
-    iframe.style.cssText = 'width:100%;height:100vh;height:100dvh;border:0;margin:0;padding:0;display:block';
+    iframe.style.cssText =
+      'width:100%;height:100vh;height:100dvh;border:0;margin:0;padding:0;display:block';
     iframe.src = `${location.origin}/`;
     newWindow.document.body.style.margin = '0';
     newWindow.document.title = 'about:blank';
@@ -252,22 +253,22 @@ class MenuHandler {
 
   private handleKeydown(e: KeyboardEvent): void {
     if (e.repeat) return;
-    
+
     if (e.key === 'Escape' && this.isMenuOpen) {
       e.preventDefault();
       e.stopPropagation();
       this.hideMenu();
       return;
     }
-    
+
     if (e.key === 'Enter' && this.elements.menuContainer.contains(document.activeElement)) {
       this.hideMenu();
       return;
     }
-    
+
     const keybind = this.buildKeybind(e);
     const target = this.keyMap.get(keybind);
-    
+
     if (target) {
       e.preventDefault();
       e.stopPropagation();
@@ -294,14 +295,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const menuButton = document.querySelector<HTMLButtonElement>('#menubtn');
   const menuContainer = document.querySelector<HTMLDivElement>('#menu');
   const menuItems = Array.from(document.querySelectorAll<HTMLButtonElement>('#menu .menu-item'));
-  
+
   if (!menuButton || !menuContainer || menuItems.length < 8) {
     console.error('Required menu elements not found');
     return;
   }
-  
+
   const [newTab, fullscreen, reload, inspectElement, darkmode, cloak, panic, settings] = menuItems;
-  
+
   const elements: MenuElements = {
     menuButton,
     menuContainer,
@@ -314,7 +315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     panic,
     settings,
   };
-  
+
   const menuHandler = new MenuHandler(elements);
   await menuHandler.initialize();
 });

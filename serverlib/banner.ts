@@ -7,17 +7,19 @@ import { findProvider } from './provider';
 export function printBanner(port: number, access: AccessConfig | null) {
   const updateStatus = updateChecker();
   type StatusKey = 'u' | 'n' | 'f';
-  const statusMap: Record<StatusKey, { icon: string; text: string; color: string; extra?: string }> =
-    {
-      u: { icon: '✅', text: 'Up to date', color: '#2ecc71' },
-      n: {
-        icon: '❌',
-        text: `Update available (${updateStatus.commitId})`,
-        color: '#f1c40f',
-        extra: chalk.hex('#95a5a6')('→ https://github.com/Trackertheweasel/xenapsis'),
-      },
-      f: { icon: '❌', text: 'Failed to check for updates', color: '#e74c3c' },
-    };
+  const statusMap: Record<
+    StatusKey,
+    { icon: string; text: string; color: string; extra?: string }
+  > = {
+    u: { icon: '✅', text: 'Up to date', color: '#2ecc71' },
+    n: {
+      icon: '❌',
+      text: `Update available (${updateStatus.commitId})`,
+      color: '#f1c40f',
+      extra: chalk.hex('#95a5a6')('→ https://github.com/Trackertheweasel/xenapsis'),
+    },
+    f: { icon: '❌', text: 'Failed to check for updates', color: '#e74c3c' },
+  };
   const statusKey = (
     ['u', 'n', 'f'].includes(updateStatus.status) ? updateStatus.status : 'f'
   ) as StatusKey;
@@ -55,9 +57,13 @@ export function printBanner(port: number, access: AccessConfig | null) {
       ),
   );
   if (access && !access.minted) {
-    console.log(chalk.hex('#f1c40f')('   Set PERSEC_SECRET so people stay signed in across restarts.'));
+    console.log(
+      chalk.hex('#f1c40f')('   Set PERSEC_SECRET so people stay signed in across restarts.'),
+    );
     if (!access.codes.size) {
-      console.log(chalk.hex('#e74c3c')('   No invite codes and no PERSEC_SECRET: nobody can sign in.'));
+      console.log(
+        chalk.hex('#e74c3c')('   No invite codes and no PERSEC_SECRET: nobody can sign in.'),
+      );
     }
   }
   console.log();

@@ -31,6 +31,7 @@ export function proxyPrefixes(raw = process.env.PUBLIC_PERSEC_PROXY_KEY): [strin
   const sc = `/${h.slice(0, 8)}/`;
   const uv = `/${h.slice(8, 16)}/`;
   // Same length, so neither can be a prefix of the other; equal only on an impossible hash clash.
-  if (sc === uv) throw new Error('proxy prefixes collided; set a different PUBLIC_PERSEC_PROXY_KEY');
+  if (sc === uv)
+    throw new Error('proxy prefixes collided; set a different PUBLIC_PERSEC_PROXY_KEY');
   return [sc, uv];
 }
