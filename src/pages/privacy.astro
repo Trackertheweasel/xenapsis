@@ -81,8 +81,12 @@ import '@/main.css';
       <section class="space-y-2">
         <h2 class="text-lg font-semibold">Ads</h2>
         <p class="text-text-secondary">
-          Ads on Persec are plain images and links served from this server. They don't track you. Clicking an ad opens
-          the advertiser's site directly, outside Persec, so the advertiser and your network can see that visit.
+          Ads on Persec are plain images and links. Whether a sponsor is chosen by hand or comes from an ad network,
+          your browser only loads the ad's image from this server and never runs an ad script or contacts the ad
+          network. If this server does use an ad network, it fetches the ad itself and tells the network nothing about
+          you &mdash; the network sees only this server, not your address or browser. Clicking an ad goes through this
+          server, which then sends you on to the advertiser's site, outside Persec; from there the advertiser and your
+          network can see that visit.
         </p>
       </section>
 
