@@ -2,54 +2,26 @@ import node from '@astrojs/node';
 import { baremuxPath } from '@mercuryworkshop/bare-mux/node';
 import { libcurlPath } from '@mercuryworkshop/libcurl-transport';
 import { scramjetPath } from '@mercuryworkshop/scramjet/path';
-import { server as wisp } from '@mercuryworkshop/wisp-js/server';
 import playformCompress from '@playform/compress';
 import tailwindcss from '@tailwindcss/vite';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import { defineConfig } from 'astro/config';
-import { createHash, randomBytes } from 'crypto';
-import type { IncomingMessage, ServerResponse } from 'http';
+import type { IncomingMessage } from 'http';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { version } from './package.json';
+import { proxyPrefixes, urlKey, wispPath } from './serverlib/env';
+import { handleQuery } from './serverlib/routes/query';
+import { wisp } from './serverlib/wisp';
 
-wisp.options.wisp_version = 2;
+// Build-time values baked into the client; see serverlib/env.ts for what each one does.
+const WISP_PATH = wispPath();
+const URL_KEY = urlKey();
+const [SC_PREFIX, UV_PREFIX] = proxyPrefixes();
 
-// The path the proxy's WebSocket tunnel listens on. A fixed, well-known path (the usual "/w/")
-// lets a network filter confirm the server is a proxy just by probing that one URL. A deployment
-// can set PUBLIC_PERSEC_WISP_PATH to a hard-to-guess value so there is nothing constant to probe.
-// This value is baked into the client at build time, so the server (index.ts) must read the same
-// env var at runtime. Normalized here once; the client uses the injected WISP_PATH below.
-function normalizeWispPath(raw: string | undefined): string {
-  let p = (raw ?? '').trim();
-  if (!p) return '/w/';
-  if (!p.startsWith('/')) p = '/' + p;
-  if (!p.endsWith('/')) p = p + '/';
-  return p;
-}
-const WISP_PATH = normalizeWispPath(process.env.PUBLIC_PERSEC_WISP_PATH);
-
-// Key for the proxied-URL codec (src/utils/codec.ts). Random per build, so URLs look different on
-// every deployment; set PUBLIC_PERSEC_URL_KEY to keep one across builds or servers.
-const URL_KEY = process.env.PUBLIC_PERSEC_URL_KEY?.trim() || randomBytes(16).toString('base64url');
-
-// The URL path prefix each proxy engine uses (the defaults were /v1/data/ and /v1/tmp/). A fixed
-// prefix is the same on every Persec install, so a filter can match it to spot the proxy. Derive
-// two distinct prefixes per build instead, or keep them stable across builds/servers by setting
-// PUBLIC_PERSEC_PROXY_KEY. They are client-side only; the server never routes these paths.
-function proxyPrefixes(seed: string): [string, string] {
-  const h = createHash('sha256').update(seed).digest('hex');
-  const sc = `/${h.slice(0, 8)}/`;
-  const uv = `/${h.slice(8, 16)}/`;
-  // Same length, so neither can be a prefix of the other; equal only on an impossible hash clash.
-  if (sc === uv) throw new Error('proxy prefixes collided; set a different PUBLIC_PERSEC_PROXY_KEY');
-  return [sc, uv];
-}
-const [SC_PREFIX, UV_PREFIX] = proxyPrefixes(
-  process.env.PUBLIC_PERSEC_PROXY_KEY?.trim() || randomBytes(16).toString('hex'),
-);
-
+// Dev server only (`pnpm dev`); production serves both from serverlib/app.ts. They share the same
+// Wisp settings and search handler so dev behaves like production.
 function WispServer(): Plugin {
   return {
     name: 'vite-wisp-server',
@@ -67,45 +39,7 @@ function searchBackend(): Plugin {
   return {
     name: 'search-suggestions-vite',
     configureServer({ middlewares }) {
-      middlewares.use('/api/query', async (req: IncomingMessage, res: ServerResponse) => {
-        const urlObj = new URL(req.url ?? '', 'http://localhost');
-        const query = urlObj.searchParams.get('q');
-
-        if (!query) {
-          res.statusCode = 400;
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: 'Query parameter "q" is required.' }));
-          return;
-        }
-
-        try {
-          const response = await fetch(
-            `https://duckduckgo.com/ac/?q=${encodeURIComponent(query)}`,
-            {
-              headers: {
-                'User-Agent': 'Mozilla/5.0',
-                Accept: 'application/json',
-              },
-            },
-          );
-
-          if (!response.ok) {
-            res.statusCode = response.status;
-            res.end(JSON.stringify({ error: 'Failed to fetch suggestions.' }));
-            return;
-          }
-
-          const data = (await response.json()) as Array<{ phrase: string }>;
-          const suggestions = data.map(d => d.phrase).filter(Boolean);
-
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ suggestions }));
-        } catch (err) {
-          console.error('Backend suggestion error:', err);
-          res.statusCode = 500;
-          res.end(JSON.stringify({ error: 'Internal server error.' }));
-        }
-      });
+      middlewares.use('/api/query', handleQuery);
     },
   };
 }

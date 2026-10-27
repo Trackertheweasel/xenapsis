@@ -118,8 +118,8 @@ import ImportLucide from '../layouts/lucide.astro';
                 <h3 class="mb-2 font-medium">Clear site data</h3>
                 <p class="text-text-secondary mb-3 text-sm">
                   Sites you open in Persec can read each other's cookies. Clear them after logging in anywhere, and
-                  before visiting sites you don't trust. This also deletes your saved-logins backup. Your Persec settings
-                  are kept.
+                  before visiting sites you don't trust. This also deletes your saved-logins backup. Your Persec
+                  settings are kept.
                 </p>
                 <button
                   data-clear-site-data
@@ -132,7 +132,9 @@ import ImportLucide from '../layouts/lucide.astro';
               <div data-logins hidden class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
                 <div class="flex items-start justify-between gap-4">
                   <div>
-                    <h3 id="logins-title" class="font-medium">Saved logins</h3>
+                    <h3 id="logins-title" class="font-medium">
+                      Saved logins
+                    </h3>
                     <p class="text-text-secondary text-sm">
                       Keep an encrypted backup of your site logins with your invite code, so you're still signed in when
                       you come back on any device. Anyone with your invite code can unlock it, including whoever runs
@@ -146,10 +148,13 @@ import ImportLucide from '../layouts/lucide.astro';
                     aria-checked="false"
                     aria-labelledby="logins-title"
                     data-logins-toggle
-                    class="switch mt-1 shrink-0"></button>
+                    class="switch mt-1 shrink-0"
+                  ></button>
                 </div>
                 <form data-logins-code hidden class="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <label for="logins-code" class="sr-only">Invite code</label>
+                  <label for="logins-code" class="sr-only">
+                    Invite code
+                  </label>
                   <input
                     id="logins-code"
                     type="password"
@@ -214,7 +219,8 @@ import ImportLucide from '../layouts/lucide.astro';
                       data-preset-favicon="/a/images/co/go.ico"
                       class="cloak-preset bg-background/60 hover:bg-background/80 flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/6 px-3 py-2 text-sm"
                     >
-                      <img src="/a/images/co/go.ico" class="h-4 w-4" alt="" />Google
+                      <img src="/a/images/co/go.ico" class="h-4 w-4" alt="" />
+                      Google
                     </button>
                     <button
                       data-cloak-preset="drive"
@@ -222,7 +228,8 @@ import ImportLucide from '../layouts/lucide.astro';
                       data-preset-favicon="/a/images/co/drei.png"
                       class="cloak-preset bg-background/60 hover:bg-background/80 flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/6 px-3 py-2 text-sm"
                     >
-                      <img src="/a/images/co/drei.png" class="h-4 w-4" alt="" />Drive
+                      <img src="/a/images/co/drei.png" class="h-4 w-4" alt="" />
+                      Drive
                     </button>
                     <button
                       data-cloak-preset="classroom"
@@ -230,7 +237,8 @@ import ImportLucide from '../layouts/lucide.astro';
                       data-preset-favicon="/a/images/co/class.png"
                       class="cloak-preset bg-background/60 hover:bg-background/80 flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/6 px-3 py-2 text-sm"
                     >
-                      <img src="/a/images/co/class.png" class="h-4 w-4" alt="" />Classroom
+                      <img src="/a/images/co/class.png" class="h-4 w-4" alt="" />
+                      Classroom
                     </button>
                   </div>
                   <input
@@ -250,9 +258,7 @@ import ImportLucide from '../layouts/lucide.astro';
                 </div>
               </div>
 
-              <div
-                class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5"
-              >
+              <div class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5">
                 <div>
                   <h3 class="font-medium">Tab Switch Cloak</h3>
                   <p class="text-text-secondary text-sm">
@@ -263,9 +269,7 @@ import ImportLucide from '../layouts/lucide.astro';
                 <div class="toggle" data-toggle="tabSwitchCloak"></div>
               </div>
 
-              <div
-                class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5"
-              >
+              <div class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5">
                 <div>
                   <h3 class="font-medium">Anti-close</h3>
                   <p class="text-text-secondary text-sm">
@@ -393,9 +397,7 @@ import ImportLucide from '../layouts/lucide.astro';
                   class="bg-background/80 w-full rounded-lg border border-white/6 px-4 py-2.5 text-sm focus:border-[#6366f1]/40 focus:outline-none"
                 />
               </div>
-              <div
-                class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5"
-              >
+              <div class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5">
                 <div>
                   <h3 class="font-medium">Ad Blocker (experimental)</h3>
                   <p class="text-text-secondary text-sm">
@@ -418,8 +420,8 @@ import ImportLucide from '../layouts/lucide.astro';
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
                 <h3 class="mb-2 font-medium">Wisp Server</h3>
                 <p class="text-text-secondary mb-3 text-sm">
-                  Wisp is the connection Persec uses to reach websites: a tunnel (a WebSocket) from your browser to
-                  this Persec server. Leave it as it is unless whoever runs Persec gives you a different address.
+                  Wisp is the connection Persec uses to reach websites: a tunnel (a WebSocket) from your browser to this
+                  Persec server. Leave it as it is unless whoever runs Persec gives you a different address.
                 </p>
                 <input
                   type="text"
@@ -466,13 +468,16 @@ import ImportLucide from '../layouts/lucide.astro';
 
               <div class="mb-4 space-y-2 text-sm">
                 <div class="flex justify-between">
-                  <span class="text-text-secondary">Based on</span><span>Lunar v2 by Bearcattt</span>
+                  <span class="text-text-secondary">Based on</span>
+                  <span>Lunar v2 by Bearcattt</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-text-secondary">License</span><span>AGPL-3.0</span>
+                  <span class="text-text-secondary">License</span>
+                  <span>AGPL-3.0</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-text-secondary">Built with</span><span>Astro, TypeScript, Tailwind</span>
+                  <span class="text-text-secondary">Built with</span>
+                  <span>Astro, TypeScript, Tailwind</span>
                 </div>
               </div>
 
@@ -482,8 +487,8 @@ import ImportLucide from '../layouts/lucide.astro';
                   target="_blank"
                   class="bg-background/60 flex items-center gap-2 rounded-lg border border-white/6 px-3 py-2 text-sm transition-colors duration-150 hover:border-[#6366f1]/30 hover:bg-[#6366f1]/10 hover:text-[#6366f1]"
                 >
-                  <i data-lucide="github" class="h-4 w-4 transition-colors duration-150 group-hover:text-[#6366f1]"
-                  ></i>Source code
+                  <i data-lucide="github" class="h-4 w-4 transition-colors duration-150 group-hover:text-[#6366f1]"></i>
+                  Source code
                 </a>
                 <a
                   href="/privacy"

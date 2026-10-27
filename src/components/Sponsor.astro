@@ -16,24 +16,22 @@ const href = ad ? (ad.kind === 'network' ? `/a/ad/click/${ad.id}` : ad.url) : '#
 const image = ad ? (ad.kind === 'network' ? `/a/ad/img/${ad.id}` : ad.image) : undefined;
 ---
 
-{
-  ad && (
-    <a
-      href={href}
-      target="_blank"
-      rel="sponsored noopener noreferrer"
-      title="Opens the sponsor's site outside Persec"
-      class={cardClass}
-    >
-      {image && <img src={image} alt="" class={imgClass} />}
-      <span class="flex flex-col">
-        <span class="text-sm font-semibold text-white/80">{ad.name}</span>
-        {ad.text && <span class="text-xs text-white/50">{ad.text}</span>}
-      </span>
-      <span class={badgeClass}>Ad</span>
-      {ad.kind === 'network' && (
-        <img src={`/a/ad/px/${ad.id}`} alt="" width="1" height="1" class="absolute h-px w-px opacity-0" loading="eager" />
-      )}
-    </a>
-  )
-}
+{ad && (
+  <a
+    href={href}
+    target="_blank"
+    rel="sponsored noopener noreferrer"
+    title="Opens the sponsor's site outside Persec"
+    class={cardClass}
+  >
+    {image && <img src={image} alt="" class={imgClass} />}
+    <span class="flex flex-col">
+      <span class="text-sm font-semibold text-white/80">{ad.name}</span>
+      {ad.text && <span class="text-xs text-white/50">{ad.text}</span>}
+    </span>
+    <span class={badgeClass}>Ad</span>
+    {ad.kind === 'network' && (
+      <img src={`/a/ad/px/${ad.id}`} alt="" width="1" height="1" class="absolute h-px w-px opacity-0" loading="eager" />
+    )}
+  </a>
+)}

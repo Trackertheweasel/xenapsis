@@ -33,7 +33,11 @@ function filterQuick(str: string): [string, string][] {
 // Web addresses (typed, or the current page's address shown when the bar is focused)
 // are never sent to the suggestion service.
 function isAddress(str: string): boolean {
-  return isQuick(str) || /^([a-z][a-z\d+.-]*:\/\/|(about|data|blob|javascript|mailto):)/i.test(str) || looksLikeDomain(str);
+  return (
+    isQuick(str) ||
+    /^([a-z][a-z\d+.-]*:\/\/|(about|data|blob|javascript|mailto):)/i.test(str) ||
+    looksLikeDomain(str)
+  );
 }
 
 async function fetchSugg(q: string): Promise<string[]> {
@@ -50,11 +54,7 @@ async function fetchSugg(q: string): Promise<string[]> {
 
 function isMath(str: string): boolean {
   const norm = str.trim().replace(/x/gi, '*');
-  return (
-    /^[0-9+\-*/().%^√\s]+$/.test(norm) &&
-    !/^[0-9.]+$/.test(norm) &&
-    /[+\-*/%^√()]/.test(norm)
-  );
+  return /^[0-9+\-*/().%^√\s]+$/.test(norm) && !/^[0-9.]+$/.test(norm) && /[+\-*/%^√()]/.test(norm);
 }
 
 function calc(str: string): string | null {
@@ -252,10 +252,14 @@ if (urlbar) {
     }
   });
 
-  document.addEventListener('mousedown', e => {
-    const t = e.target as HTMLElement;
-    if (t.closest('#suggestions')) {
-      e.preventDefault();
-    }
-  }, true);
+  document.addEventListener(
+    'mousedown',
+    e => {
+      const t = e.target as HTMLElement;
+      if (t.closest('#suggestions')) {
+        e.preventDefault();
+      }
+    },
+    true,
+  );
 }

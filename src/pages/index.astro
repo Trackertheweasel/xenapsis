@@ -15,7 +15,10 @@ import CookieBanner from '../components/CookieBanner.astro';
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="theme-color" content="#11121c" />
     <style>
-      html, body { background: #11121c; }
+      html,
+      body {
+        background: #11121c;
+      }
       /* viewport-fit=cover lets Persec use the whole screen, so keep it clear of notches and home bars. */
       body {
         padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
@@ -29,12 +32,7 @@ import CookieBanner from '../components/CookieBanner.astro';
   <body class="flex h-dvh w-screen overflow-hidden text-gray-900" style="background:#11121c;">
     <div class="flex flex-1 flex-col">
       <div class="relative flex-1">
-        <iframe
-          id="frame"
-          src="/welcome"
-          title="Persec"
-          class="absolute inset-0 h-full w-full border-none"
-        ></iframe>
+        <iframe id="frame" src="/welcome" title="Persec" class="absolute inset-0 h-full w-full border-none"></iframe>
       </div>
     </div>
     <CookieBanner />

@@ -26,5 +26,8 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      # Fails on unformatted code; fix locally with `pnpm format`.
+      - run: pnpm exec prettier --check .
       - run: pnpm test
+      # Also type-checks every file (astro check) before building.
       - run: pnpm build

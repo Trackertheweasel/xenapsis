@@ -306,7 +306,7 @@ function updateActive() {
 function closeTab(id: number) {
   const idx = tabs.findIndex(t => t.id === id);
   if (idx === -1) return;
-  
+
   if (tabs.length === 1) {
     openTab();
     requestAnimationFrame(() => {
@@ -317,7 +317,7 @@ function closeTab(id: number) {
     });
     return;
   }
-  
+
   const [removed] = tabs.splice(idx, 1);
   if (removed.titleTimer) clearInterval(removed.titleTimer);
   removed.iframe.remove();
