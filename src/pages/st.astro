@@ -176,7 +176,10 @@ import ImportLucide from '../layouts/lucide.astro';
 
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
                 <h3 class="mb-2 font-medium">About:Blank Cloak</h3>
-                <p class="text-text-secondary mb-3 text-sm">Opens Persec in a blank tab to hide from history</p>
+                <p class="text-text-secondary mb-3 text-sm">
+                  Opens Persec inside a blank tab whose address shows as <code>about:blank</code>, so this site doesn't
+                  appear in your browser history or address bar. This tab then goes to the redirect address below.
+                </p>
                 <input
                   type="text"
                   data-input="aboutBlankUrl"
@@ -195,7 +198,10 @@ import ImportLucide from '../layouts/lucide.astro';
                 <div class="mb-4 flex items-center justify-between">
                   <div>
                     <h3 class="font-medium">Tab Cloak</h3>
-                    <p class="text-text-secondary text-sm">Change tab title and icon</p>
+                    <p class="text-text-secondary text-sm">
+                      Makes this tab's title and icon look like another site, such as Google Drive, so it doesn't stand
+                      out among your tabs.
+                    </p>
                   </div>
                   <div class="toggle" data-toggle="cloak"></div>
                 </div>
@@ -249,7 +255,10 @@ import ImportLucide from '../layouts/lucide.astro';
               >
                 <div>
                   <h3 class="font-medium">Tab Switch Cloak</h3>
-                  <p class="text-text-secondary text-sm">Auto-cloak when you switch tabs</p>
+                  <p class="text-text-secondary text-sm">
+                    Disguises the tab (using the Tab Cloak title and icon) only while you're on another tab, and shows
+                    Persec again when you come back.
+                  </p>
                 </div>
                 <div class="toggle" data-toggle="tabSwitchCloak"></div>
               </div>
@@ -259,14 +268,20 @@ import ImportLucide from '../layouts/lucide.astro';
               >
                 <div>
                   <h3 class="font-medium">Anti-close</h3>
-                  <p class="text-text-secondary text-sm">Show a confirm prompt before closing Persec. Helpful for some filters that autoclose tabs.</p>
+                  <p class="text-text-secondary text-sm">
+                    Asks you to confirm before Persec's tab closes. Helps when a web filter or extension closes tabs
+                    automatically.
+                  </p>
                 </div>
                 <div class="toggle" data-toggle="beforeUnload"></div>
               </div>
 
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
                 <h3 class="mb-2 font-medium">Panic Key</h3>
-                <p class="text-text-secondary mb-3 text-sm">Quickly redirect with a keybind</p>
+                <p class="text-text-secondary mb-3 text-sm">
+                  Press this key to send the tab straight to the address on the left, for example if someone walks by.
+                  Click the box on the right, then press the key you want to use.
+                </p>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <input
                     type="text"
@@ -294,14 +309,18 @@ import ImportLucide from '../layouts/lucide.astro';
 
             <div class="space-y-3">
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
-                <h3 class="mb-3 font-medium">Proxy Backend</h3>
+                <h3 class="mb-1 font-medium">Proxy Backend</h3>
+                <p class="text-text-secondary mb-3 text-sm">
+                  The engine that loads websites for you inside Persec. If a site won't load or looks broken, switch to
+                  the other one and try again.
+                </p>
                 <div class="grid grid-cols-2 gap-3">
                   <button
                     data-proxy="scramjet"
                     class="proxy-button bg-background/60 relative rounded-lg border border-white/6 p-4 text-left hover:border-[#6366f1]/30 hover:bg-[#6366f1]/10"
                   >
                     <div class="text-sm font-medium">Scramjet</div>
-                    <div class="text-text-secondary text-xs">Experimental, faster</div>
+                    <div class="text-text-secondary text-xs">Newer and faster; a few sites may break</div>
                     <div class="proxy-check absolute top-2 right-2 hidden">
                       <i data-lucide="check" class="h-4 w-4 text-[#6366f1]"></i>
                     </div>
@@ -311,7 +330,7 @@ import ImportLucide from '../layouts/lucide.astro';
                     class="proxy-button bg-background/60 relative rounded-lg border border-white/6 p-4 text-left hover:border-pink-400/30 hover:bg-pink-400/10"
                   >
                     <div class="text-sm font-medium">Ultraviolet</div>
-                    <div class="text-text-secondary text-xs">More stable, slower</div>
+                    <div class="text-text-secondary text-xs">Older and slower, but works with more sites</div>
                     <div class="proxy-check absolute top-2 right-2 hidden">
                       <i data-lucide="check" class="h-4 w-4 text-pink-400"></i>
                     </div>
@@ -320,7 +339,10 @@ import ImportLucide from '../layouts/lucide.astro';
               </div>
 
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
-                <h3 class="mb-3 font-medium">Search Engine</h3>
+                <h3 class="mb-1 font-medium">Search Engine</h3>
+                <p class="text-text-secondary mb-3 text-sm">
+                  Used when you type something in the address bar that isn't a web address.
+                </p>
                 <div class="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <button
                     data-engine="https://duckduckgo.com/?q="
@@ -366,7 +388,8 @@ import ImportLucide from '../layouts/lucide.astro';
                 <input
                   type="text"
                   data-input="engine"
-                  placeholder="Custom search URL (ends with ?q= or &q=)"
+                  aria-label="Custom search address"
+                  placeholder="Or your own: a search address ending in ?q= or &q="
                   class="bg-background/80 w-full rounded-lg border border-white/6 px-4 py-2.5 text-sm focus:border-[#6366f1]/40 focus:outline-none"
                 />
               </div>
@@ -375,7 +398,10 @@ import ImportLucide from '../layouts/lucide.astro';
               >
                 <div>
                   <h3 class="font-medium">Ad Blocker (experimental)</h3>
-                  <p class="text-text-secondary text-sm">Block ads and trackers while browsing</p>
+                  <p class="text-text-secondary text-sm">
+                    Stops common ads and trackers from loading on sites you open. Turn it off if a site doesn't work
+                    properly.
+                  </p>
                 </div>
                 <div class="toggle" data-toggle="adBlock"></div>
               </div>
@@ -391,7 +417,10 @@ import ImportLucide from '../layouts/lucide.astro';
             <div class="space-y-3">
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
                 <h3 class="mb-2 font-medium">Wisp Server</h3>
-                <p class="text-text-secondary mb-3 text-sm">Change the websocket server URL</p>
+                <p class="text-text-secondary mb-3 text-sm">
+                  Wisp is the connection Persec uses to reach websites: a tunnel (a WebSocket) from your browser to
+                  this Persec server. Leave it as it is unless whoever runs Persec gives you a different address.
+                </p>
                 <input
                   type="text"
                   data-input="wispUrl"
@@ -405,7 +434,9 @@ import ImportLucide from '../layouts/lucide.astro';
                   <i data-lucide="alert-triangle" class="h-4 w-4"></i>
                   Clear All Data
                 </h3>
-                <p class="text-text-secondary mb-3 text-sm">This action cannot be undone</p>
+                <p class="text-text-secondary mb-3 text-sm">
+                  Resets every Persec setting and deletes your bookmarks in this browser. This can't be undone.
+                </p>
                 <button
                   data-reset="reset"
                   class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400 hover:bg-red-500/20"

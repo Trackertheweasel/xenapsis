@@ -171,19 +171,19 @@
     {
       "name": "FruitNinja",
       "desc": "Slash fruit with your mouse!",
-      "icon": "/a/images/fn.jpg",
-      "url": "http://huningxin.github.io/spp.js/examples/fruitNinja/"
+      "icon": "",
+      "url": "https://huningxin.github.io/spp.js/examples/fruitNinja/"
     },
     {
       "name": "DriftBoss",
       "desc": "Keep drifting without falling off.",
-      "icon": "/a/images/db.png",
+      "icon": "",
       "url": "https://driftbossunblocked.github.io/"
     },
     {
       "name": "Merge Round Racers",
       "desc": "Merge cars and win races!",
-      "icon": "/a/images/mrr.avif",
+      "icon": "",
       "url": "https://ubg77.github.io/edit/merge-round-racers/"
     },
     {
@@ -213,7 +213,7 @@
     {
       "name": "Idle Mining Empire",
       "desc": "Build your mining empire empire!",
-      "icon": "/a/images/ime.webp",
+      "icon": "",
       "url": "https://ubg77.github.io/fix/idle-mining-empire/"
     },
     {
@@ -231,19 +231,19 @@
     {
       "name": "BasketBall Random",
       "desc": "Crazy physics-based basketball game.",
-      "icon": "/a/images/bbr.png",
+      "icon": "",
       "url": "https://tylerpalko.github.io/gamehub/basketrandom/"
     },
     {
       "name": "Basketbros",
       "desc": "Multiplayer basketball with a twist.",
-      "icon": "/a/images/bbs.jpeg",
+      "icon": "",
       "url": "https://basketbros.io/"
     },
     {
       "name": "Adventure Drivers",
       "desc": "Race across crazy tracks and terrains.",
-      "icon": "/a/images/ad.jpg",
+      "icon": "",
       "url": "https://ubg77.github.io/game131022/adventure-drivers/"
     },
     {
@@ -285,7 +285,7 @@
     {
       "name": "Drift Hunters",
       "desc": "Drift racing with car customization.",
-      "icon": "/a/images/ga/dh.webp",
+      "icon": "",
       "url": "https://drift-hunters.github.io/drift-hunters/index.html"
     },
     {
@@ -348,7 +348,7 @@
       "icon": "/a/images/ga/krunker.jpg",
       "url": "https://krunker.io/"
     },
-      {
+    {
       "name": "Krunker [Private Server]",
       "desc": "Fast-paced browser FPS game.",
       "icon": "/a/images/ga/pskrunker.png",
@@ -357,19 +357,19 @@
     {
       "name": "Vex 5",
       "desc": "Parkour platformer with challenging levels.",
-      "icon": "/a/images/ga/vex5.webp",
+      "icon": "",
       "url": "https://www.coolmathgames.com/0-vex-5/play"
     },
     {
       "name": "Vex 6",
       "desc": "Latest installment of parkour platformer.",
-      "icon": "/a/images/ga/vex6.webp",
+      "icon": "",
       "url": "https://www.coolmathgames.com/0-vex-6/play"
     },
     {
       "name": "Vex 7",
       "desc": "Most recent Vex parkour challenge.",
-      "icon": "/a/images/ga/vex7.webp",
+      "icon": "",
       "url": "https://www.coolmathgames.com/0-vex-7/play"
     },
     {
@@ -477,7 +477,7 @@
     {
       "name": "Moto X3M Winter",
       "desc": "Bike stunts in snowy conditions.",
-      "icon": "/a/images/ga/mx3mw.webp",
+      "icon": "",
       "url": "https://www.coolmathgames.com/0-moto-x3m-winter/play"
     },
     {
@@ -501,7 +501,7 @@
     {
       "name": "Tank Trouble",
       "desc": "Multiplayer tank battle maze game.",
-      "icon": "/a/images/ga/tt.webp",
+      "icon": "",
       "url": "https://tanktrouble.com/"
     },
     {
@@ -519,7 +519,7 @@
     {
       "name": "Monkey Mart",
       "desc": "Run your own monkey supermarket.",
-      "icon": "/a/images/ga/mm.webp",
+      "icon": "",
       "url": "https://www.coolmathgames.com/0-monkey-mart/play"
     },
     {
@@ -531,13 +531,13 @@
     {
       "name": "Time Shooter 2",
       "desc": "Slow-motion FPS action game.",
-      "icon": "/a/images/ga/ts2.webp",
+      "icon": "",
       "url": "https://time-shooter-2.github.io/"
     },
     {
       "name": "Time Shooter 3",
       "desc": "Latest time-bending shooter.",
-      "icon": "/a/images/ga/ts3.webp",
+      "icon": "",
       "url": "https://time-shooter-3.github.io/"
     },
     {
@@ -549,19 +549,19 @@
     {
       "name": "BoxingRandom",
       "desc": "Physics-based boxing with random events.",
-      "icon": "/a/images/ga/boxr.webp",
+      "icon": "",
       "url": "https://tylerpalko.github.io/gamehub/boxingrandom/"
     },
     {
       "name": "Soccer Random",
       "desc": "Chaotic physics soccer game.",
-      "icon": "/a/images/ga/socr.webp",
+      "icon": "",
       "url": "https://tylerpalko.github.io/gamehub/soccerrandom/"
     },
     {
       "name": "Volley Random",
       "desc": "Random volleyball with physics.",
-      "icon": "/a/images/ga/volr.webp",
+      "icon": "",
       "url": "https://tylerpalko.github.io/gamehub/volleyrandom/"
     },
     {
@@ -615,7 +615,7 @@
     {
       "name": "Eaglercraft",
       "desc": "Minecraft 1.8.8 in browser.",
-      "icon": "/a/images/ga/eagle.webp",
+      "icon": "",
       "url": "https://eaglercraft.com/"
     },
     {
@@ -633,7 +633,7 @@
     {
       "name": "Cluster Rush",
       "desc": "Jump between moving trucks.",
-      "icon": "/a/images/ga/clr.webp",
+      "icon": "",
       "url": "https://cluster-rush.github.io/game/"
     },
     {
@@ -651,7 +651,7 @@
     {
       "name": "Geometry Dash Lite",
       "desc": "Rhythm platformer lite version.",
-      "icon": "/a/images/ga/gdl.webp",
+      "icon": "",
       "url": "https://scratch.mit.edu/projects/105500895/"
     },
     {
@@ -675,7 +675,7 @@
     {
       "name": "Penalty Shooters 2",
       "desc": "Soccer penalty shootout game.",
-      "icon": "/a/images/ga/ps2.webp",
+      "icon": "",
       "url": "https://ubg77.github.io/game131022/penalty-shooters-2/"
     },
     {
@@ -711,13 +711,13 @@
     {
       "name": "Draw Climber",
       "desc": "Draw legs to climb obstacles.",
-      "icon": "/a/images/ga/dc.webp",
+      "icon": "",
       "url": "https://ubg77.github.io/game131022/draw-climber/"
     },
     {
       "name": "Elastic Man",
       "desc": "Stretch a 3D face around.",
-      "icon": "/a/images/ga/em.webp",
+      "icon": "",
       "url": "https://ubg77.github.io/game131022/elastic-man/"
     },
     {
@@ -735,7 +735,7 @@
     {
       "name": "Cube Field",
       "desc": "Dodge cubes at high speed.",
-      "icon": "/a/images/ga/cf.webp",
+      "icon": "",
       "url": "https://www.coolmathgames.com/0-cube-field/play"
     },
     {
@@ -819,13 +819,13 @@
     {
       "name": "Pixel Gun Apocalypse",
       "desc": "Blocky multiplayer shooter.",
-      "icon": "/a/images/ga/pga.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/pixel-gun-apocalypse"
     },
     {
       "name": "Bubble Shooter",
       "desc": "Classic bubble matching game.",
-      "icon": "/a/images/ga/bs.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/bubble-shooter"
     },
     {
@@ -855,7 +855,7 @@
     {
       "name": "Checkers",
       "desc": "Classic board game online.",
-      "icon": "/a/images/ga/check.webp",
+      "icon": "",
       "url": "https://www.coolmathgames.com/0-checkers/play"
     },
     {
@@ -867,7 +867,7 @@
     {
       "name": "Backgammon",
       "desc": "Ancient board game strategy.",
-      "icon": "/a/images/ga/bg.webp",
+      "icon": "",
       "url": "https://www.247backgammon.com/"
     },
     {
@@ -879,13 +879,13 @@
     {
       "name": "Archery World Tour",
       "desc": "Compete in archery competitions.",
-      "icon": "/a/images/ga/awt.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/archery-world-tour"
     },
     {
       "name": "Drift Boss 2",
       "desc": "Keep drifting without falling off.",
-      "icon": "/a/images/ga/db2.webp",
+      "icon": "",
       "url": "https://ubg77.github.io/game131022/drift-boss/"
     },
     {
@@ -909,19 +909,19 @@
     {
       "name": "Darts",
       "desc": "Play darts against computer.",
-      "icon": "/a/images/ga/darts.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/darts"
     },
     {
       "name": "Bowling",
       "desc": "Strike and spare in bowling.",
-      "icon": "/a/images/ga/bowl.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/bowling"
     },
     {
       "name": "Table Tennis World Tour",
       "desc": "Ping pong tournament game.",
-      "icon": "/a/images/ga/ttwt.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/table-tennis-world-tour"
     },
     {
@@ -1029,7 +1029,7 @@
     {
       "name": "Electric Man 2",
       "desc": "Stick figure fighting tournament.",
-      "icon": "/a/images/ga/em2.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/electric-man-2"
     },
     {
@@ -1065,13 +1065,13 @@
     {
       "name": "Breaking the Bank",
       "desc": "First Henry Stickmin adventure.",
-      "icon": "/a/images/ga/btb.webp",
+      "icon": "",
       "url": "https://www.newgrounds.com/portal/view/503796"
     },
     {
       "name": "Escaping the Prison",
       "desc": "Break out of prison with choices.",
-      "icon": "/a/images/ga/etp.webp",
+      "icon": "",
       "url": "https://www.newgrounds.com/portal/view/522548"
     },
     {
@@ -1185,7 +1185,7 @@
     {
       "name": "Codenames Online",
       "desc": "Play the board game online.",
-      "icon": "/a/images/ga/codenames.webp",
+      "icon": "",
       "url": "https://www.horsepaste.com/"
     },
     {
@@ -1197,7 +1197,7 @@
     {
       "name": "Quizlet",
       "desc": "Study with flashcards and games.",
-      "icon": "/a/images/ga/quizlet.webp",
+      "icon": "",
       "url": "https://quizlet.com/"
     },
     {
@@ -1209,49 +1209,49 @@
     {
       "name": "Blooket",
       "desc": "Educational game-based learning.",
-      "icon": "/a/images/ga/blooket.webp",
+      "icon": "",
       "url": "https://www.blooket.com/"
     },
     {
       "name": "Gimkit",
       "desc": "Live learning game platform.",
-      "icon": "/a/images/ga/gimkit.webp",
+      "icon": "",
       "url": "https://www.gimkit.com/"
     },
     {
       "name": "Slope Tunnel",
       "desc": "Roll through 3D tunnel obstacles.",
-      "icon": "/a/images/ga/stopetun.webp",
+      "icon": "",
       "url": "https://ubg77.github.io/game131022/slope-tunnel/"
     },
     {
       "name": "Slope Ball",
       "desc": "Control ball down endless slope.",
-      "icon": "/a/images/ga/slopeball.webp",
+      "icon": "",
       "url": "https://ubg77.github.io/game131022/slope-ball/"
     },
     {
       "name": "Roller Coaster Builder",
       "desc": "Design and ride roller coasters.",
-      "icon": "/a/images/ga/rcb.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/rollercoaster-builder"
     },
     {
       "name": "Parking Fury 3D",
       "desc": "Park in 3D environments.",
-      "icon": "/a/images/ga/pf3d.webp",
+      "icon": "",
       "url": "https://www.crazygames.com/game/parking-fury-3d"
     },
     {
       "name": "Car Drawing Game",
       "desc": "Draw car and drive your creation.",
-      "icon": "/a/images/ga/cardraw.webp",
+      "icon": "",
       "url": "https://ubg77.github.io/game131022/car-drawing-game/"
     },
     {
       "name": "Wheely 8",
       "desc": "Help car solve puzzles.",
-      "icon": "/a/images/ga/wheely.webp",
+      "icon": "",
       "url": "https://www.coolmathgames.com/0-wheely-8/play"
     }
   ],
@@ -1271,7 +1271,7 @@
     {
       "name": "Pinterest",
       "desc": "Discover and save ideas with Pinterest.",
-      "icon": "/a/images/ap/pin.webp",
+      "icon": "",
       "url": "https://pinterest.com"
     },
     {
@@ -1283,661 +1283,639 @@
     {
       "name": "YouTube",
       "desc": "Watch and share videos from around the world.",
-      "icon": "/a/images/yt.webp",
-      "url": "https://youtube.com"
+      "icon": "",
+      "url": "https://youtube.com",
+      "logo": "/a/images/bm/yt.png"
     },
     {
       "name": "Reddit",
       "desc": "Join discussions and share content on Reddit.",
-      "icon": "/a/images/reddit.webp",
+      "icon": "",
       "url": "https://www.reddit.com"
     },
     {
       "name": "Spotify",
-      "desc": "Stream music and podcasts from millions of tracks.",
-      "icon": "/a/images/spot.jpg",
-      "url": "https://spotify.com"
+      "desc": "Stream music and podcasts in your browser.",
+      "icon": "",
+      "url": "https://open.spotify.com"
     },
     {
       "name": "Discord",
       "desc": "Connect with friends and communities on Discord.",
-      "icon": "/a/images/dis.png",
-      "url": "https://discord.com/login"
+      "icon": "",
+      "url": "https://discord.com/login",
+      "logo": "/a/images/bm/disc.ico"
     },
     {
       "name": "Discord PTB",
       "desc": "Public testing build of Discord for beta features.",
-      "icon": "/a/images/dis.png",
-      "url": "https://ptb.discord.com/login"
+      "icon": "",
+      "url": "https://ptb.discord.com/login",
+      "logo": "/a/images/bm/disc.ico"
     },
     {
       "name": "Discord Canary",
       "desc": "Early access version of Discord with latest features.",
-      "icon": "/a/images/dis.png",
-      "url": "https://canary.discord.com/login"
+      "icon": "",
+      "url": "https://canary.discord.com/login",
+      "logo": "/a/images/bm/disc.ico"
     },
     {
       "name": "Stack Overflow",
       "desc": "Get answers to your programming questions.",
-      "icon": "/a/images/so.png",
+      "icon": "",
       "url": "https://stackoverflow.com/"
     },
     {
       "name": "MDN Web Docs",
       "desc": "Comprehensive resource for web developers.",
-      "icon": "/a/images/mdn.png",
+      "icon": "",
       "url": "https://developer.mozilla.org/"
     },
     {
       "name": "CodePen",
       "desc": "Online code editor and community for front-end developers.",
-      "icon": "/a/images/cp.png",
+      "icon": "",
       "url": "https://codepen.io/"
     },
     {
       "name": "W3Schools",
       "desc": "Learn web development with tutorials and references.",
-      "icon": "/a/images/w3.png",
+      "icon": "",
       "url": "https://www.w3schools.com/"
     },
     {
       "name": "VS Code",
       "desc": "Powerful code editor for modern web development.",
-      "icon": "/a/images/vs.jpeg",
+      "icon": "",
       "url": "https://code.visualstudio.com/"
     },
     {
       "name": "GitHub",
       "desc": "Host and collaborate on code repositories.",
-      "icon": "/a/images/gh.png",
-      "url": "https://www.github.com"
+      "icon": "",
+      "url": "https://www.github.com",
+      "logo": "/a/images/bm/gh.ico"
     },
     {
       "name": "Wolfram Alpha",
       "desc": "Computational knowledge engine for answers and data.",
-      "icon": "/a/images/wa.png",
+      "icon": "",
       "url": "https://www.wolframalpha.com/"
     },
     {
       "name": "Amazon",
       "desc": "Shop millions of products with fast delivery.",
-      "icon": "/a/images/ama.jpeg",
+      "icon": "",
       "url": "https://www.amazon.com/"
     },
     {
       "name": "ESPN",
       "desc": "Get the latest sports news, scores, and highlights.",
-      "icon": "/a/images/espn.webp",
+      "icon": "",
       "url": "https://www.espn.com"
     },
     {
-      "name": "Twitter",
+      "name": "X (Twitter)",
       "desc": "Social media platform for news and updates.",
-      "icon": "/a/images/ap/twitter.webp",
-      "url": "https://twitter.com"
+      "icon": "",
+      "url": "https://x.com",
+      "logo": "/a/images/bm/x.svg"
     },
     {
       "name": "Instagram",
       "desc": "Share photos and videos with friends.",
-      "icon": "/a/images/ap/insta.webp",
+      "icon": "",
       "url": "https://www.instagram.com"
     },
     {
       "name": "Facebook",
       "desc": "Connect with friends and family online.",
-      "icon": "/a/images/ap/fb.webp",
+      "icon": "",
       "url": "https://www.facebook.com"
     },
     {
       "name": "TikTok",
       "desc": "Short-form video content platform.",
-      "icon": "/a/images/ap/tiktok.webp",
+      "icon": "",
       "url": "https://www.tiktok.com"
     },
     {
       "name": "LinkedIn",
       "desc": "Professional networking platform.",
-      "icon": "/a/images/ap/linkedin.webp",
+      "icon": "",
       "url": "https://www.linkedin.com"
     },
     {
       "name": "WhatsApp Web",
       "desc": "Message friends and family on the web.",
-      "icon": "/a/images/ap/whatsapp.webp",
+      "icon": "",
       "url": "https://web.whatsapp.com"
     },
     {
       "name": "Telegram Web",
       "desc": "Fast and secure messaging platform.",
-      "icon": "/a/images/ap/telegram.webp",
+      "icon": "",
       "url": "https://web.telegram.org"
     },
     {
       "name": "Slack",
       "desc": "Team communication and collaboration tool.",
-      "icon": "/a/images/ap/slack.webp",
+      "icon": "",
       "url": "https://slack.com"
     },
     {
       "name": "Notion",
       "desc": "All-in-one workspace for notes and tasks.",
-      "icon": "/a/images/ap/notion.webp",
+      "icon": "",
       "url": "https://www.notion.so"
     },
     {
       "name": "Trello",
       "desc": "Project management with boards and cards.",
-      "icon": "/a/images/ap/trello.webp",
+      "icon": "",
       "url": "https://trello.com"
     },
     {
       "name": "Asana",
       "desc": "Work management platform for teams.",
-      "icon": "/a/images/ap/asana.webp",
+      "icon": "",
       "url": "https://app.asana.com"
     },
     {
       "name": "Google Drive",
       "desc": "Cloud storage and file sharing.",
-      "icon": "/a/images/ap/gdrive.webp",
-      "url": "https://drive.google.com"
+      "icon": "",
+      "url": "https://drive.google.com",
+      "logo": "/a/images/co/drei.png"
     },
     {
       "name": "Dropbox",
       "desc": "File hosting and cloud storage service.",
-      "icon": "/a/images/ap/dropbox.webp",
+      "icon": "",
       "url": "https://www.dropbox.com"
     },
     {
       "name": "OneDrive",
       "desc": "Microsoft cloud storage solution.",
-      "icon": "/a/images/ap/onedrive.webp",
+      "icon": "",
       "url": "https://onedrive.live.com"
     },
     {
       "name": "Google Docs",
       "desc": "Create and edit documents online.",
-      "icon": "/a/images/ap/gdocs.webp",
+      "icon": "",
       "url": "https://docs.google.com"
     },
     {
       "name": "Google Sheets",
       "desc": "Online spreadsheet application.",
-      "icon": "/a/images/ap/gsheets.webp",
+      "icon": "",
       "url": "https://sheets.google.com"
     },
     {
       "name": "Google Slides",
       "desc": "Create presentations online.",
-      "icon": "/a/images/ap/gslides.webp",
+      "icon": "",
       "url": "https://slides.google.com"
     },
     {
       "name": "Gmail",
       "desc": "Google's email service.",
-      "icon": "/a/images/ap/gmail.webp",
+      "icon": "",
       "url": "https://mail.google.com"
     },
     {
       "name": "Outlook",
       "desc": "Microsoft email and calendar service.",
-      "icon": "/a/images/ap/outlook.webp",
+      "icon": "",
       "url": "https://outlook.live.com"
     },
     {
       "name": "Zoom",
       "desc": "Video conferencing platform.",
-      "icon": "/a/images/ap/zoom.webp",
+      "icon": "",
       "url": "https://zoom.us"
     },
     {
       "name": "Google Meet",
       "desc": "Video meetings by Google.",
-      "icon": "/a/images/ap/meet.webp",
+      "icon": "",
       "url": "https://meet.google.com"
     },
     {
       "name": "Microsoft Teams",
       "desc": "Chat, meet, and collaborate in one place.",
-      "icon": "/a/images/ap/teams.webp",
+      "icon": "",
       "url": "https://teams.microsoft.com"
     },
     {
       "name": "Figma",
       "desc": "Collaborative design tool for teams.",
-      "icon": "/a/images/ap/figma.webp",
+      "icon": "",
       "url": "https://www.figma.com"
     },
     {
       "name": "Canva",
       "desc": "Graphic design platform for everyone.",
-      "icon": "/a/images/ap/canva.webp",
+      "icon": "",
       "url": "https://www.canva.com"
     },
     {
       "name": "Adobe Creative Cloud",
       "desc": "Suite of creative design applications.",
-      "icon": "/a/images/ap/adobe.webp",
+      "icon": "",
       "url": "https://www.adobe.com"
     },
     {
       "name": "Photopea",
       "desc": "Free online photo editor.",
-      "icon": "/a/images/ap/photopea.webp",
-      "url": "https://www.photopea.com"
-    },
-    {
-      "name": "GIMP Online",
-      "desc": "Free and open-source image editor.",
-      "icon": "/a/images/ap/gimp.webp",
+      "icon": "",
       "url": "https://www.photopea.com"
     },
     {
       "name": "Netflix",
       "desc": "Stream movies and TV shows.",
-      "icon": "/a/images/ap/netflix.webp",
+      "icon": "",
       "url": "https://www.netflix.com"
     },
     {
       "name": "Hulu",
       "desc": "Watch TV shows and movies online.",
-      "icon": "/a/images/ap/hulu.webp",
+      "icon": "",
       "url": "https://www.hulu.com"
     },
     {
       "name": "Disney+",
       "desc": "Stream Disney, Pixar, Marvel, and more.",
-      "icon": "/a/images/ap/disney.webp",
+      "icon": "",
       "url": "https://www.disneyplus.com"
     },
     {
       "name": "Prime Video",
       "desc": "Amazon's streaming service.",
-      "icon": "/a/images/ap/prime.webp",
-      "url": "https://www.amazon.com/primevideo"
+      "icon": "",
+      "url": "https://www.primevideo.com"
     },
     {
       "name": "Apple Music",
       "desc": "Stream millions of songs.",
-      "icon": "/a/images/ap/apple-music.webp",
+      "icon": "",
       "url": "https://music.apple.com"
     },
     {
       "name": "SoundCloud",
       "desc": "Discover and stream music.",
-      "icon": "/a/images/ap/soundcloud.webp",
+      "icon": "",
       "url": "https://soundcloud.com"
     },
     {
       "name": "Pandora",
       "desc": "Personalized internet radio.",
-      "icon": "/a/images/ap/pandora.webp",
+      "icon": "",
       "url": "https://www.pandora.com"
     },
     {
       "name": "Duolingo",
       "desc": "Learn languages for free.",
-      "icon": "/a/images/ap/duolingo.webp",
+      "icon": "",
       "url": "https://www.duolingo.com"
     },
     {
       "name": "Khan Academy",
       "desc": "Free educational resources and courses.",
-      "icon": "/a/images/ap/khan.webp",
+      "icon": "",
       "url": "https://www.khanacademy.org"
     },
     {
       "name": "Coursera",
       "desc": "Online courses from top universities.",
-      "icon": "/a/images/ap/coursera.webp",
+      "icon": "",
       "url": "https://www.coursera.org"
     },
     {
       "name": "Udemy",
       "desc": "Learn new skills with online courses.",
-      "icon": "/a/images/ap/udemy.webp",
+      "icon": "",
       "url": "https://www.udemy.com"
     },
     {
       "name": "edX",
       "desc": "Free online courses from universities.",
-      "icon": "/a/images/ap/edx.webp",
+      "icon": "",
       "url": "https://www.edx.org"
     },
     {
       "name": "Codecademy",
       "desc": "Learn to code interactively.",
-      "icon": "/a/images/ap/codecademy.webp",
+      "icon": "",
       "url": "https://www.codecademy.com"
     },
     {
       "name": "freeCodeCamp",
       "desc": "Learn coding for free.",
-      "icon": "/a/images/ap/freecode.webp",
+      "icon": "",
       "url": "https://www.freecodecamp.org"
     },
     {
       "name": "LeetCode",
       "desc": "Practice coding problems and interviews.",
-      "icon": "/a/images/ap/leetcode.webp",
+      "icon": "",
       "url": "https://leetcode.com"
     },
     {
       "name": "HackerRank",
       "desc": "Practice coding and prepare for interviews.",
-      "icon": "/a/images/ap/hackerrank.webp",
+      "icon": "",
       "url": "https://www.hackerrank.com"
     },
     {
       "name": "Replit",
       "desc": "Online coding platform and IDE.",
-      "icon": "/a/images/ap/replit.webp",
+      "icon": "",
       "url": "https://replit.com"
     },
     {
       "name": "JSFiddle",
       "desc": "Online code editor for web development.",
-      "icon": "/a/images/ap/jsfiddle.webp",
+      "icon": "",
       "url": "https://jsfiddle.net"
     },
     {
       "name": "StackBlitz",
       "desc": "Online IDE for web applications.",
-      "icon": "/a/images/ap/stackblitz.webp",
+      "icon": "",
       "url": "https://stackblitz.com"
-    },
-    {
-      "name": "Glitch",
-      "desc": "Build and share web apps instantly.",
-      "icon": "/a/images/ap/glitch.webp",
-      "url": "https://glitch.com"
     },
     {
       "name": "Wikipedia",
       "desc": "Free online encyclopedia.",
-      "icon": "/a/images/ap/wiki.webp",
-      "url": "https://www.wikipedia.org"
+      "icon": "",
+      "url": "https://www.wikipedia.org",
+      "logo": "/a/images/bm/wiki.png"
     },
     {
       "name": "Dictionary.com",
       "desc": "Online dictionary and thesaurus.",
-      "icon": "/a/images/ap/dict.webp",
+      "icon": "",
       "url": "https://www.dictionary.com"
     },
     {
       "name": "Grammarly",
       "desc": "Writing assistant for grammar and spelling.",
-      "icon": "/a/images/ap/grammarly.webp",
+      "icon": "",
       "url": "https://www.grammarly.com"
     },
     {
       "name": "Google Translate",
       "desc": "Translate text between languages.",
-      "icon": "/a/images/ap/translate.webp",
+      "icon": "",
       "url": "https://translate.google.com"
     },
     {
       "name": "DeepL",
       "desc": "Advanced translation tool.",
-      "icon": "/a/images/ap/deepl.webp",
+      "icon": "",
       "url": "https://www.deepl.com"
     },
     {
       "name": "Desmos",
       "desc": "Graphing calculator online.",
-      "icon": "/a/images/ap/desmos.webp",
+      "icon": "",
       "url": "https://www.desmos.com"
     },
     {
       "name": "Symbolab",
       "desc": "Advanced math solver and calculator.",
-      "icon": "/a/images/ap/symbolab.webp",
+      "icon": "",
       "url": "https://www.symbolab.com"
     },
     {
       "name": "Mathway",
       "desc": "Math problem solver with steps.",
-      "icon": "/a/images/ap/mathway.webp",
+      "icon": "",
       "url": "https://www.mathway.com"
-    },
-    {
-      "name": "Photomath",
-      "desc": "Scan and solve math problems.",
-      "icon": "/a/images/ap/photomath.webp",
-      "url": "https://photomath.com"
     },
     {
       "name": "SparkNotes",
       "desc": "Study guides and literature summaries.",
-      "icon": "/a/images/ap/sparknotes.webp",
+      "icon": "",
       "url": "https://www.sparknotes.com"
     },
     {
       "name": "CliffsNotes",
       "desc": "Study guides and test prep.",
-      "icon": "/a/images/ap/cliffsnotes.webp",
+      "icon": "",
       "url": "https://www.cliffsnotes.com"
     },
     {
       "name": "Google Calendar",
       "desc": "Organize your schedule and events.",
-      "icon": "/a/images/ap/gcal.webp",
+      "icon": "",
       "url": "https://calendar.google.com"
     },
     {
       "name": "Todoist",
       "desc": "Task manager and to-do list app.",
-      "icon": "/a/images/ap/todoist.webp",
+      "icon": "",
       "url": "https://todoist.com"
     },
     {
       "name": "Evernote",
       "desc": "Note-taking and organization app.",
-      "icon": "/a/images/ap/evernote.webp",
+      "icon": "",
       "url": "https://www.evernote.com"
     },
     {
       "name": "OneNote",
       "desc": "Digital notebook by Microsoft.",
-      "icon": "/a/images/ap/onenote.webp",
+      "icon": "",
       "url": "https://www.onenote.com"
     },
     {
       "name": "Google Keep",
       "desc": "Quick note-taking and lists.",
-      "icon": "/a/images/ap/keep.webp",
+      "icon": "",
       "url": "https://keep.google.com"
-    },
-    {
-      "name": "Spotify Web Player",
-      "desc": "Listen to music in your browser.",
-      "icon": "/a/images/ap/spotifyweb.webp",
-      "url": "https://open.spotify.com"
     },
     {
       "name": "ChatGPT",
       "desc": "AI chatbot assistant by OpenAI.",
-      "icon": "/a/images/ap/chatgpt.webp",
-      "url": "https://chat.openai.com"
+      "icon": "",
+      "url": "https://chatgpt.com"
     },
     {
       "name": "Claude",
       "desc": "AI assistant by Anthropic.",
-      "icon": "/a/images/ap/claude.webp",
+      "icon": "",
       "url": "https://claude.ai"
     },
     {
       "name": "Perplexity",
       "desc": "AI-powered search engine.",
-      "icon": "/a/images/ap/perplexity.webp",
+      "icon": "",
       "url": "https://www.perplexity.ai"
     },
     {
-      "name": "Bard",
-      "desc": "Google's AI chatbot.",
-      "icon": "/a/images/ap/bard.webp",
-      "url": "https://bard.google.com"
+      "name": "Gemini",
+      "desc": "Google's AI assistant.",
+      "icon": "",
+      "url": "https://gemini.google.com"
     },
     {
       "name": "PayPal",
       "desc": "Send and receive money online.",
-      "icon": "/a/images/ap/paypal.webp",
+      "icon": "",
       "url": "https://www.paypal.com"
     },
     {
       "name": "Venmo",
       "desc": "Mobile payment service.",
-      "icon": "/a/images/ap/venmo.webp",
+      "icon": "",
       "url": "https://venmo.com"
     },
     {
       "name": "Cash App",
       "desc": "Send and receive money instantly.",
-      "icon": "/a/images/ap/cashapp.webp",
+      "icon": "",
       "url": "https://cash.app"
-    },
-    {
-      "name": "Mint",
-      "desc": "Personal finance and budgeting tool.",
-      "icon": "/a/images/ap/mint.webp",
-      "url": "https://www.mint.com"
     },
     {
       "name": "Etsy",
       "desc": "Marketplace for handmade and vintage items.",
-      "icon": "/a/images/ap/etsy.webp",
+      "icon": "",
       "url": "https://www.etsy.com"
     },
     {
       "name": "eBay",
       "desc": "Online auction and shopping site.",
-      "icon": "/a/images/ap/ebay.webp",
+      "icon": "",
       "url": "https://www.ebay.com"
     },
     {
       "name": "Walmart",
       "desc": "Shop online at Walmart.",
-      "icon": "/a/images/ap/walmart.webp",
+      "icon": "",
       "url": "https://www.walmart.com"
     },
     {
       "name": "Target",
       "desc": "Online shopping at Target.",
-      "icon": "/a/images/ap/target.webp",
+      "icon": "",
       "url": "https://www.target.com"
     },
     {
       "name": "Best Buy",
       "desc": "Electronics and appliances store.",
-      "icon": "/a/images/ap/bestbuy.webp",
+      "icon": "",
       "url": "https://www.bestbuy.com"
     },
     {
       "name": "Craigslist",
       "desc": "Classified advertisements and community.",
-      "icon": "/a/images/ap/craigslist.webp",
+      "icon": "",
       "url": "https://www.craigslist.org"
     },
     {
       "name": "IMDb",
       "desc": "Movie and TV show database.",
-      "icon": "/a/images/ap/imdb.webp",
+      "icon": "",
       "url": "https://www.imdb.com"
     },
     {
       "name": "Rotten Tomatoes",
       "desc": "Movie and TV reviews and ratings.",
-      "icon": "/a/images/ap/rt.webp",
+      "icon": "",
       "url": "https://www.rottentomatoes.com"
     },
     {
       "name": "Goodreads",
       "desc": "Book reviews and recommendations.",
-      "icon": "/a/images/ap/goodreads.webp",
+      "icon": "",
       "url": "https://www.goodreads.com"
     },
     {
       "name": "Audible",
       "desc": "Audiobooks and podcasts.",
-      "icon": "/a/images/ap/audible.webp",
+      "icon": "",
       "url": "https://www.audible.com"
     },
     {
       "name": "NPR",
       "desc": "News and public radio.",
-      "icon": "/a/images/ap/npr.webp",
+      "icon": "",
       "url": "https://www.npr.org"
     },
     {
       "name": "BBC",
       "desc": "British news and media.",
-      "icon": "/a/images/ap/bbc.webp",
+      "icon": "",
       "url": "https://www.bbc.com"
     },
     {
       "name": "CNN",
       "desc": "Breaking news and updates.",
-      "icon": "/a/images/ap/cnn.webp",
+      "icon": "",
       "url": "https://www.cnn.com"
     },
     {
       "name": "The New York Times",
       "desc": "News, opinion, and analysis.",
-      "icon": "/a/images/ap/nyt.webp",
+      "icon": "",
       "url": "https://www.nytimes.com"
     },
     {
       "name": "The Guardian",
       "desc": "International news and opinion.",
-      "icon": "/a/images/ap/guardian.webp",
+      "icon": "",
       "url": "https://www.theguardian.com"
     },
     {
       "name": "Weather.com",
       "desc": "Weather forecasts and radar.",
-      "icon": "/a/images/ap/weather.webp",
+      "icon": "",
       "url": "https://weather.com"
     },
     {
       "name": "Google Maps",
       "desc": "Maps, directions, and navigation.",
-      "icon": "/a/images/ap/gmaps.webp",
+      "icon": "",
       "url": "https://maps.google.com"
     },
     {
       "name": "Zillow",
       "desc": "Real estate listings and home values.",
-      "icon": "/a/images/ap/zillow.webp",
+      "icon": "",
       "url": "https://www.zillow.com"
     },
     {
       "name": "Indeed",
       "desc": "Job search and career resources.",
-      "icon": "/a/images/ap/indeed.webp",
+      "icon": "",
       "url": "https://www.indeed.com"
     },
     {
       "name": "Glassdoor",
       "desc": "Company reviews and salary info.",
-      "icon": "/a/images/ap/glassdoor.webp",
+      "icon": "",
       "url": "https://www.glassdoor.com"
     },
     {
       "name": "Airbnb",
       "desc": "Vacation rentals and experiences.",
-      "icon": "/a/images/ap/airbnb.webp",
+      "icon": "",
       "url": "https://www.airbnb.com"
     },
     {
       "name": "Booking.com",
       "desc": "Book hotels and accommodations.",
-      "icon": "/a/images/ap/booking.webp",
+      "icon": "",
       "url": "https://www.booking.com"
     },
     {
       "name": "Expedia",
       "desc": "Travel booking for flights and hotels.",
-      "icon": "/a/images/ap/expedia.webp",
+      "icon": "",
       "url": "https://www.expedia.com"
     }
   ]
