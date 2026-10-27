@@ -1,0 +1,240 @@
+---
+// Cookie choices, shown once per browser. On an invite-only Persec it offers saved logins
+// (src/utils/loginsync.ts); without invite codes there is nothing optional, so it only explains.
+---
+
+<section
+  id="cookie-banner"
+  role="dialog"
+  aria-modal="false"
+  aria-labelledby="cookie-title"
+  aria-describedby="cookie-text"
+  hidden
+  class="fixed inset-x-3 bottom-3 z-100 mx-auto max-w-lg rounded-2xl border border-[#2a2740] bg-[#1f1d2e]/95 p-4 font-sans text-sm text-[#c4c9e6] shadow-[0_12px_40px_rgba(0,0,0,0.6)] backdrop-blur-md sm:bottom-5 sm:p-5"
+  style="margin-bottom: env(safe-area-inset-bottom)"
+>
+  <h2 id="cookie-title" class="mb-1.5 text-base font-semibold text-white"></h2>
+  <p id="cookie-text" class="leading-relaxed"></p>
+  <p data-note class="mt-2 text-xs leading-relaxed text-[#a8a3c7]"></p>
+  <p class="mt-2 text-xs">
+    <a href="/privacy" target="_blank" data-privacy class="text-[#60a5fa] underline underline-offset-2">
+      What Persec stores
+    </a>
+  </p>
+
+  <form data-code-form hidden class="mt-3 flex flex-col gap-2">
+    <label for="cookie-code" class="text-xs text-[#a8a3c7]">
+      Enter your invite code once more to turn this on.
+    </label>
+    <input
+      id="cookie-code"
+      type="password"
+      autocomplete="current-password"
+      class="h-11 rounded-lg border border-[#2a2740] bg-[#11121c] px-3 text-base text-white focus:border-[#6366f1] focus:outline-none"
+    />
+    <p data-error hidden role="alert" class="text-xs text-red-400"></p>
+  </form>
+
+  <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+    <button
+      type="button"
+      data-no
+      class="min-h-11 rounded-xl bg-white/10 px-4 font-medium text-white transition hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:outline-none"
+    ></button>
+    <button
+      type="button"
+      data-yes
+      class="min-h-11 rounded-xl bg-[#6366f1] px-4 font-medium text-white transition hover:bg-[#5558e6] focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:outline-none disabled:opacity-60"
+    ></button>
+  </div>
+</section>
+
+<script>
+  import {
+    backUpNow,
+    deleteBackup,
+    forgetKey,
+    getConsent,
+    getStatus,
+    hasKey,
+    keepKeyFromCode,
+    restore,
+    setConsent,
+    startAutoBackup,
+  } from '../utils/loginsync';
+
+  const banner = document.getElementById('cookie-banner') as HTMLElement;
+  const $ = <T extends HTMLElement>(sel: string) => banner.querySelector(sel) as T;
+  const title = $('#cookie-title');
+  const text = $('#cookie-text');
+  const note = $('[data-note]');
+  const codeForm = $<HTMLFormElement>('[data-code-form]');
+  const codeInput = $<HTMLInputElement>('#cookie-code');
+  const codeError = $('[data-error]');
+  const yes = $<HTMLButtonElement>('[data-yes]');
+  const no = $<HTMLButtonElement>('[data-no]');
+
+  interface View {
+    title: string;
+    text: string;
+    note?: string;
+    yes?: string;
+    // Needs the key that locks saved logins (src/utils/loginsync.ts).
+    onYes?: () => Promise<void>;
+    no: string;
+    onNo?: () => Promise<void>;
+  }
+  let view: View;
+
+  function render(next: View) {
+    view = next;
+    title.textContent = view.title;
+    text.textContent = view.text;
+    note.textContent = view.note ?? '';
+    note.hidden = !view.note;
+    yes.textContent = view.yes ?? '';
+    yes.hidden = !view.yes;
+    yes.disabled = false;
+    no.textContent = view.no;
+    codeForm.hidden = true;
+    banner.hidden = false;
+  }
+
+  const close = (after = 0) => setTimeout(() => (banner.hidden = true), after);
+
+  // People who signed in before saved logins existed have no key yet, so ask for their code once.
+  async function haveKey(): Promise<boolean> {
+    if (await hasKey()) return true;
+    if (codeForm.hidden) {
+      codeForm.hidden = false;
+      codeInput.focus();
+      return false;
+    }
+    yes.disabled = true;
+    const error = await keepKeyFromCode(codeInput.value);
+    yes.disabled = false;
+    codeError.textContent = error ?? '';
+    codeError.hidden = !error;
+    if (error) return false;
+    codeInput.value = '';
+    return true;
+  }
+
+  yes.addEventListener('click', async () => {
+    if (!view.onYes || !(await haveKey())) return;
+    yes.disabled = true;
+    await view.onYes();
+  });
+  codeForm.addEventListener('submit', e => {
+    e.preventDefault();
+    yes.click();
+  });
+  no.addEventListener('click', () => {
+    close();
+    view.onNo?.();
+  });
+
+  // Opens the privacy page in a Persec tab rather than leaving the app.
+  $('[data-privacy]').addEventListener('click', e => {
+    const tabs = (document.getElementById('frame') as HTMLIFrameElement | null)?.contentWindow as any;
+    if (tabs?.TabManager) {
+      e.preventDefault();
+      tabs.TabManager.openTab('/privacy');
+    }
+  });
+
+  const RISK_NOTE =
+    'It’s locked with your invite code. Anyone who has your code can unlock it, including whoever runs this ' +
+    'server, since they hand out the codes. If your safety is at risk, don’t save logins to important accounts.';
+
+  async function keepBackingUp() {
+    await setConsent('saved');
+    await backUpNow();
+    startAutoBackup();
+  }
+
+  const offerSave = () =>
+    render({
+      title: 'Cookies on Persec',
+      text:
+        'Persec uses one essential cookie to keep you signed in, and sites you open here save their cookies in ' +
+        'this browser. Want an encrypted backup of your site logins, so you’re still signed in when you come back ' +
+        'on any device with your invite code?',
+      note: RISK_NOTE,
+      yes: 'Save my logins',
+      async onYes() {
+        await keepBackingUp();
+        render({ title: 'Logins saved', text: 'Persec will keep your backup up to date.', no: 'Close' });
+        close(2500);
+      },
+      no: 'Essential only',
+      onNo: () => setConsent('essential'),
+    });
+
+  const offerRestore = () =>
+    render({
+      title: 'Welcome back',
+      text:
+        'You have saved logins from another visit. Restore them in this browser? Only do this on a device you ' +
+        'trust: anyone using this browser will be signed in to your sites.',
+      note: RISK_NOTE,
+      yes: 'Restore my logins',
+      async onYes() {
+        const result = await restore();
+        if (result === 'locked') return offerReplace();
+        await keepBackingUp();
+        render({
+          title: result === 'restored' ? 'Logins restored' : 'Nothing to restore',
+          text: 'Sites you open now will use them. Persec will keep your backup up to date.',
+          no: 'Close',
+        });
+        close(3000);
+      },
+      no: 'Not on this device',
+      onNo: () => setConsent('essential'),
+    });
+
+  // The backup was saved with an earlier invite code, so this one can't unlock it.
+  const offerReplace = () =>
+    render({
+      title: 'Couldn’t unlock your saved logins',
+      text: 'They were saved with a different invite code. Start a new backup from this browser instead?',
+      yes: 'Start a new backup',
+      async onYes() {
+        await deleteBackup();
+        await keepBackingUp();
+        close();
+      },
+      no: 'Not now',
+      onNo: () => setConsent('essential'),
+    });
+
+  const explain = () =>
+    render({
+      title: 'Cookies on Persec',
+      text:
+        'Persec has no tracking or ad cookies. Sites you open here keep their cookies only in this browser. You ' +
+        'can clear them any time in Settings → Privacy.',
+      no: 'OK',
+      onNo: () => setConsent('notice'),
+    });
+
+  async function start() {
+    const [status, consent] = await Promise.all([getStatus(), getConsent()]);
+    // It only backs up while saved logins are on, which can also be changed in Settings.
+    if (status) startAutoBackup();
+    if (consent === 'saved') return;
+    if (consent === 'essential') {
+      // A key the sign-in page made is only kept for people who chose to save logins.
+      await forgetKey();
+    } else if (!status) {
+      if (consent !== 'notice') explain();
+    } else {
+      // Someone who only saw the plain notice gets the choice once this Persec adds invite codes.
+      if (status.saved) offerRestore();
+      else offerSave();
+    }
+  }
+
+  start();
+</script>

@@ -1,8 +1,10 @@
-// Every site opened in Persec shares Persec's origin, so cookies and storage saved by one
-// site can be read by others. This wipes everything sites have saved, but keeps Persec's
-// own settings and the proxy engines' configuration.
+import { deleteBackup } from './loginsync';
 
-const KEEP_DATABASES = new Set(['PersecDB', '$scramjet', '__op', 'localforage']);
+// Every site opened in Persec shares Persec's origin, so cookies and storage saved by one
+// site can be read by others. This wipes everything sites have saved, and the saved-logins
+// backup of it, but keeps Persec's own settings and the proxy engines' configuration.
+
+const KEEP_DATABASES = new Set(['PersecDB', 'PersecLogins', '$scramjet', '__op', 'localforage']);
 // Object stores holding site data inside the proxy engines' own databases.
 const SITE_STORES: Record<string, string[]> = {
   $scramjet: ['cookies', 'redirectTrackers', 'referrerPolicies'],
@@ -71,4 +73,6 @@ export async function clearSiteData(): Promise<void> {
   if ('caches' in self) {
     await Promise.all((await caches.keys()).map(k => caches.delete(k)));
   }
+  // Last, so a backup made while clearing can't bring the data back.
+  await deleteBackup();
 }

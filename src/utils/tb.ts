@@ -220,7 +220,7 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
 
 function getTabClass(active: boolean): string {
   const base =
-    'tab flex items-center justify-between h-10 min-w-[180px] max-w-[200px] px-3 py-2 rounded-t-xl cursor-pointer select-none transition-all duration-200 relative z-10 mx-0.5 border border-b-0 border-[color:var(--border)] gap-2';
+    'tab flex items-center justify-between h-10 min-w-[130px] max-w-[160px] sm:min-w-[180px] sm:max-w-[200px] px-3 py-2 rounded-t-xl cursor-pointer select-none transition-all duration-200 relative z-10 mx-0.5 border border-b-0 border-[color:var(--border)] gap-2';
   return active
     ? `${base} bg-[color:var(--background)] shadow-[0_4px_16px_#23213660] text-[color:var(--text-header)]`
     : `${base} bg-[color:var(--background-overlay)] hover:bg-[color:var(--background)] text-[color:var(--text-secondary)] opacity-70 hover:opacity-90`;
@@ -258,8 +258,9 @@ function createTabEl(tab: Tab): HTMLDivElement {
 
   const closeBtn = document.createElement('button');
   closeBtn.className =
-    'flex items-center justify-center w-5 h-5 flex-shrink-0 rounded-full bg-transparent hover:bg-[color:var(--background-disabled)] text-[color:var(--text-secondary)] hover:text-red-400 transition-all duration-200 text-base leading-none';
+    'flex items-center justify-center w-7 h-7 -mr-1.5 sm:w-5 sm:h-5 sm:mr-0 flex-shrink-0 rounded-full bg-transparent hover:bg-[color:var(--background-disabled)] text-[color:var(--text-secondary)] hover:text-red-400 transition-all duration-200 text-base leading-none';
   closeBtn.textContent = '×';
+  closeBtn.setAttribute('aria-label', 'Close tab');
   closeBtn.style.fontWeight = '400';
   closeBtn.style.padding = '0';
   closeBtn.style.lineHeight = '1';
@@ -283,7 +284,8 @@ function renderTabs() {
 
   tabBar.innerHTML = '';
   const wrapper = document.createElement('div');
-  wrapper.className = 'flex items-center justify-center w-full';
+  // Starts at the left: tabs overflowing a centered row can't be scrolled back to.
+  wrapper.className = 'flex items-center justify-start w-full';
   const tabsContainer = document.createElement('div');
   tabsContainer.className = 'flex items-center gap-0';
   for (const tab of tabs) {
@@ -297,6 +299,8 @@ function updateActive() {
   for (const tab of tabs) {
     if (tab.el) tab.el.className = getTabClass(tab.id === activeId);
   }
+  // On narrow screens the tab row scrolls, so keep the active tab in view.
+  tabs.find(t => t.id === activeId)?.el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
 function closeTab(id: number) {
@@ -382,8 +386,8 @@ function openTab(src?: string) {
   const tabEl = createTabEl(tab);
   if (tabBar) {
     const wrapper =
-      tabBar.querySelector('.flex.items-center.justify-center') || document.createElement('div');
-    wrapper.className = 'flex items-center justify-center w-full';
+      tabBar.querySelector('.flex.items-center.justify-start') || document.createElement('div');
+    wrapper.className = 'flex items-center justify-start w-full';
     const container =
       wrapper.querySelector('.flex.items-center.gap-0') || document.createElement('div');
     container.className = 'flex items-center gap-0';

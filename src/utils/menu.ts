@@ -61,6 +61,8 @@ class MenuHandler {
   }
 
   private addKeybindLabel(element: HTMLButtonElement, combo: string): void {
+    // Phones and tablets have no keyboard shortcuts, and the labels crowd a narrow menu.
+    if (!matchMedia('(any-hover: hover)').matches) return;
     const label = element.querySelector('span');
     if (label) {
       label.textContent = `${label.textContent} (${combo})`;
@@ -117,11 +119,13 @@ class MenuHandler {
 
   private showMenu(): void {
     this.elements.menuContainer.classList.remove('hidden');
+    this.elements.menuButton.setAttribute('aria-expanded', 'true');
     this.isMenuOpen = true;
   }
 
   private hideMenu(): void {
     this.elements.menuContainer.classList.add('hidden');
+    this.elements.menuButton.setAttribute('aria-expanded', 'false');
     this.isMenuOpen = false;
   }
 
@@ -188,8 +192,12 @@ class MenuHandler {
       top.window.location.href = panicLoc;
     }
     
+    const viewport = newWindow.document.createElement('meta');
+    viewport.name = 'viewport';
+    viewport.content = 'width=device-width, initial-scale=1';
+    newWindow.document.head.appendChild(viewport);
     const iframe = newWindow.document.createElement('iframe');
-    iframe.style.cssText = 'width:100%;height:100vh;border:0;margin:0;padding:0';
+    iframe.style.cssText = 'width:100%;height:100vh;height:100dvh;border:0;margin:0;padding:0;display:block';
     iframe.src = `${location.origin}/`;
     newWindow.document.body.style.margin = '0';
     newWindow.document.title = 'about:blank';

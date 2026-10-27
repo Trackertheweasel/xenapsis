@@ -2,16 +2,18 @@
 import ImportLucide from './lucide.astro';
 import '@/main.css';
 
+// Phones show Forward in the menu instead, like mobile browsers, to leave room for the address bar.
 const navButtons = [
-  { id: 'back', icon: 'arrow-left' },
-  { id: 'forward', icon: 'arrow-right' },
+  { id: 'back', icon: 'arrow-left', label: 'Back' },
+  { id: 'forward', icon: 'arrow-right', label: 'Forward', class: 'max-sm:hidden' },
   {
     id: 'refresh',
     icon: 'refresh-cw',
+    label: 'Reload',
     class: 'group',
     iconClass: 'transition-transform duration-500',
   },
-  { id: 'home', icon: 'house' },
+  { id: 'home', icon: 'house', label: 'Home' },
 ];
 
 const menuSections = [
@@ -49,24 +51,34 @@ const menuSections = [
         class="relative isolate flex h-12 items-end overflow-hidden rounded-t-xl bg-[#1c1a2b] px-1.5"
       >
         <div class="flex w-full items-center gap-1.5">
-          <div id="tcontainer" class="flex max-w-full flex-nowrap gap-1.5 overflow-x-auto"></div>
+          <div
+            id="tcontainer"
+            class="flex max-w-full min-w-0 flex-nowrap gap-1.5 overflow-x-auto [scrollbar-width:none]"
+          >
+          </div>
           <button
             id="add"
-            class="relative -top-1/2 flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white"
+            aria-label="New tab"
+            title="New tab"
+            class="relative -top-1/2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white max-sm:w-9"
           >
             <i data-lucide="plus" class="h-3.5 w-3.5"></i>
           </button>
         </div>
       </div>
 
-      <div class="flex h-10 items-center gap-3 border-t border-[#3a3758] bg-[#1c1a2b] px-3">
-        <div class="flex items-center gap-1.5">
+      <div
+        class="flex h-12 items-center gap-1.5 border-t border-[#3a3758] bg-[#1c1a2b] px-2 sm:h-10 sm:gap-3 sm:px-3"
+      >
+        <div class="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
           {
-            navButtons.map(({ id, icon, class: btnClass, iconClass }) => (
+            navButtons.map(({ id, icon, label, class: btnClass, iconClass }) => (
               <button
                 id={id}
+                aria-label={label}
+                title={label}
                 class:list={[
-                  'flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white',
+                  'flex h-9 w-9 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white sm:h-7 sm:w-7',
                   btnClass,
                 ]}
               >
@@ -79,7 +91,7 @@ const menuSections = [
           }
         </div>
 
-        <div class="relative flex grow flex-col">
+        <div class="relative flex min-w-0 grow flex-col">
           <div class="relative w-full">
             <div class="absolute top-1/2 left-2.5 z-20 flex -translate-y-1/2 items-center gap-2">
               <i data-lucide="lock" class="h-3.5 w-3.5 text-green-500"></i>
@@ -89,13 +101,20 @@ const menuSections = [
               id="urlbar"
               type="text"
               autocomplete="off"
-              class="h-8 w-full rounded-full border border-[#3a3758] bg-[#23213a] pr-10 pl-9 text-[13px] text-gray-200 transition-colors placeholder:text-gray-500 hover:text-white focus:outline-none"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              enterkeyhint="go"
+              aria-label="Search or enter address"
+              class="h-9 w-full rounded-full border border-[#3a3758] bg-[#23213a] pr-10 pl-9 text-base text-gray-200 transition-colors placeholder:text-gray-500 hover:text-white focus:outline-none sm:h-8 sm:text-[13px]"
               placeholder="Search or enter address"
             />
 
             <button
               id="fav"
-              class="absolute top-1/2 right-1 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white"
+              aria-label="Bookmark this page"
+              title="Bookmark this page"
+              class="absolute top-1/2 right-1 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-700 hover:text-white sm:h-6 sm:w-6 sm:rounded-md"
             >
               <i data-lucide="bookmark" class="h-4 w-4"></i>
             </button>
@@ -110,7 +129,11 @@ const menuSections = [
 
         <button
           id="menubtn"
-          class="flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white"
+          aria-label="Menu"
+          aria-haspopup="menu"
+          aria-controls="menu"
+          aria-expanded="false"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white sm:h-7 sm:w-7"
         >
           <i data-lucide="menu" class="h-4 w-4"></i>
         </button>
@@ -119,15 +142,32 @@ const menuSections = [
       <div class="relative">
         <div
           id="menu"
-          class="absolute top-full right-0 z-1000 mt-2 hidden w-56 overflow-hidden rounded-xl border border-[#3a3758] bg-[#1f1f30] shadow-2xl backdrop-blur-md"
+          role="menu"
+          class="absolute top-full right-2 z-1000 mt-2 hidden max-h-[calc(100dvh-7rem)] w-56 overflow-hidden overflow-y-auto rounded-xl border border-[#3a3758] bg-[#1f1f30] shadow-2xl backdrop-blur-md sm:right-0"
         >
+          <button
+            id="menu-forward"
+            role="menuitem"
+            class="flex w-full items-center gap-3 px-3.5 py-3 text-gray-200 transition hover:bg-[#2a293f] hover:text-white sm:hidden"
+          >
+            <i data-lucide="arrow-right" class="h-4.5 w-4.5 shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">Forward</span>
+          </button>
           {
             menuSections.map((section, i) => (
-              <div class:list={['flex flex-col', i !== 0 ? 'border-t border-[#3a3758]' : '']}>
+              <div
+                class:list={[
+                  'flex flex-col',
+                  i !== 0 ? 'border-t border-[#3a3758]' : 'max-sm:border-t max-sm:border-[#3a3758]',
+                ]}
+              >
                 {section.map(({ icon, label }) => (
-                  <button class="menu-item flex w-full items-center gap-3 px-3.5 py-2.25 text-gray-200 transition hover:bg-[#2a293f] hover:text-white">
+                  <button
+                    role="menuitem"
+                    class="menu-item flex w-full items-center gap-3 px-3.5 py-3 text-gray-200 transition hover:bg-[#2a293f] hover:text-white sm:py-2.25"
+                  >
                     <i data-lucide={icon} class="h-4.5 w-4.5 shrink-0" />
-                    <span class="text-[13px] whitespace-nowrap">{label}</span>
+                    <span class="text-sm whitespace-nowrap sm:text-[13px]">{label}</span>
                   </button>
                 ))}
               </div>
@@ -136,7 +176,11 @@ const menuSections = [
         </div>
       </div>
 
-      <div id="fcontainer" class="absolute inset-x-0 top-[5.6rem] bottom-0 w-full overflow-hidden rounded-b-lg"></div>
+      <div
+        id="fcontainer"
+        class="absolute inset-x-0 top-24 bottom-0 w-full overflow-hidden rounded-b-lg sm:top-[5.6rem]"
+      >
+      </div>
 
       <ImportLucide />
     </div>

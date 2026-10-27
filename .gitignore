@@ -4,3 +4,4 @@ download.sh
 .astro
 package-lock.json
 deploy/.env
+/data

@@ -7,6 +7,7 @@
 ## Features
 
 - Browser like UI and navigation
+- Works on phones and tablets
 - Fast performance
 - `about:blank` cloaking
 - Built in ad blocking
@@ -14,6 +15,7 @@
 - Self-served, tracking-free sponsor slot
 - Tab system
 - Keyboard shortcuts
+- Optional saved logins: an encrypted backup of your site logins, tied to your invite code
 - And much more
 
 ---
@@ -183,7 +185,7 @@ Most hosting providers forbid public proxies but allow private ones. In invite-o
      persec
    ```
 
-People enter their code once and stay signed in for 30 days. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
+People enter their code once and stay signed in as long as they come back at least once every 30 days, and their browser's password manager can save the code for them. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
 
 ### Handing out invites without restarting
 
@@ -200,6 +202,16 @@ PERSEC_SECRET="<your secret>" pnpm invite sam 30   # prints a code that works fo
 - Anyone with `PERSEC_SECRET` can mint invites, so keep it as private as the codes. Changing it signs everyone out and cancels every minted invite.
 
 Share codes privately (in person or an encrypted messenger), never on a public page. After 10 wrong codes, an address has to wait 15 minutes.
+
+### Saved logins
+
+On an invite-only Persec, a cookie notice on the first visit asks people whether to save their logins. If they agree, Persec keeps an encrypted backup of the cookies and site data that sites save in Persec, so they are still signed in to those sites when they come back, even on a new device or after their browser was cleared: they enter their invite code and tap **Restore my logins**. They can turn it off, or restore, in Settings → Privacy & Cloaking. Without invite codes, the notice only explains Persec's cookies.
+
+- The backup is encrypted in the browser with a key made from the person's invite code, so the server only stores data it can't read on its own. Anyone with the code can unlock it, and that includes you, since you hand out the codes. The cookie notice and privacy page say so.
+- **Give each person their own code.** Everyone who signs in with the same code shares one backup.
+- Backups are stored in `data/logins` (with Docker Compose, the `persec_data` volume, which `persec update` keeps). Set `PERSEC_DATA_DIR` to store them elsewhere. Render and Codespaces have no lasting disk, so backups there are lost on every restart.
+- A backup is deleted when its owner turns saved logins off or clears site data, and automatically when it hasn't been updated for 90 days.
+- Backup servers (`persec export`) share invites but not backups: each server keeps its own.
 
 ---
 

@@ -3,6 +3,7 @@
 export const prerender = true;
 import '@/main.css';
 import ImportLucide from '../layouts/lucide.astro';
+import CookieBanner from '../components/CookieBanner.astro';
 ---
 
 <!doctype html>
@@ -14,22 +15,31 @@ import ImportLucide from '../layouts/lucide.astro';
     <title>Persec</title>
     <meta name="description" content="Persec is a browser-like web proxy for reaching an open internet." />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="theme-color" content="#11121c" />
     <style>
       html, body { background: #11121c; }
+      /* viewport-fit=cover lets Persec use the whole screen, so keep it clear of notches and home bars. */
+      body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+          env(safe-area-inset-left);
+        box-sizing: border-box;
+      }
     </style>
     <script src="@scripts/config"></script>
     <script src="@scripts/index"></script>
   </head>
-  <body class="flex h-screen w-screen overflow-hidden text-gray-900" style="background:#11121c;">
-    <div class="flex flex-1 flex-col h-dvh">
+  <body class="flex h-dvh w-screen overflow-hidden text-gray-900" style="background:#11121c;">
+    <div class="flex flex-1 flex-col">
       <div class="relative flex-1">
         <iframe
           id="frame"
           src="/welcome"
+          title="Persec"
           class="absolute inset-0 h-full w-full border-none"
         ></iframe>
       </div>
     </div>
+    <CookieBanner />
     <ImportLucide />
   </body>
 </html>

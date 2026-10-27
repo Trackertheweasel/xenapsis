@@ -16,7 +16,7 @@ const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
 
 <html lang="en">
   <body class="bg-background font-linux text-text-header min-h-screen">
-    <div class="mx-auto max-w-7xl p-6">
+    <div class="mx-auto max-w-7xl p-4 sm:p-6">
       <div class="mb-6">
         <div class="mb-4 flex items-center justify-between">
           <h1 class="text-2xl font-bold">
@@ -26,18 +26,21 @@ const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
             <div class="bg-background-overlay flex gap-1 rounded-lg p-1">
               <button
                 data-view="grid"
+                aria-label="Large grid"
                 class="bg-background text-text-header flex h-9 w-9 items-center justify-center rounded transition-colors"
               >
                 <i data-lucide="grid-3x3" class="h-4 w-4"></i>
               </button>
               <button
                 data-view="compact"
+                aria-label="Compact grid"
                 class="text-text-secondary flex h-9 w-9 items-center justify-center rounded transition-colors"
               >
                 <i data-lucide="layout-grid" class="h-4 w-4"></i>
               </button>
               <button
                 data-view="list"
+                aria-label="List"
                 class="text-text-secondary flex h-9 w-9 items-center justify-center rounded transition-colors"
               >
                 <i data-lucide="list" class="h-4 w-4"></i>
@@ -47,11 +50,12 @@ const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
         </div>
 
         <div class="mb-3 flex flex-wrap items-center gap-2">
-          <div class="relative max-w-md min-w-60 flex-1">
+          <div class="relative max-w-md min-w-0 flex-1 basis-full sm:min-w-60 sm:basis-auto">
             <i data-lucide="search" class="text-text-secondary absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"></i>
             <input
               type="text"
               data-input
+              aria-label={`Search the ${type === 'games' ? 'Games' : type === 'app' ? 'Apps' : 'Assets'}`}
               placeholder={`Search the ${type === 'games' ? 'Games' : type === 'app' ? 'Apps' : 'Assets'}`}
               class="bg-background-overlay text-text-header placeholder-text-secondary/60 focus:ring-text-secondary/30 h-10 w-full rounded-lg pr-3 pl-10 text-sm focus:ring-1 focus:outline-none"
             />
