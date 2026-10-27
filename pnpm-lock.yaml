@@ -42,8 +42,8 @@ importers:
         specifier: https://github.com/MercuryWorkshop/scramjet/releases/download/v1.1.0/mercuryworkshop-scramjet-1.1.0.tgz
         version: https://github.com/MercuryWorkshop/scramjet/releases/download/v1.1.0/mercuryworkshop-scramjet-1.1.0.tgz
       '@mercuryworkshop/wisp-js':
-        specifier: ^0.5.1
-        version: 0.5.1
+        specifier: ^0.4.1
+        version: 0.4.1
       '@playform/compress':
         specifier: ^0.2.1
         version: 0.2.2(@types/node@26.6.5)(jiti@2.6.1)(rollup@4.60.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
@@ -817,8 +817,8 @@ packages:
     resolution: {integrity: sha512-T/9GZqAQX42eYr/t6VGR2m9J4BtIuncRkANo8hBVTGskrr522yuhaADhSu+65DYlhUyQnLUjDikuNYzlgv0Ejw==, tarball: https://github.com/MercuryWorkshop/scramjet/releases/download/v1.1.0/mercuryworkshop-scramjet-1.1.0.tgz}
     version: 1.1.0
 
-  '@mercuryworkshop/wisp-js@0.5.1':
-    resolution: {integrity: sha512-OKAxaZ1T6il+vBqbu1o+AlzALCp2hWIqfcuZ+/0eTIMsdP7XvxjyGcdUsf8rjKCNOB9Mpe+NmpYm9hQmQco9Fw==}
+  '@mercuryworkshop/wisp-js@0.4.1':
+    resolution: {integrity: sha512-104LwiXiuhti/e32gmv0Da0u0yuLFDHX8JawCzleTPWJ5t5qTX4EYi4E7/ucbjBPN9wwVPWHE5g5yGqzl/NzQA==}
     hasBin: true
 
   '@napi-rs/wasm-runtime@1.2.4':
@@ -1496,10 +1496,6 @@ packages:
     resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
     engines: {node: '>=20'}
 
-  commander@15.0.0:
-    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
-    engines: {node: '>=22.12.0'}
-
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
@@ -1905,10 +1901,6 @@ packages:
   ip-regex@5.0.0:
     resolution: {integrity: sha512-fOCG6lhoKKakwv+C6KdsOnGvgXnmgfmp0myi3bcNwj3qfwPAxRKWEuFhvEFF7ceYIz6+1jRZ+yguLFAmUNPEfw==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
-  ipaddr.js@2.3.0:
-    resolution: {integrity: sha512-Zv/pA+ciVFbCSBBjGfaKUya/CcGmUHzTydLMaTwrUUEM2DIEO3iZvueGxmacvmN50fGpGVKeTXpb2LcYQxeVdg==}
-    engines: {node: '>= 10'}
 
   ipaddr.js@2.5.0:
     resolution: {integrity: sha512-aq+t5NAc+cS6rZQQVWC2x98CPqGtKKTMDd4Gaodv0wShnItdKg/51djkGJ1hqH+Oy0ivDftCbSLCQob8zso01w==}
@@ -3830,7 +3822,7 @@ snapshots:
   '@fastify/proxy-addr@5.1.0':
     dependencies:
       '@fastify/forwarded': 3.0.1
-      ipaddr.js: 2.3.0
+      ipaddr.js: 2.5.0
 
   '@fastify/send@4.1.0':
     dependencies:
@@ -3992,10 +3984,10 @@ snapshots:
       parse-domain: 8.2.2
       set-cookie-parser: 2.7.2
 
-  '@mercuryworkshop/wisp-js@0.5.1':
+  '@mercuryworkshop/wisp-js@0.4.1':
     dependencies:
       bufferutil: 4.1.0
-      commander: 15.0.0
+      commander: 14.0.3
       ipaddr.js: 2.5.0
       ws: 8.22.0(bufferutil@4.1.0)
     transitivePeerDependencies:
@@ -4813,8 +4805,6 @@ snapshots:
 
   commander@14.0.3: {}
 
-  commander@15.0.0: {}
-
   commander@2.20.3: {}
 
   common-ancestor-path@1.0.1: {}
@@ -5323,8 +5313,6 @@ snapshots:
   inherits@2.0.4: {}
 
   ip-regex@5.0.0: {}
-
-  ipaddr.js@2.3.0: {}
 
   ipaddr.js@2.5.0: {}
 
