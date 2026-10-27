@@ -60,12 +60,23 @@ main() {
       ip=$(curl -4fsS https://api.ipify.org || curl -4fsS https://ifconfig.me)
       domain=${ip//./-}.sslip.io
     fi
+    # Reuse an existing secret if one is passed in (so a second server can share invites with
+    # the first; see `persec export`). Otherwise generate a fresh one.
+    local secret=${PERSEC_SECRET:-}
+    if [ -n "$secret" ]; then
+      if ! [[ "$secret" =~ ^[A-Za-z0-9._-]{16,}$ ]]; then
+        echo "PERSEC_SECRET must be at least 16 of: letters, numbers and - _ ." >&2
+        exit 1
+      fi
+    else
+      secret=$(openssl rand -hex 32)
+    fi
     umask 077
     cat >"$env" <<EOF
 DOMAIN=$domain
 PERSEC_INVITE_ONLY=true
-PERSEC_SECRET=$(openssl rand -hex 32)
-PERSEC_REVOKED=
+PERSEC_SECRET=$secret
+PERSEC_REVOKED=${PERSEC_REVOKED:-}
 EOF
   elif [ -n "${PERSEC_DOMAIN:-}" ]; then
     sed -i "s|^DOMAIN=.*|DOMAIN=$PERSEC_DOMAIN|" "$env"
@@ -111,6 +122,7 @@ EOF
   echo "  persec invite <name> [days]   make an invite code for someone (default 30 days)"
   echo "  persec revoke <name>          cancel someone's invites"
   echo "  persec domain add <name>      add another web address (persec domain remove <name>)"
+  echo "  persec export                 set up a backup server that shares these invites"
   echo "  persec update                 update to the latest version"
   echo "  persec logs                   see what the server is doing"
 }

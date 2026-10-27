@@ -53,10 +53,21 @@ The site runs over HTTPS (needed for the proxy to work) and is invite-only. Mana
 | `persec domain add <name>`    | Adds another web address, e.g. a new DuckDNS name if one gets blocked |
 | `persec domain remove <name>` | Stops using a web address                                             |
 | `persec domain`               | Lists the site's web addresses                                        |
+| `persec export`               | Prints a command to set up a backup server that shares these invites  |
 | `persec update`               | Updates to the latest version                                         |
 | `persec logs`                 | Shows what the server is doing                                        |
 
 If the site shows a certificate error with the `sslip.io` address, or an address gets blocked, get a new DuckDNS name pointed at your server and run `persec domain add yourname.duckdns.org`. Your settings and invites are kept. It is worth keeping a spare name or two added so a block never cuts everyone off.
+
+#### Surviving a blocked server
+
+Extra names all point at one server, so if its **IP address** is blocked (not just a name), every name goes down at once. The fix is a second server on a different provider or region. Because logins are signed with your `PERSEC_SECRET`, a second server that shares it accepts the same invite codes — and people's existing logins — with nothing to keep in sync.
+
+1. On your current server's console, run `persec export`. It prints a ready-to-paste `curl ... | PERSEC_SECRET=... bash` command.
+2. Open a second server's console (a different host is best) and paste that command.
+3. Run `persec domain add` on the second server to give it its own name, and share that address as a backup.
+
+Keep the `export` command private: anyone with the secret can mint invites. Minted invites (`persec invite`) work on every server sharing the secret automatically; codes added with `persec add` must be added on each server.
 
 ### Other options
 
