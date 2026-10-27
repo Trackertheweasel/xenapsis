@@ -45,12 +45,13 @@ Hosting platforms often shut down proxies. A small server of your own (a VPS) do
 
 The site runs over HTTPS (needed for the proxy to work) and is invite-only. Manage it from the same console:
 
-| Command                       | What it does                                       |
-| ----------------------------- | -------------------------------------------------- |
-| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days) |
-| `persec revoke <name>`        | Cancels that person's invites right away           |
-| `persec update`               | Updates to the latest version                      |
-| `persec logs`                 | Shows what the server is doing                     |
+| Command                       | What it does                                                     |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `persec add <name> <code>`    | Lets someone in with a code you choose (also changes their code) |
+| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days)               |
+| `persec revoke <name>`        | Cancels that person's invites right away                         |
+| `persec update`               | Updates to the latest version                                    |
+| `persec logs`                 | Shows what the server is doing                                   |
 
 If the site shows a certificate error with the `sslip.io` address, get a DuckDNS name and run the DuckDNS command above again; your settings and invites are kept.
 

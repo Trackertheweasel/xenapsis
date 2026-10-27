@@ -106,6 +106,7 @@ EOF
   fi
   echo
   echo "Commands:"
+  echo "  persec add <name> <code>      let someone in with a code you choose"
   echo "  persec invite <name> [days]   make an invite code for someone (default 30 days)"
   echo "  persec revoke <name>          cancel someone's invites"
   echo "  persec update                 update to the latest version"
