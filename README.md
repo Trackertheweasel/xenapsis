@@ -133,7 +133,7 @@ All of these options are free to use.
 | Platform          | Config file                       | Notes                                                                                            |
 | ----------------- | --------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Render            | `render.yaml`                     | Free web service. Sleeps after 15 minutes without traffic and takes about a minute to wake up.   |
-| GitHub Codespaces | `.devcontainer/devcontainer.json` | Free monthly hours for personal accounts. Run `pnpm start`, then open the forwarded port `6060`. |
+| GitHub Codespaces | `.devcontainer/devcontainer.json` | Free monthly hours for personal accounts. Run `pnpm build && pnpm start`, then open the forwarded port `6060`. |
 | Docker            | `Dockerfile`                      | Run it on your own computer or server (see below).                                               |
 
 ### Docker
@@ -170,11 +170,13 @@ Persec will be available at `http://localhost:8080`.
    cd xenapsis
    ```
 
-2. Install dependencies and start the server:
+2. Install dependencies, build, and start the server:
    ```bash
    pnpm install
+   pnpm build
    pnpm start
    ```
+   After pulling new code, run `pnpm build` again before `pnpm start`; the server only starts what was last built.
 
 ### Development
 

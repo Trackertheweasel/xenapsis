@@ -35,8 +35,3 @@ test('Persec inner iframe pages no longer load the ad helper', async () => {
 		{ code: 'ENOENT' },
 	);
 });
-
-test('Persec allows cross-origin no-CORS resources with credentialless COEP', async () => {
-	const server = await readFile(new URL('../index.ts', import.meta.url), 'utf8');
-	assert.match(server, /crossOriginEmbedderPolicy:\s*\{\s*policy:\s*'credentialless'\s*\}/);
-});

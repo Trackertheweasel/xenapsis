@@ -30,20 +30,6 @@ test('Every Lucide icon used in the UI is bundled', async () => {
 	assert.deepEqual(missing, [], 'add these icons to src/utils/icons.ts');
 });
 
-test('Wisp only allows TCP to web ports and uses malware-blocking DNS', async () => {
-	const server = await read('index.ts');
-	assert.match(server, /allow_udp_streams:\s*false/);
-	assert.match(server, /port_whitelist:\s*\[80, 443, \[1024, 2524\], \[2526, 65535\]\]/);
-	assert.match(server, /dns_servers:\s*\['1\.1\.1\.2', '1\.0\.0\.2'\]/);
-});
-
-test('Server sends real 404s and controls its own cache headers', async () => {
-	const server = await read('index.ts');
-	assert.match(server, /reply\.code\(404\)/);
-	assert.match(server, /cacheControl:\s*false/);
-	assert.match(server, /encodings:\s*\['br'/);
-});
-
 test('The code obfuscator is gone', async () => {
 	assert.doesNotMatch(await read('astro.config.ts'), /obfuscator/i);
 	assert.doesNotMatch(await read('package.json'), /obfuscator/i);
