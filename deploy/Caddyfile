@@ -1,3 +1,17 @@
+# --- Optional: Encrypted Client Hello (ECH) ---
+# Hides the site name (TLS SNI) from the network, so a filter can't block this site by its name.
+# Needs Caddy 2.10+ built WITH your DNS provider's module (the stock `caddy:2` image below is not),
+# plus an API token, because Caddy publishes the ECH key to a DNS record. See the README section
+# "Hiding which site you're visiting". The no-server-changes alternative is to put the domain
+# behind Cloudflare, which turns ECH on automatically. Uncomment and adapt:
+#
+# {
+# 	# Public (outer) name clients connect to; point it at this server.
+# 	ech {$DOMAIN}
+# 	# Caddy needs DNS access to publish the ECH config, e.g. the Cloudflare DNS module:
+# 	# acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+# }
+
 {$DOMAIN} {
 	reverse_proxy persec:8080 {
 		# Behind Caddy every request comes from the same address, so pass on the visitor's real one

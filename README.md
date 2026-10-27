@@ -93,6 +93,19 @@ curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/de
 
 The value is built into the app, so set it at install time (changing it later means rebuilding, which `persec update` does). Leave it unset to keep the default `/w/`. This hides the endpoint from probing; it does not change the server's IP address or domain name, so pair it with a spare domain and a backup server (above) for blocks at those levels.
 
+#### Hiding which site you're visiting (Encrypted Client Hello)
+
+Even over HTTPS, the domain name your browser asks for is sent in the clear at the start of every connection (the TLS "SNI"). This is how many filters block a site: they never see the page, only the name, and drop the connection. **Encrypted Client Hello (ECH)** encrypts that name too, so a network watching the connection can't tell which site is being reached from the handshake.
+
+ECH needs two things: the server (or a CDN in front of it) has to offer ECH and publish its key in a DNS record, and the **visitor's browser has to have ECH turned on**. In Chrome, Edge and Firefox that happens automatically once **Secure DNS (DNS-over-HTTPS)** is enabled, so it's worth telling people to switch Secure DNS on in their browser settings.
+
+Two ways to get it:
+
+1. **Through Cloudflare (recommended, no server changes).** Put the domain behind Cloudflare — the same free step that hides the server's IP (proxying on, SSL/TLS set to Full). Cloudflare turns ECH on automatically for proxied domains and publishes the DNS record for you. Nothing to configure on the server.
+2. **In Caddy, on your own domain (advanced).** Caddy 2.10+ can do ECH itself, but it has to publish the key to your DNS, so it needs a Caddy build that includes **your DNS provider's module** plus an API token for it. The stock `caddy:2` image used here does not include DNS modules, so this means building a custom Caddy image. See the commented `ech` block in [`deploy/Caddyfile`](deploy/Caddyfile) for the shape of the config.
+
+> **Important, and region-dependent.** ECH helps where filtering is based on the domain name. But some censors respond by blocking **all** ECH traffic rather than reading it — Russia's filtering devices began dropping ECH connections to Cloudflare in late 2024. So ECH can *remove* a block in one country and *cause* one in another. Keep a non-ECH address available as a fallback, and test from the actual region before relying on it.
+
 ### Other options
 
 <p>
