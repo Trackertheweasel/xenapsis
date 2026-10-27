@@ -173,10 +173,11 @@ function targetUrl(requestUrl) {
     const u = new URL(requestUrl);
     if (u.origin !== self.location.origin) return null;
     const scPrefix = scramjet.config?.prefix || '/v1/data/';
-    if (u.pathname.startsWith(scPrefix)) {
-      return new URL(decodeURIComponent(u.pathname.slice(scPrefix.length)));
-    }
     const uv = self.__uv$config;
+    // Both engines share one URL codec (src/utils/codec.ts), which /tmp/config.js provides here.
+    if (uv && u.pathname.startsWith(scPrefix)) {
+      return new URL(uv.decodeUrl(u.pathname.slice(scPrefix.length)));
+    }
     if (uv && u.pathname.startsWith(uv.prefix)) {
       return new URL(uv.decodeUrl(u.pathname.slice(uv.prefix.length) + u.search));
     }

@@ -7,6 +7,7 @@ import playformCompress from '@playform/compress';
 import tailwindcss from '@tailwindcss/vite';
 import { uvPath } from '@titaniumnetwork-dev/ultraviolet';
 import { defineConfig } from 'astro/config';
+import { randomBytes } from 'crypto';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
@@ -28,6 +29,10 @@ function normalizeWispPath(raw: string | undefined): string {
   return p;
 }
 const WISP_PATH = normalizeWispPath(process.env.PUBLIC_PERSEC_WISP_PATH);
+
+// Key for the proxied-URL codec (src/utils/codec.ts). Random per build, so URLs look different on
+// every deployment; set PUBLIC_PERSEC_URL_KEY to keep one across builds or servers.
+const URL_KEY = process.env.PUBLIC_PERSEC_URL_KEY?.trim() || randomBytes(16).toString('base64url');
 
 function WispServer(): Plugin {
   return {
@@ -152,6 +157,7 @@ export default defineConfig({
     define: {
       VERSION: JSON.stringify(version),
       WISP_PATH: JSON.stringify(WISP_PATH),
+      URL_KEY: JSON.stringify(URL_KEY),
     },
     plugins: [
       tailwindcss(),

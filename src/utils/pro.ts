@@ -1,3 +1,5 @@
+import { decodeUrl, encodeUrl } from './codec';
+
 // @ts-ignore
 const { ScramjetController } = $scramjetLoadController();
 
@@ -26,16 +28,7 @@ class ScramjetWrapper {
         strictRewrites: false,
         syncxhr: false,
       },
-      codec: {
-        // @ts-ignore
-        encode: (url) => {
-         return encodeURIComponent(url);
-        },
-        // @ts-ignore
-        decode: (url) => {
-         return decodeURIComponent(url);
-        }
-      },
+      codec: { encode: encodeUrl, decode: decodeUrl },
     };
   }
 

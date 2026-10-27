@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
+import { uvConfigSource } from '../src/pages/tmp/config.js.ts';
 
 const origin = 'https://persec.test';
 
@@ -9,6 +10,11 @@ const origin = 'https://persec.test';
 async function loadServiceWorker() {
 	const ctx: any = {
 		URL,
+		URL_KEY: 'test-key',
+		TextEncoder,
+		TextDecoder,
+		atob,
+		btoa,
 		console,
 		location: { origin },
 		addEventListener: () => {},
@@ -33,14 +39,13 @@ async function loadServiceWorker() {
 	};
 	ctx.self = ctx;
 	vm.createContext(ctx);
-	for (const file of ['public/tmp/config.js', 'public/sw.js']) {
-		vm.runInContext(await readFile(new URL(`../${file}`, import.meta.url), 'utf8'), ctx);
-	}
+	vm.runInContext(uvConfigSource(), ctx);
+	vm.runInContext(await readFile(new URL('../public/sw.js', import.meta.url), 'utf8'), ctx);
 	return ctx;
 }
 
 const sw = await loadServiceWorker();
-const scramjet = (url: string) => `${origin}/v1/data/${encodeURIComponent(url)}`;
+const scramjet = (url: string) => `${origin}/v1/data/${sw.__uv$config.encodeUrl(url)}`;
 const uv = (url: string) => `${origin}${sw.__uv$config.prefix}${sw.__uv$config.encodeUrl(url)}`;
 const blocked = (proxied: string, request: Record<string, string> = { destination: 'script' }) => {
 	const target = sw.targetUrl(proxied);
