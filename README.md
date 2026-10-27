@@ -45,15 +45,18 @@ Hosting platforms often shut down proxies. A small server of your own (a VPS) do
 
 The site runs over HTTPS (needed for the proxy to work) and is invite-only. Manage it from the same console:
 
-| Command                       | What it does                                                     |
-| ----------------------------- | ---------------------------------------------------------------- |
-| `persec add <name> <code>`    | Lets someone in with a code you choose (also changes their code) |
-| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days)               |
-| `persec revoke <name>`        | Cancels that person's invites right away                         |
-| `persec update`               | Updates to the latest version                                    |
-| `persec logs`                 | Shows what the server is doing                                   |
+| Command                       | What it does                                                          |
+| ----------------------------- | --------------------------------------------------------------------- |
+| `persec add <name> <code>`    | Lets someone in with a code you choose (also changes their code)      |
+| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days)                    |
+| `persec revoke <name>`        | Cancels that person's invites right away                              |
+| `persec domain add <name>`    | Adds another web address, e.g. a new DuckDNS name if one gets blocked |
+| `persec domain remove <name>` | Stops using a web address                                             |
+| `persec domain`               | Lists the site's web addresses                                        |
+| `persec update`               | Updates to the latest version                                         |
+| `persec logs`                 | Shows what the server is doing                                        |
 
-If the site shows a certificate error with the `sslip.io` address, get a DuckDNS name and run the DuckDNS command above again; your settings and invites are kept.
+If the site shows a certificate error with the `sslip.io` address, or an address gets blocked, get a new DuckDNS name pointed at your server and run `persec domain add yourname.duckdns.org`. Your settings and invites are kept. It is worth keeping a spare name or two added so a block never cuts everyone off.
 
 ### Other options
 

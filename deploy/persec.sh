@@ -38,6 +38,58 @@ case "${1:-}" in
     compose up -d persec
     echo "Revoked every invite for \"$2\"."
     ;;
+  domain)
+    # DOMAIN holds every name the site answers on, separated by spaces.
+    domains=$(sed -n 's/^DOMAIN=//p' "$env")
+    name=$(echo "${3:-}" | tr '[:upper:]' '[:lower:]')
+    name=${name#http://}
+    name=${name#https://}
+    name=${name%%/*}
+    in_list() { printf '%s\n' $domains | grep -Fqx "$name"; }
+    case "${2:-list}" in
+      list) ;;
+      add)
+        if ! [[ "$name" =~ ^([a-z0-9-]+\.)+[a-z]{2,}$ ]]; then
+          echo "Usage: persec domain add <name>   (for example: persec domain add yourname.duckdns.org)" >&2
+          exit 1
+        fi
+        if in_list; then
+          echo "$name is already added."
+          exit 0
+        fi
+        ip=$(curl -4fs https://api.ipify.org || true)
+        points_to=$(getent ahostsv4 "$name" | awk 'NR == 1 {print $1}' || true)
+        if [ -n "$ip" ] && [ "$points_to" != "$ip" ]; then
+          echo "Warning: $name points to ${points_to:-nothing}, but this server is ${ip:-unknown}."
+          echo "Point it here (on DuckDNS: put $ip in \"current ip\"). It starts working once it does."
+        fi
+        domains="$domains $name"
+        ;;
+      remove)
+        if ! in_list; then
+          echo "$name isn't one of this site's names. See them with: persec domain" >&2
+          exit 1
+        fi
+        domains=$(printf '%s\n' $domains | grep -Fvx "$name" | paste -sd' ' - || true)
+        if [ -z "$domains" ]; then
+          echo "That's the only name left; add another first so the site stays reachable." >&2
+          exit 1
+        fi
+        ;;
+      *)
+        echo "Usage: persec domain [add <name> | remove <name>]" >&2
+        exit 1
+        ;;
+    esac
+    if [ "${2:-list}" != list ]; then
+      sed -i "s|^DOMAIN=.*|DOMAIN=$domains|" "$env"
+      # Caddy picks up the new names and gets their HTTPS certificates.
+      compose up -d caddy
+      echo
+    fi
+    echo "The site answers on:"
+    for d in $domains; do echo "  https://$d"; done
+    ;;
   update)
     curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | bash
     ;;
@@ -45,7 +97,7 @@ case "${1:-}" in
     compose logs --tail 100 -f persec
     ;;
   *)
-    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | update | logs" >&2
+    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | update | logs" >&2
     exit 1
     ;;
 esac

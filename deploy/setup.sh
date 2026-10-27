@@ -92,7 +92,8 @@ EOF
   docker image prune -f >/dev/null
 
   echo
-  echo "Persec is running at https://$domain"
+  echo "Persec is running at:"
+  for d in $domain; do echo "  https://$d"; done
   echo "(The HTTPS certificate can take a minute to arrive after the first start.)"
   if [ -n "${PERSEC_INVITE_CODES:-}" ]; then
     echo
@@ -109,6 +110,7 @@ EOF
   echo "  persec add <name> <code>      let someone in with a code you choose"
   echo "  persec invite <name> [days]   make an invite code for someone (default 30 days)"
   echo "  persec revoke <name>          cancel someone's invites"
+  echo "  persec domain add <name>      add another web address (persec domain remove <name>)"
   echo "  persec update                 update to the latest version"
   echo "  persec logs                   see what the server is doing"
 }
