@@ -6,13 +6,12 @@ import Fastify from 'fastify';
 import fs from 'node:fs';
 import { createServer } from 'node:http';
 import { constants as zlibConstants } from 'node:zlib';
-import { ACCESS_COOKIE, readCookie, verifyToken } from './access';
 import type { AccessConfig } from './access';
 import { registerAccessGate } from './routes/access';
 import { registerLoginRoutes } from './routes/logins';
 import { handleQuery } from './routes/query';
 import { staticFileOptions } from './static';
-import { wisp } from './wisp';
+import { routeWisp } from './wisp';
 
 type NodeHandler = (req: any, res: any, next: (err?: unknown) => void) => void;
 
@@ -25,10 +24,9 @@ export interface AppOptions {
   site?: { clientRoot: string; handler: NodeHandler };
 }
 
+// Composition only: this wires the server's parts together. Put logic in the module it belongs to
+// (routes/, access.ts, wisp.ts, static.ts) so it can be tested on its own.
 export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions) {
-  const hasAccess = (cookieHeader: string | undefined) =>
-    !access || verifyToken(access, readCookie(cookieHeader, ACCESS_COOKIE));
-
   const app = Fastify({
     logger: false,
     serverFactory: handler => {
@@ -38,13 +36,9 @@ export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions
       server.setMaxListeners(0);
       server.on('connection', socket => socket.setMaxListeners(0));
       server.on('request', (req, res) => handler(req, res));
-      // The tunnel needs an invite too, or anyone could use the server as a proxy without one.
+      // Only the tunnel upgrades; it needs an invite too (see routeWisp).
       server.on('upgrade', (req, socket, head) => {
-        if (req.url?.endsWith(wispPath) && hasAccess(req.headers.cookie)) {
-          wisp.routeRequest(req, socket, head);
-        } else {
-          socket.destroy();
-        }
+        if (!routeWisp(access, wispPath, req, socket, head)) socket.destroy();
       });
       return server;
     },

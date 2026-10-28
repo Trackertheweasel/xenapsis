@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import http from 'node:http';
+import net from 'node:net';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { loadAccess } from '../serverlib/access.ts';
+import { createToken, loadAccess } from '../serverlib/access.ts';
 import { buildApp } from '../serverlib/app.ts';
 import { cacheControlFor, staticFileOptions } from '../serverlib/static.ts';
 import { wisp } from '../serverlib/wisp.ts';
@@ -192,17 +193,136 @@ function upgrade(port: number, path: string, cookie?: string): Promise<number | 
   });
 }
 
-test('The Wisp tunnel needs an invite and only answers on its own path', async () => {
-  const app = await server(inviteOnly);
-  const { cookie } = await signIn(app, 'abc123');
+// Sends raw bytes and resolves with whatever the server answered before hanging up.
+function raw(port: number, text: string): Promise<string> {
+  return new Promise(resolve => {
+    let out = '';
+    const socket = net.connect(port, '127.0.0.1', () => socket.end(text));
+    socket.on('data', d => (out += d));
+    socket.on('close', () => resolve(out));
+    socket.on('error', () => {});
+    socket.setTimeout(1000, () => socket.destroy());
+  });
+}
+
+const tunnelEnv = {
+  PERSEC_INVITE_CODES: 'tester:abc123, gone:def456',
+  PERSEC_SECRET: 'test-secret',
+  PERSEC_REVOKED: 'gone',
+};
+
+// One rule for both servers (routeWisp); the path only hides the tunnel, the cookie guards it.
+async function checkTunnelRule(port: number) {
+  const access = loadAccess(tunnelEnv)!;
+  const token = (name: string, now?: number) => `persec_access=${createToken(access, name, now)}`;
+  const valid = token('tester');
+  const otherSecret = loadAccess({ ...tunnelEnv, PERSEC_SECRET: 'other-secret' })!;
+  const refused: Record<string, string | undefined> = {
+    'no cookie': undefined,
+    'empty cookie': 'persec_access=',
+    'forged cookie': 'persec_access=forged',
+    'malformed cookie': 'persec_access=%ZZ.not.base64',
+    'tampered signature': valid.replace(/.$/, c => (c === 'a' ? 'b' : 'a')),
+    'expired sign-in': token('tester', Date.now() - 31 * 24 * 3600 * 1000),
+    'revoked name': token('gone'),
+    'name no longer invited': token('stranger'),
+    'signed with another secret': `persec_access=${createToken(otherSecret, 'tester')}`,
+  };
+  for (const [why, cookie] of Object.entries(refused)) {
+    assert.equal(await upgrade(port, '/w/', cookie), 'closed', why);
+  }
+  const head = 'GET /w/ HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n';
+  for (const [why, request] of Object.entries({
+    'no WebSocket key, no invite': head + '\r\n',
+    'no WebSocket key, valid invite': head + `Cookie: ${valid}\r\n\r\n`,
+    'not HTTP': 'garbage\r\n\r\n',
+  })) {
+    assert.doesNotMatch(await raw(port, request), /^HTTP\/1\.1 101/, why);
+  }
+  assert.equal(await upgrade(port, '/w/', valid), 101, 'still serving after all that');
+}
+
+test('The Wisp tunnel needs a valid invite and only answers on its own path', async () => {
+  const app = await server(tunnelEnv);
   await app.listen({ host: '127.0.0.1', port: 0 });
   const { port } = app.server.address() as AddressInfo;
+  const valid = `persec_access=${createToken(loadAccess(tunnelEnv)!, 'tester')}`;
   try {
-    assert.equal(await upgrade(port, '/w/'), 'closed', 'no invite');
-    assert.equal(await upgrade(port, '/w/', 'persec_access=forged'), 'closed', 'forged invite');
-    assert.equal(await upgrade(port, '/other/', cookie), 'closed', 'wrong path');
-    assert.equal(await upgrade(port, '/w/', cookie), 101);
+    await checkTunnelRule(port);
+    assert.equal(await upgrade(port, '/other/', valid), 'closed', 'wrong path');
   } finally {
     await app.close();
+  }
+});
+
+// `pnpm dev` serves the tunnel from the Vite plugin in astro.config.ts, not from buildApp.
+async function devServer(env: Record<string, string>) {
+  const { default: config } = await import('../astro.config.ts');
+  const plugin = (config.vite!.plugins as any[]).find(p => p?.name === 'vite-wisp-server');
+  const httpServer = http.createServer();
+  const saved = { ...process.env };
+  Object.assign(process.env, env);
+  try {
+    plugin.configureServer({ httpServer });
+  } finally {
+    process.env = saved;
+  }
+  // Stands in for Vite's live-reload socket, which shares the dev server.
+  httpServer.on('upgrade', (req, socket) => {
+    if (req.url === '/hmr') socket.end('HTTP/1.1 101 Switching Protocols\r\n\r\n');
+  });
+  await new Promise<void>(resolve => httpServer.listen(0, '127.0.0.1', resolve));
+  return { httpServer, port: (httpServer.address() as AddressInfo).port };
+}
+
+test('The dev server applies the same invite rule to the Wisp tunnel', async t => {
+  const warn = t.mock.method(console, 'warn', () => {});
+  const { httpServer, port } = await devServer(tunnelEnv);
+  try {
+    assert.equal(warn.mock.callCount(), 1, 'says why the tunnel is closed in dev');
+    await checkTunnelRule(port);
+    assert.equal(await upgrade(port, '/hmr'), 101, "Vite's own upgrades are left alone");
+  } finally {
+    httpServer.close();
+  }
+});
+
+test('The dev server tunnel is open when the site is', async () => {
+  const { httpServer, port } = await devServer({});
+  try {
+    assert.equal(await upgrade(port, '/w/'), 101);
+  } finally {
+    httpServer.close();
+  }
+});
+
+test('Sign-in cookies are Secure behind an HTTPS proxy', async () => {
+  const app = await server(inviteOnly);
+  const res = await app.inject({
+    method: 'POST',
+    url: '/enter',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      'cf-connecting-ip': freshIp(),
+      'x-forwarded-proto': 'https',
+    },
+    payload: 'code=abc123',
+  });
+  assert.match(String(res.headers['set-cookie']), /; Secure$/);
+});
+
+test('An old sign-in is renewed on pages only, never on cacheable responses', async () => {
+  const app = await server(inviteOnly);
+  const twoDaysAgo = Date.now() - 2 * 24 * 3600 * 1000;
+  const cookie = `persec_access=${createToken(loadAccess(inviteOnly)!, 'tester', twoDaysAgo)}`;
+
+  const page = await app.inject({ url: '/', headers: { cookie, accept: 'text/html' } });
+  assert.match(String(page.headers['set-cookie']), /^persec_access=[^;]+; .*HttpOnly/);
+  assert.notEqual(page.headers['set-cookie'], cookie);
+
+  for (const url of ['/sw.js', '/api/query?q=hi']) {
+    const res = await app.inject({ url, headers: { cookie } });
+    assert.notEqual(res.statusCode, 401, url);
+    assert.equal(res.headers['set-cookie'], undefined, url);
   }
 });

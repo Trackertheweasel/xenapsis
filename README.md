@@ -187,6 +187,8 @@ pnpm install
 pnpm dev
 ```
 
+The dev server has no sign-in page. If `PERSEC_INVITE_CODES` or `PERSEC_INVITE_ONLY` is set, it keeps the proxy connection closed, as production does without an invite. Unset them to browse through the proxy in dev.
+
 ---
 
 ## Invite-only mode

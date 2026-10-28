@@ -11,9 +11,10 @@ import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { version } from './package.json';
+import { loadAccess } from './serverlib/access';
 import { proxyPrefixes, urlKey, wispPath } from './serverlib/env';
 import { handleQuery } from './serverlib/routes/query';
-import { wisp } from './serverlib/wisp';
+import { routeWisp } from './serverlib/wisp';
 
 // Build-time values baked into the client; see serverlib/env.ts for what each one does.
 const WISP_PATH = wispPath();
@@ -26,10 +27,16 @@ function WispServer(): Plugin {
   return {
     name: 'vite-wisp-server',
     configureServer(server: any) {
+      // Same invite rule as production, so a dev server shared over a tunnel is no open proxy.
+      const access = loadAccess();
+      if (access) {
+        console.warn(
+          'Invite-only mode: the dev server has no sign-in page, so the Wisp tunnel stays closed. ' +
+            'Unset PERSEC_INVITE_CODES and PERSEC_INVITE_ONLY to browse through the proxy in dev.',
+        );
+      }
       server.httpServer?.on('upgrade', (req: IncomingMessage, socket: any, head: any) => {
-        if (req.url?.endsWith(WISP_PATH)) {
-          wisp.routeRequest(req, socket, head);
-        }
+        routeWisp(access, WISP_PATH, req, socket, head);
       });
     },
   };
