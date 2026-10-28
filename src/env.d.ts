@@ -3,6 +3,9 @@
 declare const LAST_UPDATED: string;
 declare const VERSION: string;
 declare const WISP_PATH: string;
+declare const URL_KEY: string;
+// This build's paths (serverlib/env.ts deployPaths), injected by astro.config.ts.
+declare const PERSEC_PATHS: import('../serverlib/env').DeployPaths;
 declare const BareMux: any;
 
 interface Bookmark {

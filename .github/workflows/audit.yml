@@ -1,0 +1,27 @@
+name: Dependency Audit
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  # New advisories appear without any code change, so check weekly too.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      # Reads only the lockfile, so no install is needed.
+      - name: Report all advisories
+        run: pnpm audit || true
+      - name: Fail on high or critical
+        run: pnpm audit --audit-level high

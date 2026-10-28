@@ -16,20 +16,25 @@ const navButtons = [
   { id: 'home', icon: 'house', label: 'Home' },
 ];
 
+// src/utils/menu.ts finds each item by its id.
 const menuSections = [
   [
-    { icon: 'plus', label: 'New Tab' },
-    { icon: 'maximize-2', label: 'Full Screen' },
-    { icon: 'refresh-cw', label: 'Reload' },
+    { id: 'newTab', icon: 'plus', label: 'New Tab' },
+    { id: 'reopen', icon: 'rotate-ccw', label: 'Reopen Closed Tab' },
+    { id: 'fullscreen', icon: 'maximize-2', label: 'Full Screen' },
+    { id: 'reload', icon: 'refresh-cw', label: 'Reload' },
+    { id: 'other-engine', icon: 'shuffle', label: 'Try the Other Engine' },
   ],
   [
-    { icon: 'code', label: 'Inspect Element' },
-    { icon: 'moon', label: 'Dark Mode' },
-    { icon: 'glasses', label: 'AB Cloak' },
+    { id: 'bookmarks', icon: 'bookmark', label: 'Bookmarks' },
+    { id: 'inspectElement', icon: 'code', label: 'Inspect Element' },
+    { id: 'darkmode', icon: 'moon', label: 'Dark Mode' },
+    { id: 'cloak', icon: 'glasses', label: 'AB Cloak' },
   ],
   [
-    { icon: 'log-out', label: 'Panic' },
-    { icon: 'settings', label: 'Settings' },
+    { id: 'help', icon: 'circle-help', label: 'Getting Started' },
+    { id: 'panic', icon: 'log-out', label: 'Panic' },
+    { id: 'settings', icon: 'settings', label: 'Settings' },
   ],
 ];
 ---
@@ -53,9 +58,10 @@ const menuSections = [
         <div class="flex w-full items-center gap-1.5">
           <div
             id="tcontainer"
+            role="tablist"
+            aria-label="Tabs"
             class="flex max-w-full min-w-0 flex-nowrap gap-1.5 overflow-x-auto [scrollbar-width:none]"
-          >
-          </div>
+          ></div>
           <button
             id="add"
             aria-label="New tab"
@@ -67,28 +73,24 @@ const menuSections = [
         </div>
       </div>
 
-      <div
-        class="flex h-12 items-center gap-1.5 border-t border-[#3a3758] bg-[#1c1a2b] px-2 sm:h-10 sm:gap-3 sm:px-3"
-      >
+      <div class="flex h-12 items-center gap-1.5 border-t border-[#3a3758] bg-[#1c1a2b] px-2 sm:h-10 sm:gap-3 sm:px-3">
         <div class="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
-          {
-            navButtons.map(({ id, icon, label, class: btnClass, iconClass }) => (
-              <button
-                id={id}
-                aria-label={label}
-                title={label}
-                class:list={[
-                  'flex h-9 w-9 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white sm:h-7 sm:w-7',
-                  btnClass,
-                ]}
-              >
-                <i
-                  data-lucide={icon}
-                  class:list={['h-3.5 w-3.5', iconClass, id === 'refresh' ? 'group-hover:animate-spin' : '']}
-                />
-              </button>
-            ))
-          }
+          {navButtons.map(({ id, icon, label, class: btnClass, iconClass }) => (
+            <button
+              id={id}
+              aria-label={label}
+              title={label}
+              class:list={[
+                'flex h-9 w-9 items-center justify-center rounded-md text-gray-400 transition hover:bg-gray-700 hover:text-white sm:h-7 sm:w-7',
+                btnClass,
+              ]}
+            >
+              <i
+                data-lucide={icon}
+                class:list={['h-3.5 w-3.5', iconClass, id === 'refresh' ? 'group-hover:animate-spin' : '']}
+              />
+            </button>
+          ))}
         </div>
 
         <div class="relative flex min-w-0 grow flex-col">
@@ -100,19 +102,24 @@ const menuSections = [
             <input
               id="urlbar"
               type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="suggestions"
               autocomplete="off"
               autocapitalize="off"
               autocorrect="off"
               spellcheck="false"
               enterkeyhint="go"
               aria-label="Search or enter address"
-              class="h-9 w-full rounded-full border border-[#3a3758] bg-[#23213a] pr-10 pl-9 text-base text-gray-200 transition-colors placeholder:text-gray-500 hover:text-white focus:outline-none sm:h-8 sm:text-[13px]"
+              class="h-9 w-full rounded-full border border-[#3a3758] bg-[#23213a] pr-10 pl-9 text-base text-gray-200 transition-colors placeholder:text-gray-500 hover:text-white focus:border-[#8b87ff] focus:outline-none sm:h-8 sm:text-[13px]"
               placeholder="Search or enter address"
             />
 
             <button
               id="fav"
               aria-label="Bookmark this page"
+              aria-pressed="false"
               title="Bookmark this page"
               class="absolute top-1/2 right-1 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-700 hover:text-white sm:h-6 sm:w-6 sm:rounded-md"
             >
@@ -122,8 +129,7 @@ const menuSections = [
             <div
               id="loading-bar"
               class="pointer-events-none fixed inset-x-0 z-50 hidden h-0.5 w-screen rounded-full bg-[#5c59a5] opacity-0 transition-all duration-200"
-            >
-            </div>
+            ></div>
           </div>
         </div>
 
@@ -148,39 +154,46 @@ const menuSections = [
           <button
             id="menu-forward"
             role="menuitem"
+            tabindex="-1"
             class="flex w-full items-center gap-3 px-3.5 py-3 text-gray-200 transition hover:bg-[#2a293f] hover:text-white sm:hidden"
           >
             <i data-lucide="arrow-right" class="h-4.5 w-4.5 shrink-0"></i>
             <span class="text-sm whitespace-nowrap">Forward</span>
           </button>
-          {
-            menuSections.map((section, i) => (
-              <div
-                class:list={[
-                  'flex flex-col',
-                  i !== 0 ? 'border-t border-[#3a3758]' : 'max-sm:border-t max-sm:border-[#3a3758]',
-                ]}
-              >
-                {section.map(({ icon, label }) => (
-                  <button
-                    role="menuitem"
-                    class="menu-item flex w-full items-center gap-3 px-3.5 py-3 text-gray-200 transition hover:bg-[#2a293f] hover:text-white sm:py-2.25"
-                  >
-                    <i data-lucide={icon} class="h-4.5 w-4.5 shrink-0" />
-                    <span class="text-sm whitespace-nowrap sm:text-[13px]">{label}</span>
-                  </button>
-                ))}
-              </div>
-            ))
-          }
+          {menuSections.map((section, i) => (
+            <div
+              class:list={[
+                'flex flex-col',
+                i !== 0 ? 'border-t border-[#3a3758]' : 'max-sm:border-t max-sm:border-[#3a3758]',
+              ]}
+            >
+              {section.map(({ id, icon, label }) => (
+                <button
+                  id={`menu-${id}`}
+                  role="menuitem"
+                  tabindex="-1"
+                  class="menu-item flex w-full items-center gap-3 px-3.5 py-3 text-gray-200 transition hover:bg-[#2a293f] hover:text-white sm:py-2.25"
+                >
+                  <i data-lucide={icon} class="h-4.5 w-4.5 shrink-0" />
+                  <span class="text-sm whitespace-nowrap sm:text-[13px]">{label}</span>
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
+
+      <!-- Messages from the browser's own controls (src/utils/navigation.ts notify). -->
+      <div
+        id="persec-status"
+        role="status"
+        class="pointer-events-none fixed bottom-4 left-1/2 z-1000 opacity-0 transition-opacity max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-[#3a3758] bg-[#1f1f30] px-4 py-2.5 text-sm text-gray-100 shadow-2xl"
+      ></div>
 
       <div
         id="fcontainer"
         class="absolute inset-x-0 top-24 bottom-0 w-full overflow-hidden rounded-b-lg sm:top-[5.6rem]"
-      >
-      </div>
+      ></div>
 
       <ImportLucide />
     </div>

@@ -1,0 +1,79 @@
+---
+// Static page: built once at deploy time instead of rendered on every request.
+export const prerender = true;
+import '@/main.css';
+import ImportLucide from '../layouts/lucide.astro';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bookmarks</title>
+  </head>
+
+  <body class="bg-background font-linux text-text-header min-h-screen p-4 sm:p-6 md:p-8">
+    <main class="mx-auto max-w-3xl space-y-8">
+      <header>
+        <h1 class="mb-1 text-2xl font-bold">Bookmarks</h1>
+        <p class="text-text-secondary text-sm">
+          Saved in this browser only. To move them to another Persec address, use Settings → Advanced → Export settings.
+        </p>
+      </header>
+
+      <section aria-labelledby="add-title" class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
+        <h2 id="add-title" class="mb-3 font-medium">
+          Add a bookmark
+        </h2>
+        <form data-add class="grid gap-2 sm:grid-cols-[1fr_1.5fr_auto]">
+          <label class="sr-only" for="bm-name">
+            Name (optional)
+          </label>
+          <input
+            id="bm-name"
+            name="name"
+            placeholder="Name (optional)"
+            maxlength="300"
+            class="bg-background/80 rounded-lg border border-white/6 px-4 py-2.5 text-sm focus:border-[#6366f1]/40"
+          />
+          <label class="sr-only" for="bm-url">
+            Web address
+          </label>
+          <input
+            id="bm-url"
+            name="url"
+            required
+            inputmode="url"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Web address, e.g. example.com"
+            class="bg-background/80 rounded-lg border border-white/6 px-4 py-2.5 text-sm focus:border-[#6366f1]/40"
+          />
+          <button
+            type="submit"
+            class="min-h-11 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 text-sm hover:bg-[#6366f1]/25"
+          >
+            Add
+          </button>
+        </form>
+        <p data-status role="status" class="text-text-secondary mt-2 min-h-5 text-sm"></p>
+      </section>
+
+      <section aria-labelledby="bm-title">
+        <h2 id="bm-title" class="mb-1 text-lg font-semibold">
+          Saved bookmarks
+        </h2>
+        <p class="text-text-secondary mb-3 text-sm">
+          The first 12 are the shortcuts on your start page. To reorder them, use the pencil on each one there.
+        </p>
+        <ul data-list="bm" class="space-y-2"></ul>
+        <p data-empty="bm" hidden class="text-text-secondary text-sm">
+          No bookmarks yet. Press the bookmark icon at the end of the address bar on any site, or add one above.
+        </p>
+      </section>
+    </main>
+
+    <ImportLucide />
+    <script src="@scripts/bm"></script>
+  </body>
+</html>

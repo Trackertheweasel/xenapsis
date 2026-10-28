@@ -1,7 +1,31 @@
+# --- Optional: Encrypted Client Hello (ECH) ---
+# Hides the site name (TLS SNI) from the network, so a filter can't block this site by its name.
+# Needs Caddy 2.10+ built WITH your DNS provider's module (the stock `caddy:2` image below is not),
+# plus an API token, because Caddy publishes the ECH key to a DNS record. See the README section
+# "Hiding which site you're visiting". The no-server-changes alternative is to put the domain
+# behind Cloudflare, which turns ECH on automatically. Uncomment the two lines in the block below.
+
+{
+	# Caddy needs DNS access to publish the ECH config, e.g. the Cloudflare DNS module:
+	# dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+	# Public (outer) name sent in the clear instead of the real one. Use a bland name that is
+	# NOT {$DOMAIN} (that would expose the very name ECH hides), and point its DNS at this server.
+	# ech ech.example.net
+
+	# Behind Cloudflare every visitor arrives from a Cloudflare address. Trust the visitor address
+	# Cloudflare sends, but only from Cloudflare's own ranges, so nobody else can fake it.
+	# shortcut: copied from cloudflare.com/ips-v4 and /ips-v6 (2026-10), refresh if Cloudflare adds ranges.
+	servers {
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		client_ip_headers Cf-Connecting-Ip
+	}
+}
+
 {$DOMAIN} {
 	reverse_proxy persec:8080 {
 		# Behind Caddy every request comes from the same address, so pass on the visitor's real one
-		# for the invite-code attempt limit. Overwriting it also stops visitors from faking it.
-		header_up Cf-Connecting-Ip {remote_host}
+		# for the invite-code attempt limit. {client_ip} is the direct address unless the request came
+		# through Cloudflare (trusted above), so visitors still can't fake it.
+		header_up Cf-Connecting-Ip {client_ip}
 	}
 }

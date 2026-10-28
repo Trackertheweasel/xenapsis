@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -7,8 +8,10 @@ import {
   Calculator,
   Check,
   CheckCircle,
+  CircleHelp,
   Code,
   createIcons,
+  Download,
   ExternalLink,
   Gamepad,
   Github,
@@ -26,19 +29,24 @@ import {
   Maximize2,
   Menu,
   Moon,
+  Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Settings,
   Shield,
   Shuffle,
   Trash2,
+  Upload,
   Wrench,
+  X,
 } from 'lucide';
 
 // Only the icons Persec uses, instead of the whole Lucide set (~350 KB).
 // Add an icon here when you use a new data-lucide name, or it won't render.
 const icons = {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -47,7 +55,9 @@ const icons = {
   Calculator,
   Check,
   CheckCircle,
+  CircleHelp,
   Code,
+  Download,
   ExternalLink,
   Gamepad,
   Github,
@@ -65,14 +75,18 @@ const icons = {
   Maximize2,
   Menu,
   Moon,
+  Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Settings,
   Shield,
   Shuffle,
   Trash2,
+  Upload,
   Wrench,
+  X,
 };
 
 export function renderIcons() {

@@ -13,6 +13,7 @@ const quick: Record<string, string> = {
   'persec://games': 'Games',
   'persec://apps': 'Apps',
   'persec://privacy': 'Privacy & Safety',
+  'persec://bookmarks': 'Bookmarks',
 };
 
 let timer: number | null = null;
@@ -33,7 +34,11 @@ function filterQuick(str: string): [string, string][] {
 // Web addresses (typed, or the current page's address shown when the bar is focused)
 // are never sent to the suggestion service.
 function isAddress(str: string): boolean {
-  return isQuick(str) || /^([a-z][a-z\d+.-]*:\/\/|(about|data|blob|javascript|mailto):)/i.test(str) || looksLikeDomain(str);
+  return (
+    isQuick(str) ||
+    /^([a-z][a-z\d+.-]*:\/\/|(about|data|blob|javascript|mailto):)/i.test(str) ||
+    looksLikeDomain(str)
+  );
 }
 
 async function fetchSugg(q: string): Promise<string[]> {
@@ -50,11 +55,7 @@ async function fetchSugg(q: string): Promise<string[]> {
 
 function isMath(str: string): boolean {
   const norm = str.trim().replace(/x/gi, '*');
-  return (
-    /^[0-9+\-*/().%^√\s]+$/.test(norm) &&
-    !/^[0-9.]+$/.test(norm) &&
-    /[+\-*/%^√()]/.test(norm)
-  );
+  return /^[0-9+\-*/().%^√\s]+$/.test(norm) && !/^[0-9.]+$/.test(norm) && /[+\-*/%^√()]/.test(norm);
 }
 
 function calc(str: string): string | null {
@@ -76,6 +77,8 @@ function create(): HTMLDivElement {
   close();
   const m = document.createElement('div');
   m.id = 'suggestions';
+  m.setAttribute('role', 'listbox');
+  m.setAttribute('aria-label', 'Suggestions');
   m.className =
     'absolute top-full z-50 mt-0 w-full rounded-b-xl border-x border-b border-[#3a3758] bg-[#1f1f30]/95 shadow-2xl backdrop-blur-xl transition-all duration-200 overflow-y-auto opacity-0 hidden';
   urlbar?.parentElement?.appendChild(m);
@@ -92,11 +95,16 @@ function show(m: HTMLDivElement): void {
   const max = window.innerHeight - b.bottom - 16;
   m.style.maxHeight = `${Math.max(max, 100)}px`;
   open = true;
+  urlbar.setAttribute('aria-expanded', 'true');
 }
 
 function close(): void {
   const m = document.getElementById('suggestions');
+  urlbar?.setAttribute('aria-expanded', 'false');
+  urlbar?.removeAttribute('aria-activedescendant');
   if (m) {
+    // Renamed so a new list can take the id while this one fades out.
+    m.id = '';
     m.classList.add('opacity-0');
     setTimeout(() => m.remove(), 200);
   }
@@ -116,6 +124,29 @@ function select(val: string): void {
       cancelable: true,
     }),
   );
+}
+
+const options = () =>
+  Array.from(document.querySelectorAll<HTMLElement>('#suggestions [role="option"]'));
+
+function activeOption(): HTMLElement | null {
+  const id = urlbar?.getAttribute('aria-activedescendant');
+  return id ? document.getElementById(id) : null;
+}
+
+// Moves the highlight; past either end it returns to the typed text, as browsers do.
+function move(by: 1 | -1): void {
+  const all = options();
+  const i = all.indexOf(activeOption()!);
+  const next = i === -1 ? (by === 1 ? 0 : all.length - 1) : i + by;
+  all.forEach((o, j) => {
+    const on = j === next;
+    o.setAttribute('aria-selected', String(on));
+    o.classList.toggle('bg-[#2a293f]', on);
+    if (on) o.scrollIntoView({ block: 'nearest' });
+  });
+  if (all[next]) urlbar?.setAttribute('aria-activedescendant', all[next].id);
+  else urlbar?.removeAttribute('aria-activedescendant');
 }
 
 function esc(text: string): string {
@@ -144,7 +175,7 @@ function render(sugg: string[], qm: [string, string][], math: string | null, sq:
 
   if (trim.length) {
     html.push(
-      `<div class="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-(--text-secondary)">Suggestions for <span class="text-white">"${esc(sq)}"</span></div>`,
+      `<div aria-hidden="true" class="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-(--text-secondary)">Suggestions for <span class="text-white">"${esc(sq)}"</span></div>`,
     );
     trim.forEach(s => {
       html.push(
@@ -155,7 +186,7 @@ function render(sugg: string[], qm: [string, string][], math: string | null, sq:
 
   if (showq && qm.length) {
     html.push(
-      `<div class="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-(--text-secondary) border-t border-[#3a3758]">Persec Links</div>`,
+      `<div aria-hidden="true" class="px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-(--text-secondary) border-t border-[#3a3758]">Persec Links</div>`,
     );
     qm.forEach(([link, desc]) => {
       html.push(
@@ -165,7 +196,10 @@ function render(sugg: string[], qm: [string, string][], math: string | null, sq:
   }
 
   dd.innerHTML = html.join('');
-  dd.querySelectorAll<HTMLElement>('[data-value]').forEach(el => {
+  dd.querySelectorAll<HTMLElement>('[data-value]').forEach((el, i) => {
+    el.id = `suggestion-${i}`;
+    el.setAttribute('role', 'option');
+    el.setAttribute('aria-selected', 'false');
     el.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -225,10 +259,17 @@ if (urlbar) {
   });
   urlbar.addEventListener('blur', blur);
   urlbar.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
+    if (open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      e.preventDefault();
+      move(e.key === 'ArrowDown' ? 1 : -1);
+    } else if (e.key === 'Escape') {
       e.preventDefault();
       close();
     } else if (e.key === 'Enter') {
+      // Runs before the address bar's own Enter handler (src/utils/navigation.ts), which then
+      // opens the chosen suggestion.
+      const chosen = activeOption();
+      if (chosen?.dataset.value) urlbar.value = chosen.dataset.value;
       generation++;
       if (timer) clearTimeout(timer);
       timer = null;
@@ -252,10 +293,14 @@ if (urlbar) {
     }
   });
 
-  document.addEventListener('mousedown', e => {
-    const t = e.target as HTMLElement;
-    if (t.closest('#suggestions')) {
-      e.preventDefault();
-    }
-  }, true);
+  document.addEventListener(
+    'mousedown',
+    e => {
+      const t = e.target as HTMLElement;
+      if (t.closest('#suggestions')) {
+        e.preventDefault();
+      }
+    },
+    true,
+  );
 }

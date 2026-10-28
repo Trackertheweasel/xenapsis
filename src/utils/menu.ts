@@ -1,4 +1,5 @@
 import ConfigAPI from './config';
+import { notify } from './status';
 import { TabManager } from './tb';
 
 interface MenuElements {
@@ -12,6 +13,9 @@ interface MenuElements {
   cloak: HTMLButtonElement;
   panic: HTMLButtonElement;
   settings: HTMLButtonElement;
+  reopen: HTMLButtonElement;
+  bookmarks: HTMLButtonElement;
+  help: HTMLButtonElement;
 }
 
 interface KeybindConfig {
@@ -37,6 +41,8 @@ class MenuHandler {
     const panicKeybind = await this.getPanicKeybind();
     const keybindConfigs: KeybindConfig[] = [
       { element: this.elements.newTab, combo: 'Ctrl+Alt+N' },
+      { element: this.elements.reopen, combo: 'Ctrl+Alt+T' },
+      { element: this.elements.bookmarks, combo: 'Ctrl+Alt+B' },
       { element: this.elements.fullscreen, combo: 'Ctrl+Alt+Z' },
       { element: this.elements.reload, combo: 'Ctrl+Alt+R' },
       { element: this.elements.inspectElement, combo: 'Ctrl+Alt+I' },
@@ -80,14 +86,14 @@ class MenuHandler {
     document.addEventListener('click', this.handleDocumentClick.bind(this));
     document.addEventListener('mousedown', this.handleDocumentClick.bind(this));
     window.addEventListener('blur', this.handleWindowBlur.bind(this));
-    
+
     menuContainer.querySelectorAll<HTMLButtonElement>('.menu-item').forEach(item => {
       item.addEventListener('click', this.hideMenu.bind(this));
       item.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === 'Escape') this.hideMenu();
       });
     });
-    
+
     this.setupMenuActions();
     window.addEventListener('keydown', this.handleKeydown.bind(this), true);
     document.addEventListener('keydown', this.handleKeydown.bind(this), true);
@@ -97,6 +103,11 @@ class MenuHandler {
     this.elements.newTab.addEventListener('click', () => TabManager.openTab());
     this.elements.reload.addEventListener('click', this.handleReload.bind(this));
     this.elements.settings.addEventListener('click', () => TabManager.openTab('./st'));
+    this.elements.bookmarks.addEventListener('click', () => TabManager.openTab('/bm'));
+    this.elements.help.addEventListener('click', () => TabManager.openTab('/new#guide'));
+    this.elements.reopen.addEventListener('click', async () => {
+      if (!(await TabManager.reopenClosed())) notify('No recently closed tabs to reopen.');
+    });
     this.elements.cloak.addEventListener('click', this.handleCloak.bind(this));
     this.elements.fullscreen.addEventListener('click', this.handleFullscreen.bind(this));
     this.elements.inspectElement.addEventListener('click', this.handleInspectElement.bind(this));
@@ -107,9 +118,9 @@ class MenuHandler {
   private toggleMenu(e: MouseEvent): void {
     e.stopPropagation();
     e.preventDefault();
-    
+
     const wasHidden = this.elements.menuContainer.classList.contains('hidden');
-    
+
     if (wasHidden) {
       this.showMenu();
     } else {
@@ -121,12 +132,42 @@ class MenuHandler {
     this.elements.menuContainer.classList.remove('hidden');
     this.elements.menuButton.setAttribute('aria-expanded', 'true');
     this.isMenuOpen = true;
+    this.visibleItems()[0]?.focus();
   }
 
   private hideMenu(): void {
+    const hadFocus = this.elements.menuContainer.contains(document.activeElement);
     this.elements.menuContainer.classList.add('hidden');
     this.elements.menuButton.setAttribute('aria-expanded', 'false');
     this.isMenuOpen = false;
+    // After the frame: Enter on an item hides the menu before the item's click runs.
+    if (hadFocus) requestAnimationFrame(() => this.elements.menuButton.focus());
+  }
+
+  // Forward is only shown on phones, so skip it when it's hidden.
+  private visibleItems(): HTMLButtonElement[] {
+    return Array.from(
+      this.elements.menuContainer.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+    ).filter(b => b.offsetParent !== null);
+  }
+
+  // Up/Down, Home/End move through the menu, as role="menu" promises.
+  private moveFocus(e: KeyboardEvent): boolean {
+    const items = this.visibleItems();
+    const i = items.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      e.key === 'ArrowDown'
+        ? items[(i + 1) % items.length]
+        : e.key === 'ArrowUp'
+          ? items[(i - 1 + items.length) % items.length]
+          : e.key === 'Home'
+            ? items[0]
+            : e.key === 'End'
+              ? items[items.length - 1]
+              : null;
+    if (!next) return false;
+    next.focus();
+    return true;
   }
 
   private handleDocumentClick(e: MouseEvent): void {
@@ -165,7 +206,7 @@ class MenuHandler {
   private handleDarkMode(): void {
     const frame = this.getActiveFrame();
     if (!frame?.contentWindow || !frame.contentDocument) return;
-    
+
     const script = frame.contentDocument.createElement('script');
     script.textContent = `(() => {
       let style = document.getElementById('dark-mode');
@@ -191,13 +232,14 @@ class MenuHandler {
       const panicLoc = await this.getConfigValue('panicLoc', 'https://google.com');
       top.window.location.href = panicLoc;
     }
-    
+
     const viewport = newWindow.document.createElement('meta');
     viewport.name = 'viewport';
     viewport.content = 'width=device-width, initial-scale=1';
     newWindow.document.head.appendChild(viewport);
     const iframe = newWindow.document.createElement('iframe');
-    iframe.style.cssText = 'width:100%;height:100vh;height:100dvh;border:0;margin:0;padding:0;display:block';
+    iframe.style.cssText =
+      'width:100%;height:100vh;height:100dvh;border:0;margin:0;padding:0;display:block';
     iframe.src = `${location.origin}/`;
     newWindow.document.body.style.margin = '0';
     newWindow.document.title = 'about:blank';
@@ -252,22 +294,29 @@ class MenuHandler {
 
   private handleKeydown(e: KeyboardEvent): void {
     if (e.repeat) return;
-    
+
+    if (this.isMenuOpen && this.moveFocus(e)) {
+      // Stopped, as this listens on both window and document.
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     if (e.key === 'Escape' && this.isMenuOpen) {
       e.preventDefault();
       e.stopPropagation();
       this.hideMenu();
       return;
     }
-    
+
     if (e.key === 'Enter' && this.elements.menuContainer.contains(document.activeElement)) {
       this.hideMenu();
       return;
     }
-    
+
     const keybind = this.buildKeybind(e);
     const target = this.keyMap.get(keybind);
-    
+
     if (target) {
       e.preventDefault();
       e.stopPropagation();
@@ -293,28 +342,29 @@ class MenuHandler {
 document.addEventListener('DOMContentLoaded', async () => {
   const menuButton = document.querySelector<HTMLButtonElement>('#menubtn');
   const menuContainer = document.querySelector<HTMLDivElement>('#menu');
-  const menuItems = Array.from(document.querySelectorAll<HTMLButtonElement>('#menu .menu-item'));
-  
-  if (!menuButton || !menuContainer || menuItems.length < 8) {
+  const item = (id: string) => document.querySelector<HTMLButtonElement>(`#menu-${id}`);
+  const ids = [
+    'newTab',
+    'fullscreen',
+    'darkmode',
+    'reload',
+    'inspectElement',
+    'cloak',
+    'panic',
+    'settings',
+    'reopen',
+    'bookmarks',
+    'help',
+  ] as const;
+  const items = Object.fromEntries(ids.map(id => [id, item(id)]));
+
+  if (!menuButton || !menuContainer || ids.some(id => !items[id])) {
     console.error('Required menu elements not found');
     return;
   }
-  
-  const [newTab, fullscreen, reload, inspectElement, darkmode, cloak, panic, settings] = menuItems;
-  
-  const elements: MenuElements = {
-    menuButton,
-    menuContainer,
-    newTab,
-    fullscreen,
-    darkmode,
-    reload,
-    inspectElement,
-    cloak,
-    panic,
-    settings,
-  };
-  
+
+  const elements = { menuButton, menuContainer, ...items } as MenuElements;
+
   const menuHandler = new MenuHandler(elements);
   await menuHandler.initialize();
 });
