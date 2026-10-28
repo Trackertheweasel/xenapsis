@@ -102,6 +102,7 @@ async function handleMessage(event) {
   const { type, data } = event.data || {};
   const reply = event.ports[0];
   if (type === 'ADBLOCK') adblockEnabled = !!data?.enabled;
+  if (type === 'USER_AGENT') userAgentHeaders = isHeaderMap(data?.headers) ? data.headers : null;
   if (type === 'CLEAR_SITE_DATA') {
     // Scramjet keeps its cookie jar in memory as well as in IndexedDB, which the page clears.
     scramjet.cookieStore.load('{}');
@@ -137,29 +138,69 @@ self.addEventListener('message', event => {
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 
-// Reads Persec's adBlock setting without creating the settings database if it doesn't exist yet.
-function readAdblockSetting() {
+// Reads one of Persec's settings (undefined when unreadable) without creating the settings
+// database if it doesn't exist yet.
+function readSetting(key) {
   return new Promise(resolve => {
     const req = indexedDB.open('PersecDB');
     req.onupgradeneeded = () => req.transaction.abort();
-    req.onerror = () => resolve(true);
+    req.onerror = () => resolve(undefined);
     req.onsuccess = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains('Settings')) {
         db.close();
-        return resolve(true);
+        return resolve(undefined);
       }
-      const get = db.transaction('Settings').objectStore('Settings').get('adBlock');
+      const get = db.transaction('Settings').objectStore('Settings').get(key);
       get.onsuccess = () => {
         db.close();
-        resolve(get.result !== 'off');
+        resolve(get.result);
       };
       get.onerror = () => {
         db.close();
-        resolve(true);
+        resolve(undefined);
       };
     };
   });
+}
+
+function readAdblockSetting() {
+  return readSetting('adBlock').then(v => v !== 'off');
+}
+
+// The user agent chosen in Settings (src/utils/guards.ts), as the request headers that carry it:
+// null for the browser's own, undefined until read. Sent on every request Scramjet makes.
+let userAgentHeaders;
+const isHeaderMap = v =>
+  !!v &&
+  typeof v === 'object' &&
+  !Array.isArray(v) &&
+  Object.entries(v).every(
+    ([k, h]) =>
+      /^(user-agent|sec-ch-ua(-[a-z-]+)?)$/.test(k) && typeof h === 'string' && !/[\r\n]/.test(h)
+  );
+
+function withUserAgent(headers) {
+  if (!userAgentHeaders) return headers;
+  if (headers && typeof headers.set === 'function') {
+    for (const [k, v] of Object.entries(userAgentHeaders)) headers.set(k, v);
+    return headers;
+  }
+  const out = {};
+  for (const [k, v] of Object.entries(headers || {}))
+    if (!/^(user-agent|sec-ch-ua(-.*)?)$/i.test(k)) out[k] = v;
+  return { ...out, ...userAgentHeaders };
+}
+
+if (scramjet.client && typeof scramjet.client.fetch === 'function') {
+  const bareFetch = scramjet.client.fetch.bind(scramjet.client);
+  scramjet.client.fetch = async (url, init = {}) => {
+    if (userAgentHeaders === undefined) {
+      const saved = await readSetting('userAgentHeaders');
+      userAgentHeaders = isHeaderMap(saved) ? saved : null;
+    }
+    return bareFetch(url, { ...init, headers: withUserAgent(init.headers) });
+  };
 }
 
 // Ad and tracker hosts, matched against the host and all its subdomains.

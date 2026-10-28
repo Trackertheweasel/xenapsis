@@ -22,6 +22,7 @@ async function loadServiceWorker() {
     network: [] as string[],
     imported: [] as string[],
     configLoads: 0,
+    bare: [] as { url: string; headers: any }[],
   };
   const ctx: any = {
     calls,
@@ -47,6 +48,9 @@ async function loadServiceWorker() {
     $scramjetLoadWorker: () => ({
       ScramjetServiceWorker: class {
         config = { prefix: PATHS.scPrefix };
+        constructor() {
+          ctx.scramjet = this;
+        }
         // Like Scramjet's: reads the stored config (and builds its codec) only when it has none.
         async loadConfig() {
           if (!this.config) {
@@ -66,6 +70,13 @@ async function loadServiceWorker() {
           if (event.request.setCookie) this.cookieStore.cookies[event.request.setCookie] = {};
           return new Response('scramjet');
         }
+        // Scramjet's own transport client, which it sends every request of a site through.
+        client = {
+          async fetch(url: string, init: any) {
+            calls.bare.push({ url, headers: init.headers });
+            return new Response('bare');
+          },
+        };
         cookieStore = {
           cookies: {} as Record<string, unknown>,
           // Like Scramjet 1.1.0's, which skips objects: the format it saves the jar in.
@@ -403,4 +414,31 @@ test('A new build takes over from the old worker straight away', async () => {
   sw.listeners.activate({ waitUntil: (p: Promise<unknown>) => (claimed = p) });
   assert.ok(skipped);
   assert.equal(await claimed, 'claimed');
+});
+
+// Made in the worker's realm, so compared by value.
+const lastHeaders = (worker: any) => JSON.parse(JSON.stringify(worker.calls.bare.at(-1).headers));
+
+test("The user agent chosen in Settings replaces the browser's on every request Scramjet makes", async () => {
+  const worker = await loadServiceWorker();
+  const headers = {
+    'user-agent': 'Mozilla/5.0 (PlayStation; PlayStation 5/2.26)',
+    'sec-ch-ua': '"Chromium";v="141"',
+  };
+  await message(worker, 'USER_AGENT', { headers });
+  await worker.scramjet.client.fetch('https://example.com/', {
+    headers: { 'User-Agent': 'real browser', 'Sec-CH-UA-Mobile': '?0', accept: '*/*' },
+  });
+  assert.deepEqual(lastHeaders(worker), { accept: '*/*', ...headers });
+
+  // Back to the browser's own: headers pass through untouched.
+  await message(worker, 'USER_AGENT', { headers: null });
+  await worker.scramjet.client.fetch('https://example.com/', { headers: { 'User-Agent': 'real' } });
+  assert.deepEqual(lastHeaders(worker), { 'User-Agent': 'real' });
+
+  // Only user-agent headers on one line are taken, so a page can't add others or split a header.
+  await message(worker, 'USER_AGENT', { headers: { cookie: 'a=1' } });
+  await message(worker, 'USER_AGENT', { headers: { 'user-agent': 'x\r\nCookie: a=1' } });
+  await worker.scramjet.client.fetch('https://example.com/', { headers: { 'User-Agent': 'real' } });
+  assert.deepEqual(lastHeaders(worker), { 'User-Agent': 'real' });
 });
