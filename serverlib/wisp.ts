@@ -15,6 +15,10 @@ Object.assign(wisp.options, {
   // stops the server being used for spam or attacks; 2525 is a common alternate SMTP port.
   allow_udp_streams: false,
   port_whitelist: [80, 443, [1024, 2524], [2526, 65535]],
+  // wisp-js refuses loopback and private addresses, but classifies IPv6 forms of IPv4 addresses
+  // (::ffff:127.0.0.1, ::ffff:169.254.169.254) as neither, so they reached the host, the Docker
+  // network and cloud metadata. Browsing never needs an IPv6 literal, so refuse every one.
+  hostname_blacklist: [/:/],
   wisp_version: 2,
   // The MOTD is returned to anyone who completes the WebSocket handshake. The usual
   // "wisp server" string is a fixed value that lets automated fingerprinting identify the
@@ -24,6 +28,24 @@ Object.assign(wisp.options, {
 });
 
 export { wisp };
+
+// A browser always sends Origin on a WebSocket, and a page can't change it or Host. A mismatch means
+// another site is opening the tunnel with this visitor's cookie (SameSite=Lax still sends it from
+// sibling subdomains, such as another *.sslip.io name). Non-browser clients send no Origin.
+export function sameOrigin(req: IncomingMessage): boolean {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  let host: string;
+  try {
+    host = new URL(origin).host;
+  } catch {
+    return false;
+  }
+  const forwarded = req.headers['x-forwarded-host'];
+  return [req.headers.host, ...(Array.isArray(forwarded) ? forwarded : [forwarded])].some(
+    h => !!h && h.split(',')[0].trim().toLowerCase() === host.toLowerCase(),
+  );
+}
 
 // The one rule for who may open the tunnel, shared by the production server (serverlib/app.ts) and
 // the dev server (astro.config.ts). In invite-only mode it needs a valid sign-in cookie, or anyone
@@ -37,6 +59,11 @@ export function routeWisp(
   head: Buffer,
 ): boolean {
   if (!req.url?.endsWith(wispPath)) return false;
+  // Only a sign-in cookie is worth hijacking; an open server's tunnel is meant for any page.
+  if (access && !sameOrigin(req)) {
+    socket.destroy();
+    return true;
+  }
   const subject = access && tokenSubject(access, readCookie(req.headers.cookie, ACCESS_COOKIE));
   if (!access || subject) {
     // Usage counts only exist where the owner turned on the admin page (see serverlib/stats.ts).
