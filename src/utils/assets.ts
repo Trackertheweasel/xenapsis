@@ -1,5 +1,7 @@
 import ConfigAPI from './config';
+import { checkAndShow } from './diagnostics';
 import { scramjetWrapper, vWrapper } from './pro';
+import { ensureTransport } from './transport';
 
 type CardItem = {
   el: HTMLDivElement;
@@ -11,12 +13,10 @@ type CardItem = {
 document.addEventListener('DOMContentLoaded', async () => {
   scramjetWrapper.init();
   const sc = scramjetWrapper.getConfig();
-  const conn = new BareMux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
   const input = document.querySelector<HTMLInputElement>('[data-input]');
   const box = document.querySelector<HTMLDivElement>('[data-container]');
   const empty = document.querySelector<HTMLDivElement>('[data-empty]');
   const count = document.querySelector<HTMLSpanElement>('[data-visible]');
-  const wisp = await ConfigAPI.get('wispUrl');
 
   if (!input || !box) return;
 
@@ -126,8 +126,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const url = el.dataset.href;
       if (!url) return;
 
-      if ((await conn.getTransport()) !== PERSEC_PATHS.files.libcurl) {
-        await conn.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
+      try {
+        await ensureTransport();
+      } catch {
+        checkAndShow({ runtime: () => scramjetWrapper.init() });
+        return;
       }
 
       // Opens with whichever engine is chosen in Settings ('u' is Ultraviolet), each with its own encoding.

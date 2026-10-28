@@ -1,6 +1,7 @@
 import * as baremux from '@mercuryworkshop/bare-mux';
 import ConfigAPI from './config';
 import { scramjetWrapper, vWrapper } from './pro';
+import { ensureTransport } from './transport';
 
 interface Tab {
   id: number;
@@ -22,8 +23,8 @@ const internalRoutes: Record<string, string> = {
 const defaultIcon = '/a/persec.svg';
 const faviconApi =
   'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&size=64&url=';
-const bmConnection = new baremux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
-const bmClient = new baremux.BareClient();
+// Given the path: without one, bare-mux reads it from localStorage, which is empty on a first visit.
+const bmClient = new baremux.BareClient(PERSEC_PATHS.files.bareMuxWorker);
 
 const tabs: Tab[] = [];
 let activeId: number | null = null;
@@ -78,11 +79,7 @@ function truncate(str: string, len = 12): string {
 
 async function loadFavicon(origin: string): Promise<string> {
   try {
-    const transport = await bmConnection.getTransport();
-    if (transport !== PERSEC_PATHS.files.libcurl) {
-      const wisp = await ConfigAPI.get('wispUrl');
-      await bmConnection.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
-    }
+    await ensureTransport();
     // Only the site's origin is sent to the favicon service, never the page's full URL.
     const res = await bmClient.fetch(faviconApi + encodeURIComponent(origin));
     if (!res.ok) return defaultIcon;

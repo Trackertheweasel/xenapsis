@@ -48,7 +48,8 @@ export function registerAccessGate(app: FastifyInstance, access: AccessConfig) {
   });
 
   app.post('/enter', (req, reply) => {
-    const ip = (req.headers['cf-connecting-ip'] as string) || req.ip;
+    const header = access.clientIpHeader && req.headers[access.clientIpHeader];
+    const ip = (typeof header === 'string' && header) || req.ip;
     reply.header('Cache-Control', 'no-store').type('text/html');
     if (tooManyAttempts(ip)) {
       return reply.code(429).send(enterPage('Too many attempts. Try again in 15 minutes.'));

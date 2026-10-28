@@ -1,6 +1,8 @@
 import ConfigAPI from './config';
+import { checkAndShow } from './diagnostics';
 import { scramjetWrapper, vWrapper } from './pro';
 import { TabManager, decodeProxyUrl } from './tb';
+import { ensureTransport } from './transport';
 import { validateUrl } from './url';
 
 const reloadBtn = document.getElementById('refresh') as HTMLButtonElement | null;
@@ -25,19 +27,8 @@ const sc = scramjetWrapper.getConfig();
 const uv = vWrapper.getConfig();
 const hist = new Map<string, { stack: string[]; idx: number }>();
 
-let wisp: string;
-
-async function setup() {
-  wisp = await ConfigAPI.get('wispUrl');
-  scramjetWrapper.init();
-  await navigator.serviceWorker.register(PERSEC_PATHS.sw);
-
-  const conn = new BareMux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
-  const trans = await conn.getTransport();
-  if (trans !== PERSEC_PATHS.files.libcurl) {
-    await conn.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
-  }
-}
+// Registers the service worker, starts the engine and sets the transport, showing what failed.
+const setup = () => checkAndShow({ runtime: () => scramjetWrapper.init() });
 
 function frame(): HTMLIFrameElement | null {
   const id = TabManager.activeTabId;
@@ -166,10 +157,12 @@ async function submit() {
     return;
   }
 
-  const conn = new BareMux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
-  const trans = await conn.getTransport();
-  if (trans !== PERSEC_PATHS.files.libcurl) {
-    await conn.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
+  try {
+    await ensureTransport();
+  } catch {
+    // Opening the page now would only hang; say what is wrong instead.
+    setup();
+    return;
   }
 
   const val = await validateUrl(v);

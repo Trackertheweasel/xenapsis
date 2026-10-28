@@ -47,17 +47,19 @@ Hosting platforms often shut down proxies. A small server of your own (a VPS) do
 
 The site runs over HTTPS (needed for the proxy to work) and is invite-only. Manage it from the same console:
 
-| Command                       | What it does                                                          |
-| ----------------------------- | --------------------------------------------------------------------- |
-| `persec add <name> <code>`    | Lets someone in with a code you choose (also changes their code)      |
-| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days)                    |
-| `persec revoke <name>`        | Cancels that person's invites right away                              |
-| `persec domain add <name>`    | Adds another web address, e.g. a new DuckDNS name if one gets blocked |
-| `persec domain remove <name>` | Stops using a web address                                             |
-| `persec domain`               | Lists the site's web addresses                                        |
-| `persec export`               | Prints a command to set up a backup server that shares these invites  |
-| `persec update`               | Updates to the latest version                                         |
-| `persec logs`                 | Shows what the server is doing                                        |
+| Command                       | What it does                                                           |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `persec add <name> <code>`    | Lets someone in with a code you choose (also changes their code)       |
+| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days)                     |
+| `persec revoke <name>`        | Cancels that person's invites right away                               |
+| `persec domain add <name>`    | Adds another web address, e.g. a new DuckDNS name if one gets blocked  |
+| `persec domain remove <name>` | Stops using a web address                                              |
+| `persec domain`               | Lists the site's web addresses                                         |
+| `persec export`               | Prints a command to set up a backup server that shares these invites   |
+| `persec status`               | Checks that each web address answers over HTTPS (fails if one doesn't) |
+| `persec logins export/import` | Copies saved-login backups to or from another server (still encrypted) |
+| `persec update`               | Updates to the latest version                                          |
+| `persec logs`                 | Shows what the server is doing                                         |
 
 If the site shows a certificate error with the `sslip.io` address, or a single name gets blocked, add another name with `persec domain add` (your settings and invites are kept) and share it. It is worth keeping a spare name or two added so a block never cuts everyone off.
 
@@ -81,15 +83,42 @@ A spare domain is still worth keeping pre-added — but make it a registered dom
 
 Persec reads the visitor's real address from Cloudflare (only from Cloudflare's own address ranges), so the invite-code attempt limit still counts each visitor separately.
 
+Cloudflare decrypts traffic to your domain before passing it on, so it can see Persec's own pages, invite codes and sign-in cookies. Sites opened through Persec stay encrypted end to end over HTTPS, because the proxy's TLS runs inside the browser. Cloudflare still sees how much traffic each visitor sends, and the tunnel's WebSocket. It may also close long-lived connections now and then, which the proxy reconnects from.
+
+#### Choosing how people reach the server
+
+|                                      | Direct HTTPS (the default)                                          | Behind a CDN (Cloudflare)                                                             | Independent backup server                                  |
+| ------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| What a filter has to block           | The domain name, or the server's IP                                 | The domain name (unless ECH hides it), or the CDN, which affects many unrelated sites | Each server separately                                     |
+| Who can see Persec's pages and codes | Only your server                                                    | Your server and the CDN                                                               | Each server                                                |
+| Hides the server's IP                | No                                                                  | Yes, from visitors (not from the CDN)                                                 | No                                                         |
+| ECH                                  | Only with a custom Caddy build (below)                              | Automatic                                                                             | Per server                                                 |
+| Certificates                         | Caddy, automatic; needs ports 80 and 443 open and DNS pointing here | Caddy behind the CDN (SSL/TLS **Full (strict)**); the CDN has its own                 | Caddy on each server                                       |
+| Depends on                           | Your DNS provider and hosting provider                              | Also the CDN's account and its policies                                               | A second provider, and people knowing the backup's address |
+| When it fails                        | Add a name (`persec domain add`), or move to a backup               | Turn the CDN off for that name (grey cloud) to go direct, or use a backup             | —                                                          |
+
+These combine. A sensible setup is one name behind a CDN, one name direct, and a backup at another provider that is reached directly, not through the same CDN. Then a block on the CDN, or on ECH, still leaves a way in. See [docs/resilience.md](docs/resilience.md) for which blocks each one helps with.
+
 #### Surviving a blocked server
 
-Extra names all point at one server, so if its **IP address** is blocked (not just a name), every name goes down at once. The fix is a second server on a different provider or region. Because logins are signed with your `PERSEC_SECRET`, a second server that shares it accepts the same invite codes — and people's existing logins — with nothing to keep in sync.
+Extra names all point at one server, so if its **IP address** is blocked (not just a name), every name goes down at once. The fix is a second server on a different provider or region.
 
-1. On your current server's console, run `persec export`. It prints a ready-to-paste `curl ... | PERSEC_SECRET=... bash` command.
+1. On your current server's console, run `persec export`. It prints a ready-to-paste `curl ... | PERSEC_SECRET=... bash` command. If you hid the tunnel path, the command gives the backup its own random one.
 2. Open a second server's console (a different host is best) and paste that command.
-3. Run `persec domain add` on the second server to give it its own name, and share that address as a backup.
+3. Run `persec domain add` on the second server to give it its own name.
+4. Send people the backup's address together with their invite code, through the same private channel. If the main server is blocked, its pages can't tell anyone where to go instead.
+5. Optional: copy saved logins across with `persec logins export > logins.tar` on the first server and `persec logins import < logins.tar` on the second. The files stay encrypted.
 
-Keep the `export` command private: anyone with the secret can mint invites. Minted invites (`persec invite`) work on every server sharing the secret automatically; codes added with `persec add` must be added on each server.
+What the two servers share, and what they don't:
+
+- **Minted invites** (`persec invite`) work on both, because both have the same `PERSEC_SECRET`.
+- **Codes from `persec add` and revokes from `persec revoke` are copied once, by the export command, and never again.** Run them on every server; a revoke done only on one leaves that person able to use the other.
+- **Each address is a separate site to the browser.** Someone moving to the backup's address signs in again, and starts with default settings and no bookmarks unless they bring them (Settings → Advanced → _Move to another address_: export the file at the old address, import it at the new one). Proxied sites' logins come back with **Restore my logins**, if the backups were copied.
+- To avoid all that, keep one domain and move its DNS record to the backup when the main server's IP is blocked. Browsers then see the same site, so settings, bookmarks and sign-ins carry over. This needs a domain you control, and Caddy on the backup gets its certificate only after DNS points to it (a minute or two).
+
+Run `persec status` on each server (or point an uptime monitor at `https://<your-domain>/enter`, which answers 200) to know when one is down. It checks from the server's side only; a block in one country shows up as reports from people there. Failover is a manual step on purpose; [docs/resilience.md](docs/resilience.md) explains why and has the full list of what is shared.
+
+Keep the `export` command private: anyone with the secret can mint invites on every server that shares it. Changing the secret on one server signs everyone out there and stops the other servers' invites working on it.
 
 #### Hiding the proxy endpoint
 
@@ -124,6 +153,8 @@ Two ways to get it:
 
 1. **Through Cloudflare (recommended, no server changes).** Put the domain behind Cloudflare — the same free step that hides the server's IP (proxying on, SSL/TLS set to Full). Cloudflare turns ECH on automatically for proxied domains and publishes the DNS record for you. Nothing to configure on the server.
 2. **In Caddy, on your own domain (advanced).** Caddy 2.10+ can do ECH itself, but it has to publish the key to your DNS, so it needs a Caddy build that includes **your DNS provider's module** plus an API token for it. The stock `caddy:2` image used here does not include DNS modules, so this means building a custom Caddy image. See the commented `ech` block in [`deploy/Caddyfile`](deploy/Caddyfile) for the shape of the config.
+
+What ECH does not do: it hides only the name. A filter can still block the server's (or the CDN's) IP address, block the CDN altogether, or tell proxy traffic apart by its timing and volume. Browsers only use ECH when they find its DNS record, which usually needs Secure DNS. Support also differs between browsers and versions, so some visitors will connect without it.
 
 > **Important, and region-dependent.** ECH helps where filtering is based on the domain name. But some censors respond by blocking **all** ECH traffic rather than reading it — Russia's filtering devices began dropping ECH connections to Cloudflare in late 2024. So ECH can _remove_ a block in one country and _cause_ one in another. Keep a non-ECH address available as a fallback, and test from the actual region before relying on it.
 
@@ -223,6 +254,8 @@ Most hosting providers forbid public proxies but allow private ones. In invite-o
      persec
    ```
 
+If Persec runs behind a reverse proxy other than the bundled Caddy, set `PERSEC_CLIENT_IP_HEADER` to the header that proxy puts the visitor's address in (for example `x-real-ip`), and only if the proxy always overwrites it. Persec uses it to count wrong codes per visitor. Without it, Persec counts by the connection's address and ignores such headers, because anyone could otherwise send a different fake address with every guess. `deploy/compose.yml` sets it for Caddy.
+
 People enter their code once and stay signed in as long as they come back at least once every 30 days, and their browser's password manager can save the code for them. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
 
 ### Handing out invites without restarting
@@ -250,7 +283,7 @@ On an invite-only Persec, a cookie notice on the first visit asks people whether
 - **Give each person their own code.** Everyone who signs in with the same code shares one backup.
 - Backups are stored in `data/logins` (with Docker Compose, the `persec_data` volume, which `persec update` keeps). Set `PERSEC_DATA_DIR` to store them elsewhere. Render and Codespaces have no lasting disk, so backups there are lost on every restart.
 - A backup is deleted when its owner turns saved logins off or clears site data, and automatically when it hasn't been updated for 90 days.
-- Backup servers (`persec export`) share invites but not backups: each server keeps its own.
+- Backup servers (`persec export`) share invites but not backups: each server keeps its own. Copy them across with `persec logins export` and `persec logins import`; neither server can read them.
 
 ---
 
@@ -295,6 +328,12 @@ Set these environment variables on the server to serve ads from a network instea
 - **`generic`** points Persec at any URL that returns the JSON `{ "name", "text", "image", "click", "impression" }` (`impression` optional). Use it to connect any other network through a small shim of your own, or to serve a rotating house ad. `image` and `click` are the network's own URLs; Persec fetches them, never the visitor.
 
 Persec deliberately sends the network no visitor IP or user agent, so it cannot profile or target the people behind your server. With Docker Compose, pass these through in `deploy/.env`.
+
+---
+
+## When Persec can't connect
+
+When something Persec needs isn't available, the browser window shows what failed instead of loading forever. It covers service workers, shared workers, site storage, WebAssembly, the proxy engine, and the connection to the server. It also says whether to fix it in the browser, try another network or the backup address, or sign in again. **Settings → Advanced → Check connection** runs the same checks on demand. If they all pass and a site still won't load, that site is the problem; try the other proxy engine in Settings. Where a browser setting or a school or work policy turns off something Persec needs, the message says so and suggests another browser or device. Persec never tries to get around the policy. [docs/resilience.md](docs/resilience.md) lists which browsers are expected to work.
 
 ---
 

@@ -9,6 +9,7 @@ import {
   restore,
   setConsent,
 } from './loginsync';
+import { exportSettings, mergeBookmarks, parseSettings } from './portable';
 import { clearSiteData } from './sitedata';
 
 export const SettingsAPI = {
@@ -124,6 +125,49 @@ export class SettingsManager {
       await ConfigAPI.reset();
       parent.location.reload();
     }
+  }
+
+  static initConnectionCheck() {
+    const btn = document.querySelector<HTMLButtonElement>('[data-check-connection]');
+    const out = document.querySelector<HTMLElement>('[data-check-result]');
+    btn?.addEventListener('click', async () => {
+      if (!out) return;
+      btn.disabled = true;
+      out.textContent = 'Checking…';
+      // Loaded on demand so Settings doesn't carry the proxy's connection code until it's used.
+      const { renderResults, runDiagnostics } = await import('./diagnostics');
+      renderResults(out, await runDiagnostics());
+      btn.disabled = false;
+    });
+  }
+
+  static initPortableSettings() {
+    document.querySelector('[data-export-settings]')?.addEventListener('click', async () => {
+      const file = exportSettings(await ConfigAPI.getAll());
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(
+        new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }),
+      );
+      a.download = 'persec-settings.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    const input = document.querySelector<HTMLInputElement>('[data-import-settings]');
+    input?.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      input.value = '';
+      if (!file) return;
+      let settings: Record<string, any>;
+      try {
+        settings = parseSettings(await file.text());
+      } catch (err) {
+        alert((err as Error).message);
+        return;
+      }
+      if (settings.bm) settings.bm = mergeBookmarks((await ConfigAPI.get('bm')) || [], settings.bm);
+      for (const [key, value] of Object.entries(settings)) await ConfigAPI.set(key, value);
+      parent.location.reload();
+    });
   }
 
   static initClearSiteData() {
@@ -908,6 +952,8 @@ export class SettingsManager {
     this.initProxyBackend();
     this.initPanicKey();
     this.initClearSiteData();
+    this.initConnectionCheck();
+    this.initPortableSettings();
     this.initSavedLogins();
 
     const resetBtn = document.querySelector('[data-reset="reset"]');

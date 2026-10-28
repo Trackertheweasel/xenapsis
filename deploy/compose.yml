@@ -15,6 +15,9 @@ services:
         PUBLIC_PERSEC_PROXY_KEY: ${PUBLIC_PERSEC_PROXY_KEY:-}
     restart: unless-stopped
     env_file: .env
+    environment:
+      # Caddy always overwrites this header with the visitor's real address (see Caddyfile).
+      PERSEC_CLIENT_IP_HEADER: cf-connecting-ip
     # Not published to the internet: only Caddy can reach it.
     expose:
       - "8080"

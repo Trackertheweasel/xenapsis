@@ -129,3 +129,32 @@ test('Renewing never outlives a minted invite', () => {
   assert.ok(verifyToken(access, renewed, now + 6 * day));
   assert.equal(tokenSubject(access, renewed, now + 8 * day), null);
 });
+
+// What a backup server set up with `persec export` shares with the primary (README, "Surviving a
+// blocked server"). Each server reads only its own environment; nothing syncs between them.
+test('Servers sharing PERSEC_SECRET share minted invites and sign-ins, not later changes', () => {
+  const secret = 'shared-secret-0123456789';
+  const primary = loadAccess({ PERSEC_INVITE_CODES: 'alice:abc123', PERSEC_SECRET: secret })!;
+  const backup = loadAccess({ PERSEC_INVITE_CODES: 'alice:abc123', PERSEC_SECRET: secret })!;
+  const invite = mintInvite(secret, 'sam', 30);
+  assert.ok(checkCode(backup, invite), 'minted on one, accepted on the other');
+  // A cookie only reaches the backup if both answer on the same domain (DNS failover).
+  assert.equal(tokenSubject(backup, createToken(primary, 'alice')), 'alice');
+
+  // Changes made on the primary afterwards stay there.
+  const primaryLater = loadAccess({
+    PERSEC_INVITE_CODES: 'alice:abc123,lee:leecode1',
+    PERSEC_SECRET: secret,
+    PERSEC_REVOKED: 'sam',
+  })!;
+  assert.equal(checkCode(primaryLater, invite), null, 'revoked on the primary');
+  assert.ok(checkCode(backup, invite), 'still accepted by the backup until revoked there too');
+  assert.equal(checkCode(backup, 'leecode1'), null, 'a code added on the primary only');
+
+  const stranger = loadAccess({
+    PERSEC_INVITE_CODES: 'alice:abc123',
+    PERSEC_SECRET: 'other-secret-0123',
+  })!;
+  assert.equal(checkCode(stranger, invite), null, 'a different secret shares nothing');
+  assert.equal(tokenSubject(stranger, createToken(primary, 'alice')), null);
+});

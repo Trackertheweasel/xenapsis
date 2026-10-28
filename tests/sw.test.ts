@@ -21,6 +21,7 @@ async function loadServiceWorker() {
     uv: [] as string[],
     network: [] as string[],
     imported: [] as string[],
+    configLoads: 0,
   };
   const ctx: any = {
     calls,
@@ -46,7 +47,13 @@ async function loadServiceWorker() {
     $scramjetLoadWorker: () => ({
       ScramjetServiceWorker: class {
         config = { prefix: PATHS.scPrefix };
-        async loadConfig() {}
+        // Like Scramjet's: reads the stored config (and builds its codec) only when it has none.
+        async loadConfig() {
+          if (!this.config) {
+            calls.configLoads++;
+            this.config = { prefix: PATHS.scPrefix };
+          }
+        }
         route(event: any) {
           return event.request.url.startsWith(`${origin}${PATHS.scPrefix}`);
         }
@@ -368,4 +375,32 @@ test("The worker loads the proxy runtime from this build's paths", async () => {
     [uv.handler, uv.client, uv.bundle, uv.config, uv.sw],
     [files.uvHandler, files.uvClient, files.uvBundle, files.uvConfig, files.uvSw],
   );
+});
+
+test("A page's new Scramjet config makes the worker reload it, codec included", async () => {
+  const worker = await loadServiceWorker();
+  worker.readAdblockSetting = async () => false;
+  worker.withScramjetCookies = async () => undefined;
+  await request(worker, scramjet('https://example.com/'));
+  const before = worker.calls.configLoads;
+  // Sent by Scramjet's controller from any Persec page (not only the trusted ones) after saving it.
+  worker.listeners.message({
+    data: { scramjet$type: 'loadConfig', config: { prefix: PATHS.scPrefix } },
+    source: { type: 'window', url: `${origin}/welcome` },
+    ports: [],
+    waitUntil: () => {},
+  });
+  assert.equal(await (await request(worker, scramjet('https://example.com/'))).text(), 'scramjet');
+  assert.equal(worker.calls.configLoads, before + 1, 'read back from storage');
+});
+
+test('A new build takes over from the old worker straight away', async () => {
+  let skipped = false;
+  let claimed: Promise<unknown> | undefined;
+  sw.skipWaiting = () => (skipped = true);
+  sw.clients = { claim: async () => 'claimed' };
+  sw.listeners.install({});
+  sw.listeners.activate({ waitUntil: (p: Promise<unknown>) => (claimed = p) });
+  assert.ok(skipped);
+  assert.equal(await claimed, 'claimed');
 });

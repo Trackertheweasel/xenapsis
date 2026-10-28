@@ -431,6 +431,42 @@ import ImportLucide from '../layouts/lucide.astro';
                 />
               </div>
 
+              <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
+                <h3 class="mb-2 font-medium">Check connection</h3>
+                <p class="text-text-secondary mb-3 text-sm">
+                  Checks what the proxy needs in this browser and the connection to this server, so you can tell whether
+                  a problem is this browser, this network, or the site you're opening.
+                </p>
+                <button
+                  data-check-connection
+                  class="flex items-center gap-2 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 py-2 text-sm hover:bg-[#6366f1]/25"
+                >
+                  <i data-lucide="activity" class="h-4 w-4"></i>Run checks
+                </button>
+                <div data-check-result role="status" class="text-text-secondary mt-3 text-sm"></div>
+              </div>
+
+              <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
+                <h3 class="mb-2 font-medium">Move to another address</h3>
+                <p class="text-text-secondary mb-3 text-sm">
+                  Each Persec address (including a backup server) keeps its own settings and bookmarks. Export them here
+                  and import the file at the other address. Saved logins move separately: sign in there with your invite
+                  code and restore them. The file is not encrypted, so keep it private.
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    data-export-settings
+                    class="flex items-center gap-2 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 py-2 text-sm hover:bg-[#6366f1]/25"
+                  >
+                    <i data-lucide="download" class="h-4 w-4"></i>Export settings
+                  </button>
+                  <label class="cursor-pointer flex items-center gap-2 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 py-2 text-sm hover:bg-[#6366f1]/25">
+                    <i data-lucide="upload" class="h-4 w-4"></i>Import settings
+                    <input data-import-settings type="file" accept="application/json,.json" class="sr-only" />
+                  </label>
+                </div>
+              </div>
+
               <div class="bg-background-overlay/60 rounded-xl border border-red-500/20 p-5">
                 <h3 class="mb-2 flex items-center gap-2 font-medium text-amber-400">
                   <i data-lucide="alert-triangle" class="h-4 w-4"></i>

@@ -123,8 +123,19 @@ async function handleMessage(event) {
 }
 
 self.addEventListener('message', event => {
+  // Scramjet's own listener (added first) takes the config a page sends, but keeps the URL codec
+  // from the first config it read, so after a rebuild (new URL key) every new URL was decoded with
+  // the old key. The page saves the config to IndexedDB before sending it, so drop it here and the
+  // next request reads it back from there, codec included. Not a trust decision: the stored config
+  // is what any page of this origin wrote.
+  if (event.data?.scramjet$type === 'loadConfig') scramjet.config = null;
   event.waitUntil(handleMessage(event));
 });
+
+// A new build ships new URL keys and prefixes. Take over at once, instead of leaving the old
+// worker, with the old keys, in charge until every Persec tab has been closed.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 
 // Reads Persec's adBlock setting without creating the settings database if it doesn't exist yet.
 function readAdblockSetting() {
