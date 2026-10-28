@@ -34,7 +34,7 @@
     "esbuild": "^0.28.2",
     "fastify": "^5.12.7",
     "localforage": "^1.10.0",
-    "lucide": "^0.562.0",
+    "lucide": "^1.61.0",
     "node-fetch": "^3.3.2",
     "prettier-plugin-astro": "^1.1.2",
     "prettier-plugin-tailwindcss": "^0.8.1",
