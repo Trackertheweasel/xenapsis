@@ -73,6 +73,170 @@
     --pattern: 0;
   }
 
+  /* Ported from Interstellar (github.com/UseInterstellar/Interstellar) and Nebula
+     (github.com/NebulaServices/Nebula), both AGPL-3.0 like Persec, mapped onto Persec's tokens.
+     Light themes are left out: the start page draws white text on the background. */
+  :root[data-theme="arctic"] {
+    --background: #242933;
+    --background-overlay: #2e3440;
+    --border: #3b4252;
+    --text-header: #eceff4;
+    --text-secondary: #d8dee9;
+    --accent: #88c0d0;
+    --glow-1: rgb(136 192 208 / 0.12);
+    --glow-2: rgb(136 192 208 / 0.05);
+  }
+  :root[data-theme="black"] {
+    --background: #000000;
+    --background-overlay: #0a0a0a;
+    --border: #262626;
+    --text-header: #ffffff;
+    --text-secondary: #9a9a9a;
+    --accent: #ffffff;
+    --glow-1: rgb(255 255 255 / 0.12);
+    --glow-2: rgb(255 255 255 / 0.05);
+  }
+  :root[data-theme="oled"] {
+    --background: #000000;
+    --background-overlay: #00000f;
+    --border: #1c2a66;
+    --text-header: #e6e9ff;
+    --text-secondary: #9aa5e6;
+    --accent: #4763ff;
+    --glow-1: rgb(71 99 255 / 0.12);
+    --glow-2: rgb(71 99 255 / 0.05);
+  }
+  :root[data-theme="deep-ocean"] {
+    --background: #002b36;
+    --background-overlay: #073642;
+    --border: #0f4653;
+    --text-header: #d6e0e0;
+    --text-secondary: #93a1a1;
+    --accent: #268bd2;
+    --glow-1: rgb(38 139 210 / 0.12);
+    --glow-2: rgb(38 139 210 / 0.05);
+  }
+  :root[data-theme="forest"] {
+    --background: #2d353b;
+    --background-overlay: #343f44;
+    --border: #475258;
+    --text-header: #d3c6aa;
+    --text-secondary: #9da9a0;
+    --accent: #a7c080;
+    --glow-1: rgb(167 192 128 / 0.12);
+    --glow-2: rgb(167 192 128 / 0.05);
+  }
+  :root[data-theme="one-dark"] {
+    --background: #282c34;
+    --background-overlay: #21252b;
+    --border: #3a3f4b;
+    --text-header: #d7dae0;
+    --text-secondary: #9099a6;
+    --accent: #61afef;
+    --glow-1: rgb(97 175 239 / 0.12);
+    --glow-2: rgb(97 175 239 / 0.05);
+  }
+  :root[data-theme="monokai"] {
+    --background: #272822;
+    --background-overlay: #22231d;
+    --border: #3e3d32;
+    --text-header: #f8f8f2;
+    --text-secondary: #bcbcae;
+    --accent: #a6e22e;
+    --glow-1: rgb(166 226 46 / 0.12);
+    --glow-2: rgb(166 226 46 / 0.05);
+  }
+  :root[data-theme="gruvbox"] {
+    --background: #282828;
+    --background-overlay: #32302f;
+    --border: #504945;
+    --text-header: #ebdbb2;
+    --text-secondary: #a89984;
+    --accent: #fe8019;
+    --glow-1: rgb(254 128 25 / 0.12);
+    --glow-2: rgb(254 128 25 / 0.05);
+  }
+  :root[data-theme="rose"] {
+    --background: #191724;
+    --background-overlay: #1f1d2e;
+    --border: #2a273f;
+    --text-header: #e0def4;
+    --text-secondary: #908caa;
+    --accent: #c4a7e7;
+    --glow-1: rgb(196 167 231 / 0.12);
+    --glow-2: rgb(196 167 231 / 0.05);
+  }
+  :root[data-theme="sky"] {
+    --background: #0b1d33;
+    --background-overlay: #14314f;
+    --border: #1c3d63;
+    --text-header: #eaf2ff;
+    --text-secondary: #8fb4dd;
+    --accent: #38bdf8;
+    --glow-1: rgb(56 189 248 / 0.12);
+    --glow-2: rgb(56 189 248 / 0.05);
+  }
+  :root[data-theme="synthwave"] {
+    --background: #241b2f;
+    --background-overlay: #2a2139;
+    --border: #3b2f52;
+    --text-header: #ffffff;
+    --text-secondary: #c9b8e0;
+    --accent: #ff7edb;
+    --glow-1: rgb(255 126 219 / 0.12);
+    --glow-2: rgb(255 126 219 / 0.05);
+  }
+  :root[data-theme="tokyo-night"] {
+    --background: #1a1b26;
+    --background-overlay: #16161e;
+    --border: #292e42;
+    --text-header: #c0caf5;
+    --text-secondary: #a9b1d6;
+    --accent: #7aa2f7;
+    --glow-1: rgb(122 162 247 / 0.12);
+    --glow-2: rgb(122 162 247 / 0.05);
+  }
+  :root[data-theme="mocha"] {
+    --background: #1e1e2e;
+    --background-overlay: #181825;
+    --border: #313244;
+    --text-header: #cdd6f4;
+    --text-secondary: #a6adc8;
+    --accent: #cba6f7;
+    --glow-1: rgb(203 166 247 / 0.12);
+    --glow-2: rgb(203 166 247 / 0.05);
+  }
+  :root[data-theme="macchiato"] {
+    --background: #24273a;
+    --background-overlay: #1e2030;
+    --border: #363a4f;
+    --text-header: #cad3f5;
+    --text-secondary: #a5adcb;
+    --accent: #c6a0f6;
+    --glow-1: rgb(198 160 246 / 0.12);
+    --glow-2: rgb(198 160 246 / 0.05);
+  }
+  :root[data-theme="frappe"] {
+    --background: #303446;
+    --background-overlay: #292c3c;
+    --border: #414559;
+    --text-header: #c6d0f5;
+    --text-secondary: #a5adce;
+    --accent: #ca9ee6;
+    --glow-1: rgb(202 158 230 / 0.12);
+    --glow-2: rgb(202 158 230 / 0.05);
+  }
+  :root[data-theme="terminal"] {
+    --background: #000000;
+    --background-overlay: #020805;
+    --border: #14361f;
+    --text-header: #c8f0d8;
+    --text-secondary: #7fbf98;
+    --accent: #3cb371;
+    --glow-1: rgb(60 179 113 / 0.12);
+    --glow-2: rgb(60 179 113 / 0.05);
+  }
+
   html {
     font-family: var(--font-sans);
     background-color: var(--background);

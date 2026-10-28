@@ -1,6 +1,8 @@
 import ConfigAPI from './config';
+import { addCustom, customKey, readCustom, removeCustom, type CustomTile } from './custom';
 import { checkAndShow } from './diagnostics';
 import { encodeProxyUrl, scramjetWrapper } from './pro';
+import { renderIcons } from './icons';
 import { ensureTransport } from './transport';
 
 type CardItem = {
@@ -19,12 +21,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (!input || !box) return;
 
-  const items: CardItem[] = Array.from(box.querySelectorAll<HTMLDivElement>('.card')).map(el => ({
+  const key = customKey(box.dataset.type || '');
+  let custom: CustomTile[] = [];
+  try {
+    custom = readCustom(await ConfigAPI.get(key));
+  } catch {}
+  const addButton = box.querySelector<HTMLButtonElement>('[data-add-custom]');
+  let lastCustom: Element | null = addButton;
+  for (const tile of custom) {
+    const el = customCard(tile);
+    lastCustom?.after(el);
+    lastCustom = el;
+  }
+  if (custom.length) renderIcons();
+
+  const toItem = (el: HTMLDivElement): CardItem => ({
     el,
     n: el.querySelector('h2')?.textContent?.toLowerCase() || '',
     d: el.querySelector('p')?.textContent?.toLowerCase() || '',
     sn: el.dataset.name?.toLowerCase() || '',
-  }));
+  });
+  const items: CardItem[] = Array.from(box.querySelectorAll<HTMLDivElement>('.card')).map(toItem);
 
   for (const { el } of items) {
     const bg = el.dataset.bg;
@@ -43,6 +60,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   function update(): void {
     const vis = items.filter(({ el }) => el.style.display !== 'none').length;
     if (count) count.textContent = String(vis);
+    const total = document.querySelector<HTMLSpanElement>('[data-total]');
+    if (total) total.textContent = String(items.length);
     const show = vis === 0 && input && input.value.trim() !== '';
     empty?.classList.toggle('hidden', !show);
     empty?.classList.toggle('flex', !!show);
@@ -120,7 +139,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     setActive(this);
   });
 
-  for (const { el } of items) {
+  function bind(el: HTMLDivElement) {
+    el.querySelector('[data-remove]')?.addEventListener('click', async e => {
+      e.stopPropagation();
+      custom = removeCustom(custom, el.dataset.href || '');
+      await ConfigAPI.set(key, custom);
+      items.splice(
+        items.findIndex(i => i.el === el),
+        1,
+      );
+      el.remove();
+      update();
+    });
     el.addEventListener('click', async () => {
       const url = el.dataset.href;
       if (!url) return;
@@ -136,12 +166,90 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.location.href = encodeProxyUrl(url, await ConfigAPI.get('backend'));
     });
     el.addEventListener('keydown', e => {
+      if (e.target !== el) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         el.click();
       }
     });
   }
+  for (const { el } of items) bind(el);
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-custom-dialog]');
+  const form = dialog?.querySelector<HTMLFormElement>('[data-custom-form]');
+  const error = dialog?.querySelector<HTMLElement>('[data-custom-error]');
+  addButton?.addEventListener('click', () => {
+    form?.reset();
+    if (error) error.textContent = '';
+    dialog?.showModal();
+  });
+  dialog?.querySelector('[data-custom-cancel]')?.addEventListener('click', () => dialog.close());
+  form?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = new FormData(form);
+    try {
+      custom = addCustom(custom, {
+        name: String(data.get('name') ?? ''),
+        url: String(data.get('url') ?? ''),
+      });
+    } catch (err) {
+      if (error) error.textContent = (err as Error).message;
+      return;
+    }
+    await ConfigAPI.set(key, custom);
+    const el = customCard(custom[custom.length - 1]);
+    lastCustom?.after(el);
+    lastCustom = el;
+    items.push(toItem(el));
+    bind(el);
+    renderIcons();
+    dialog?.close();
+    update();
+  });
 
   update();
 });
+
+// A card for one of the person's own tiles, built like the listed ones (asset.astro) with a letter
+// in place of a picture. Text goes in as text, never as HTML.
+function customCard(tile: CustomTile): HTMLDivElement {
+  const el = document.createElement('div');
+  el.className =
+    'card group bg-background-overlay relative flex h-44 cursor-pointer flex-col justify-end overflow-hidden rounded-lg transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-[#6366f1] focus-visible:outline-none';
+  el.dataset.href = tile.url;
+  el.dataset.name = tile.name;
+  el.setAttribute('role', 'link');
+  el.tabIndex = 0;
+  el.setAttribute('aria-label', `Open ${tile.name}`);
+  const hue = [...tile.name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+  const bg = document.createElement('div');
+  bg.className = 'absolute inset-0 flex items-start justify-center pt-6';
+  bg.style.background = `linear-gradient(135deg, hsl(${hue} 45% 30%), hsl(${(hue + 40) % 360} 40% 18%))`;
+  const letter = document.createElement('span');
+  letter.className = 'text-5xl leading-none font-black text-white/80';
+  letter.textContent = tile.name.charAt(0).toUpperCase();
+  bg.append(letter);
+  const shade = document.createElement('div');
+  shade.className = 'absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent';
+  const text = document.createElement('div');
+  text.className = 'relative z-10 p-4';
+  const h2 = document.createElement('h2');
+  h2.className = 'mb-1 font-semibold text-white drop-shadow-lg';
+  h2.textContent = tile.name;
+  const p = document.createElement('p');
+  p.className = 'line-clamp-2 text-xs text-gray-300 drop-shadow-md';
+  p.textContent = `Added by you · ${new URL(tile.url).hostname}`;
+  text.append(h2, p);
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.dataset.remove = '';
+  remove.setAttribute('aria-label', `Remove ${tile.name}`);
+  remove.className =
+    'absolute top-2 right-2 z-20 flex h-8 w-8 items-center justify-center rounded-md bg-black/50 text-white/80 hover:bg-black/70 hover:text-white';
+  const icon = document.createElement('i');
+  icon.dataset.lucide = 'trash-2';
+  icon.className = 'h-4 w-4';
+  remove.append(icon);
+  el.append(bg, shade, text, remove);
+  return el;
+}

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { DEFAULT_LOGO, add, remove } from '../src/utils/bookmarks.ts';
 import {
+  THEME_SWATCHES,
   MAX_SHORTCUTS,
   PREF_DEFAULTS,
   STARTERS,
@@ -95,7 +96,7 @@ test('Saved look and clock choices are read back, and bad values fall back to de
   assert.deepEqual(
     readPrefs({
       displayName: 'x'.repeat(41),
-      theme: 'neon',
+      theme: 'plaid',
       showClock: true,
       showSeconds: null,
       timeFormat: 24,
@@ -230,7 +231,7 @@ test('Start page choices move with exported settings and old files still import'
 
 test('Imported start page settings are checked', () => {
   for (const settings of [
-    { theme: 'neon' },
+    { theme: 'plaid' },
     { theme: 1 },
     { showClock: true },
     { showSeconds: 'yes' },
@@ -263,4 +264,16 @@ test('Start page shortcuts open through the address bar, never around the proxy'
   assert.doesNotMatch(src, /innerHTML|insertAdjacentHTML|outerHTML/);
   const page = await readFile(new URL('../src/pages/new.astro', import.meta.url), 'utf8');
   assert.doesNotMatch(page, /https?:\/\/(?!www\.w3\.org)/, 'no remote assets on the start page');
+});
+
+test('Every theme has a swatch in Customize and its colours in main.css', async () => {
+  const css = await readFile(new URL('../src/main.css', import.meta.url), 'utf8');
+  assert.deepEqual(
+    THEME_SWATCHES.map(t => t.value),
+    [...THEMES],
+  );
+  // Midnight is the :root look; every other theme overrides it.
+  for (const theme of THEMES.filter(t => t !== 'midnight')) {
+    assert.match(css, new RegExp(`:root\\[data-theme="${theme}"\\] \\{`), theme);
+  }
 });

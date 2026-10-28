@@ -4,8 +4,52 @@
 import { add, has, sameUrl, toWebUrl, DEFAULT_LOGO, type Bookmark } from './bookmarks';
 import { isWebUrl } from './portable';
 
-export const THEMES = ['midnight', 'aurora', 'ember', 'minimal'] as const;
+export const THEMES = [
+  'midnight',
+  'aurora',
+  'ember',
+  'minimal',
+  'arctic',
+  'black',
+  'oled',
+  'deep-ocean',
+  'forest',
+  'one-dark',
+  'monokai',
+  'gruvbox',
+  'rose',
+  'sky',
+  'synthwave',
+  'tokyo-night',
+  'mocha',
+  'macchiato',
+  'frappe',
+  'terminal',
+] as const;
 export type Theme = (typeof THEMES)[number];
+// What Customize shows for each theme: its name and a swatch (background and accent, from main.css).
+export const THEME_SWATCHES: { value: Theme; label: string; bg: string; accent: string }[] = [
+  { value: 'midnight', label: 'Midnight', bg: '#232136', accent: '#8b87ff' },
+  { value: 'aurora', label: 'Aurora', bg: '#0e1726', accent: '#67d4f5' },
+  { value: 'ember', label: 'Ember', bg: '#1c1a19', accent: '#f5b04a' },
+  { value: 'minimal', label: 'Minimal', bg: '#18181b', accent: '#d4d4d8' },
+  { value: 'arctic', label: 'Arctic', bg: '#242933', accent: '#88c0d0' },
+  { value: 'black', label: 'Black', bg: '#000000', accent: '#ffffff' },
+  { value: 'oled', label: 'OLED', bg: '#000000', accent: '#4763ff' },
+  { value: 'deep-ocean', label: 'Deep Ocean', bg: '#002b36', accent: '#268bd2' },
+  { value: 'forest', label: 'Forest', bg: '#2d353b', accent: '#a7c080' },
+  { value: 'one-dark', label: 'One Dark', bg: '#282c34', accent: '#61afef' },
+  { value: 'monokai', label: 'Monokai', bg: '#272822', accent: '#a6e22e' },
+  { value: 'gruvbox', label: 'Gruvbox', bg: '#282828', accent: '#fe8019' },
+  { value: 'rose', label: 'Rose', bg: '#191724', accent: '#c4a7e7' },
+  { value: 'sky', label: 'Sky', bg: '#0b1d33', accent: '#38bdf8' },
+  { value: 'synthwave', label: 'Synthwave', bg: '#241b2f', accent: '#ff7edb' },
+  { value: 'tokyo-night', label: 'Tokyo Night', bg: '#1a1b26', accent: '#7aa2f7' },
+  { value: 'mocha', label: 'Catppuccin Mocha', bg: '#1e1e2e', accent: '#cba6f7' },
+  { value: 'macchiato', label: 'Catppuccin Macchiato', bg: '#24273a', accent: '#c6a0f6' },
+  { value: 'frappe', label: 'Catppuccin Frappé', bg: '#303446', accent: '#ca9ee6' },
+  { value: 'terminal', label: 'Terminal', bg: '#000000', accent: '#3cb371' },
+];
 export const MAX_DISPLAY_NAME = 40;
 export const MAX_SHORTCUT_NAME = 60;
 // Two rows of six on a wide screen; the rest of the bookmarks stay on the bookmarks page.
