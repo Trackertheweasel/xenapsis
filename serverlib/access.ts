@@ -20,6 +20,12 @@ export interface AccessConfig {
   secret: string;
   // Only with a fixed PERSEC_SECRET: a random one would invalidate every minted invite on restart.
   minted: boolean;
+  // Header holding the visitor's address, set by a reverse proxy that overwrites it (deploy/Caddyfile
+  // does). Unset, the connection's own address is used: anyone can send this header themselves, and
+  // trusting it would let a guesser pick a fresh address for every wrong code.
+  clientIpHeader?: string;
+  // PERSEC_ADMIN_PASSWORD turns on per-person usage stats and the /admin page (routes/admin.ts).
+  adminPassword?: string;
 }
 
 const truthy = (v: string | undefined) => /^(1|true|yes|on)$/i.test(v?.trim() ?? '');
@@ -46,12 +52,19 @@ export function loadAccess(env: NodeJS.ProcessEnv = process.env): AccessConfig |
   const fixedSecret = env.PERSEC_SECRET?.trim();
   // Without a fixed secret, everyone has to re-enter their code whenever the server restarts.
   const secret = fixedSecret || crypto.randomBytes(32).toString('hex');
+  let adminPassword = env.PERSEC_ADMIN_PASSWORD?.trim() || undefined;
+  if (adminPassword && adminPassword.length < 12) {
+    console.warn('PERSEC_ADMIN_PASSWORD is shorter than 12 characters, so /admin stays off.');
+    adminPassword = undefined;
+  }
   return {
     codes,
     names: new Set(codes.values()),
     revoked: new Set(list(env.PERSEC_REVOKED)),
     secret,
     minted: !!fixedSecret,
+    clientIpHeader: env.PERSEC_CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
+    adminPassword,
   };
 }
 
@@ -66,7 +79,7 @@ const signInvite = (secret: string, data: string) =>
     .subarray(0, 16)
     .toString('base64url');
 
-function safeEqual(a: string, b: string): boolean {
+export function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
   return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
@@ -135,6 +148,10 @@ export function tokenSubject(
   return isAllowed(config, subject, now) ? subject : null;
 }
 
+// The name an invite was given, for greeting people: minted subjects carry a prefix and expiry.
+export const displayName = (subject: string) =>
+  subject.startsWith(MINTED) ? subject.slice(MINTED.length).split(':')[0] : subject;
+
 export function verifyToken(
   config: AccessConfig,
   token: string | undefined,
@@ -180,6 +197,9 @@ export function recordFailure(ip: string, now = Date.now()) {
   // Drop expired entries now and then so random addresses can't grow the map forever.
   if (failures.size >= 10_000) {
     for (const [key, f] of failures) if (f.reset <= now) failures.delete(key);
+    // Still full of fresh ones (many addresses at once): forget the oldest half, so the map stays
+    // capped and this scan runs once per thousands of failures, not on every one.
+    while (failures.size >= 5_000) failures.delete(failures.keys().next().value!);
   }
   const f = failures.get(ip);
   if (!f || f.reset <= now) failures.set(ip, { count: 1, reset: now + 15 * 60 * 1000 });

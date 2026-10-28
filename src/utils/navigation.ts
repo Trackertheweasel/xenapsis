@@ -1,6 +1,10 @@
+import { add, has, remove } from './bookmarks';
 import ConfigAPI from './config';
+import { checkAndShow } from './diagnostics';
 import { scramjetWrapper, vWrapper } from './pro';
+import { notify } from './status';
 import { TabManager, decodeProxyUrl } from './tb';
+import { ensureTransport } from './transport';
 import { validateUrl } from './url';
 
 const reloadBtn = document.getElementById('refresh') as HTMLButtonElement | null;
@@ -17,29 +21,18 @@ const routes: Record<string, string> = {
   'persec://games': '/math',
   'persec://apps': '/sci',
   'persec://privacy': '/privacy',
+  'persec://bookmarks': '/bm',
 };
 
-const reverseRoutes = Object.fromEntries(
-  Object.entries(routes).map(([k, v]) => [v, k])
-);
+const reverseRoutes = Object.fromEntries(Object.entries(routes).map(([k, v]) => [v, k]));
 
 const sc = scramjetWrapper.getConfig();
 const uv = vWrapper.getConfig();
 const hist = new Map<string, { stack: string[]; idx: number }>();
 
-let wisp: string;
-
-async function setup() {
-  wisp = await ConfigAPI.get('wispUrl');
-  scramjetWrapper.init();
-  await navigator.serviceWorker.register('./sw.js');
-  
-  const conn = new BareMux.BareMuxConnection('/bm/worker.js');
-  const trans = await conn.getTransport();
-  if (trans !== '/lc/index.mjs') {
-    await conn.setTransport('/lc/index.mjs', [{ wisp }]);
-  }
-}
+// Registers the service worker, starts the engine and sets the transport, showing what failed.
+const setup = (onRecovered?: () => void) =>
+  checkAndShow({ runtime: () => scramjetWrapper.init(), onRecovered });
 
 function frame(): HTMLIFrameElement | null {
   const id = TabManager.activeTabId;
@@ -65,7 +58,7 @@ function spin() {
 function record(url: string) {
   const h = history();
   if (h.stack[h.idx] === url) return;
-  
+
   h.stack = h.stack.slice(0, h.idx + 1);
   h.stack.push(url);
   h.idx++;
@@ -74,7 +67,7 @@ function record(url: string) {
 function nav(url: string, save = true) {
   const f = frame();
   if (!f) return;
-  
+
   if (save) record(url);
   f.src = url;
 }
@@ -82,7 +75,7 @@ function nav(url: string, save = true) {
 function back() {
   const h = history();
   if (h.idx <= 0) return;
-  
+
   h.idx--;
   nav(h.stack[h.idx], false);
 }
@@ -90,7 +83,7 @@ function back() {
 function fwd() {
   const h = history();
   if (h.idx >= h.stack.length - 1) return;
-  
+
   h.idx++;
   nav(h.stack[h.idx], false);
 }
@@ -100,115 +93,139 @@ function fwd() {
 function currentUrl(f: HTMLIFrameElement): string {
   try {
     const href = f.contentWindow?.location.href || f.src;
-    return decodeProxyUrl(new URL(href, location.origin).pathname);
+    return decodeProxyUrl(href);
   } catch {
     return '';
-  }
-}
-
-function norm(url: string): string {
-  try {
-    return decodeURIComponent(url).replace(/\/$/, '');
-  } catch {
-    return url.replace(/\/$/, '');
   }
 }
 
 async function sync() {
   const f = frame();
   if (!f) return;
-  
+
   record(f.src);
-  
+
   const d = currentUrl(f);
-  const bm = (await ConfigAPI.get('bm')) || [];
-  const active = bm.some((b: any) => norm(b.redir) === norm(d));
-  
+  const active = !!d && has((await ConfigAPI.get('bm')) || [], d);
+
   const svg = favBtn?.querySelector('svg');
   if (svg) {
     svg.style.fill = active ? '#a8a3c7' : 'none';
     svg.style.stroke = active ? '#a8a3c7' : '';
   }
+  if (favBtn) {
+    const label = active ? 'Remove bookmark' : 'Bookmark this page';
+    favBtn.setAttribute('aria-pressed', String(active));
+    favBtn.setAttribute('aria-label', label);
+    favBtn.title = label;
+  }
 }
 
 async function toggleFav() {
   if (!urlbar) return;
-  
+
   const f = frame();
   if (!f || routes[urlbar.value]) return;
-  
+
   const d = currentUrl(f);
-  if (!d) return;
+  if (!d) return notify('Open a website first, then bookmark it.');
   const bm = (await ConfigAPI.get('bm')) || [];
-  
-  const i = bm.findIndex((b: any) => norm(b.redir) === norm(d));
-  
-  if (i !== -1) {
-    bm.splice(i, 1);
-  } else {
-    bm.push({
-      name: f.contentDocument?.title || d,
-      logo: TabManager.activeFavicon,
-      redir: d,
-    });
+  const was = has(bm, d);
+  try {
+    await ConfigAPI.set(
+      'bm',
+      was
+        ? remove(bm, d)
+        : add(bm, { name: f.contentDocument?.title, logo: TabManager.activeFavicon, redir: d }),
+    );
+    notify(was ? 'Bookmark removed.' : 'Bookmarked. Find it in Menu → Bookmarks.');
+  } catch {
+    notify('That page can’t be bookmarked.');
   }
-  
-  await ConfigAPI.set('bm', bm);
   sync();
+}
+
+function encode(url: string, backend: unknown) {
+  return backend === 'u'
+    ? `${uv.prefix}${uv.encodeUrl(url)}`
+    : `${sc.prefix}${sc.codec.encode(url)}`;
+}
+
+// The person asked for this (Menu → Try the other engine), so it changes the saved engine and opens
+// the same page again with it.
+let switching = false;
+async function retryOtherEngine() {
+  const f = frame();
+  const d = f && currentUrl(f);
+  if (!d) return notify('Open a website first: this reloads it with the other proxy engine.');
+  if (switching) return;
+  switching = true;
+  try {
+    const next = (await ConfigAPI.get('backend')) === 'u' ? 'sc' : 'u';
+    await ConfigAPI.set('backend', next);
+    notify(
+      `Trying ${next === 'u' ? 'Ultraviolet' : 'Scramjet'}… You can switch back in Settings → Browsing.`,
+    );
+    spin();
+    nav(encode(d, next));
+  } catch {
+    notify('Couldn’t switch engines. Try again from Settings → Browsing.');
+  } finally {
+    switching = false;
+  }
 }
 
 async function submit() {
   if (!urlbar) return;
-  
+
   const v = urlbar.value.trim();
-  
+
   if (routes[v]) {
     spin();
     nav(routes[v]);
     return;
   }
-  
-  const conn = new BareMux.BareMuxConnection('/bm/worker.js');
-  const trans = await conn.getTransport();
-  if (trans !== '/lc/index.mjs') {
-    await conn.setTransport('/lc/index.mjs', [{ wisp }]);
+
+  try {
+    await ensureTransport();
+  } catch {
+    // Opening the page now would only hang; say what is wrong instead, and open it once a retry
+    // of the checks passes, unless the person has gone somewhere else by then.
+    setup(() => {
+      if (urlbar.value.trim() === v) submit();
+    });
+    return;
   }
-  
+
   const val = await validateUrl(v);
-  const backend = await ConfigAPI.get('backend');
-  
-  const enc = backend === 'u'
-    ? `${uv.prefix}${uv.encodeUrl(val)}`
-    : `${sc.prefix}${sc.codec.encode(val)}`;
-  
   spin();
-  nav(enc);
+  nav(encode(val, await ConfigAPI.get('backend')));
 }
 
 function clickSide(e: MouseEvent) {
   const btn = (e.target as HTMLElement).closest('button');
   if (!btn) return;
-  
+
   e.preventDefault();
   e.stopPropagation();
-  
+
   const url = btn.dataset.url;
   if (!url || !urlbar) return;
-  
+
   let r = reverseRoutes[url];
   if (!r && url === '/') {
     r = 'persec://new';
   }
-  
+
   urlbar.value = r || url;
   const target = r ? routes[r] : url;
-  
+
   spin();
   nav(target);
 }
 
 if (reloadBtn) {
-  reloadBtn.addEventListener('click', (e) => {
+  reloadBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     const h = history();
@@ -219,7 +236,7 @@ if (reloadBtn) {
 }
 
 if (backBtn) {
-  backBtn.addEventListener('click', (e) => {
+  backBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     spin();
@@ -228,7 +245,7 @@ if (backBtn) {
 }
 
 if (fwdBtn) {
-  fwdBtn.addEventListener('click', (e) => {
+  fwdBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     spin();
@@ -246,8 +263,10 @@ document.getElementById('menu-forward')?.addEventListener('click', e => {
   fwd();
 });
 
+document.getElementById('menu-other-engine')?.addEventListener('click', retryOtherEngine);
+
 if (homeBtn) {
-  homeBtn.addEventListener('click', (e) => {
+  homeBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     spin();
@@ -256,7 +275,7 @@ if (homeBtn) {
 }
 
 if (favBtn) {
-  favBtn.addEventListener('click', (e) => {
+  favBtn.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
     toggleFav();
@@ -264,7 +283,7 @@ if (favBtn) {
 }
 
 if (urlbar) {
-  urlbar.addEventListener('keydown', (e) => {
+  urlbar.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
       submit();

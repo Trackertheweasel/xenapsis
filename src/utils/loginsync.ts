@@ -169,7 +169,7 @@ export async function deleteBackup(): Promise<void> {
   await fetch(API, { method: 'DELETE' }).catch(() => {});
 }
 
-// Asks the service worker (public/sw.js), which keeps Scramjet's cookies in memory.
+// Asks the service worker (src/sw.js), which keeps Scramjet's cookies in memory.
 async function askWorker<T>(type: string, data?: unknown): Promise<T | undefined> {
   const worker = (await navigator.serviceWorker?.getRegistration())?.active;
   if (!worker) return undefined;
@@ -273,7 +273,9 @@ export async function restore(): Promise<RestoreResult> {
   const key = await getKey();
   if (!key) return 'locked';
   const res = await fetch(API, { cache: 'no-store' }).catch(() => null);
-  if (!res?.ok || res.status === 204) return 'none';
+  if (res?.status === 204) return 'none';
+  // Never 'none' on a failed download: callers back up next, which would replace the real backup.
+  if (!res?.ok) throw new Error('the server didn’t answer');
   const snapshot = await unseal(key, new Uint8Array(await res.arrayBuffer()));
   if (!snapshot) return 'locked';
   await apply(snapshot);

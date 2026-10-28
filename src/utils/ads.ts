@@ -149,7 +149,11 @@ async function fetchEthicalAds(): Promise<NormalizedAd | null> {
 async function resolveClickTarget(link: string): Promise<string> {
   if (!link) return '';
   try {
-    const res = await fetch(link, { method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    const res = await fetch(link, {
+      method: 'HEAD',
+      redirect: 'manual',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     const loc = res.headers.get('location');
     if (loc) return loc;
   } catch {
@@ -260,4 +264,6 @@ export async function recordClick(id: string): Promise<string | null> {
 
 // A 1x1 transparent GIF, returned by the impression pixel. A plain Uint8Array so it is accepted as
 // a response body.
-export const PIXEL = new Uint8Array(Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'));
+export const PIXEL = new Uint8Array(
+  Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'),
+);

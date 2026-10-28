@@ -9,6 +9,7 @@ import {
   restore,
   setConsent,
 } from './loginsync';
+import { exportSettings, mergeBookmarks, parseSettings } from './portable';
 import { clearSiteData } from './sitedata';
 
 export const SettingsAPI = {
@@ -112,30 +113,171 @@ export class SettingsManager {
     };
   }
 
-  static notify() {
-    const notif = document.querySelector('[data-notification]');
-    if (notif) {
-      notif.classList.remove('hidden');
-      setTimeout(() => notif.classList.add('hidden'), 2000);
+  private static notifyTimer: ReturnType<typeof setTimeout> | undefined;
+  static notify(text = 'Settings saved', error = false) {
+    const notif = document.querySelector<HTMLElement>('[data-notification]');
+    const box = notif?.querySelector('[data-notification-box]');
+    const span = notif?.querySelector('[data-notification-text]');
+    if (!notif || !box || !span) return;
+    span.textContent = text;
+    box.classList.toggle('border-[#10b981]/40', !error);
+    box.classList.toggle('border-red-500/50', error);
+    notif.classList.remove('opacity-0');
+    clearTimeout(this.notifyTimer);
+    // Errors stay up longer, as they usually say what to do next.
+    this.notifyTimer = setTimeout(() => notif.classList.add('opacity-0'), error ? 6000 : 2500);
+  }
+
+  // An in-page confirmation (the <dialog data-confirm> in st.astro), so every destructive action
+  // asks the same way and can list everything it will do.
+  static confirm(title: string, lines: string[], ok: string): Promise<boolean> {
+    const dialog = document.querySelector<HTMLDialogElement>('[data-confirm]');
+    if (!dialog?.showModal) {
+      return Promise.resolve(window.confirm(`${title}\n\n${lines.join('\n')}`));
+    }
+    dialog.querySelector('#confirm-title')!.textContent = title;
+    dialog.querySelector('[data-confirm-text]')!.replaceChildren(
+      ...lines.map(line => {
+        const p = document.createElement('p');
+        p.textContent = line;
+        return p;
+      }),
+    );
+    dialog.querySelector('[data-confirm-ok]')!.textContent = ok;
+    dialog.returnValue = '';
+    dialog.showModal();
+    // Cancel has focus first, so a stray Enter doesn't delete anything.
+    dialog.querySelector<HTMLButtonElement>('button[value="cancel"]')?.focus();
+    return new Promise(resolve =>
+      dialog.addEventListener('close', () => resolve(dialog.returnValue === 'ok'), { once: true }),
+    );
+  }
+
+  // Runs an action once at a time: the button stays disabled until it finishes or fails.
+  static async busy(btn: HTMLButtonElement | null, run: () => Promise<void>) {
+    if (btn?.disabled) return;
+    if (btn) btn.disabled = true;
+    try {
+      await run();
+    } finally {
+      if (btn) btn.disabled = false;
     }
   }
-  static async reset() {
-    if (confirm('Are you sure you want to reset all settings to defaults?')) {
-      await ConfigAPI.reset();
-      parent.location.reload();
-    }
+
+  static async reset(btn: HTMLButtonElement | null) {
+    const ok = await this.confirm(
+      'Clear all Persec data?',
+      [
+        'Every Persec setting goes back to its default, and your bookmarks and start page shortcuts are deleted from this browser.',
+        'Site cookies and saved logins are not touched; use Clear site data for those.',
+        'This can’t be undone. Export your settings first if you might want them back.',
+      ],
+      'Clear all data',
+    );
+    if (!ok) return;
+    await this.busy(btn, async () => {
+      try {
+        await ConfigAPI.reset();
+        this.notify('All Persec data cleared. Reloading…');
+        setTimeout(() => parent.location.reload(), 800);
+      } catch (err) {
+        this.notify(`Couldn’t clear Persec’s data: ${(err as Error).message}`, true);
+      }
+    });
+  }
+
+  // Switch semantics for the .toggle buttons, which the code here turns on and off by class.
+  static syncSwitches() {
+    document.querySelectorAll('.toggle').forEach(t => {
+      t.setAttribute('aria-checked', String(t.classList.contains('active')));
+    });
+  }
+
+  static initConnectionCheck() {
+    const btn = document.querySelector<HTMLButtonElement>('[data-check-connection]');
+    const out = document.querySelector<HTMLElement>('[data-check-result]');
+    btn?.addEventListener('click', () =>
+      this.busy(btn, async () => {
+        if (!out) return;
+        out.textContent = 'Checking… this can take up to 30 seconds.';
+        try {
+          // Loaded on demand so Settings doesn't carry the proxy's connection code until it's used.
+          const { renderResults, runDiagnostics } = await import('./diagnostics');
+          renderResults(out, await runDiagnostics());
+        } catch (err) {
+          out.textContent = `The checks couldn’t run (${(err as Error).message}). Reload the page and try again.`;
+        }
+      }),
+    );
+  }
+
+  static initPortableSettings() {
+    document.querySelector('[data-export-settings]')?.addEventListener('click', async () => {
+      const file = exportSettings(await ConfigAPI.getAll());
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(
+        new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }),
+      );
+      a.download = 'persec-settings.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      this.notify(
+        'Settings exported to persec-settings.json. It isn’t encrypted: keep it private.',
+      );
+    });
+    const input = document.querySelector<HTMLInputElement>('[data-import-settings]');
+    input?.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      input.value = '';
+      if (!file) return;
+      let settings: Record<string, any>;
+      try {
+        settings = parseSettings(await file.text());
+      } catch (err) {
+        this.notify((err as Error).message, true);
+        return;
+      }
+      try {
+        if (settings.bm) {
+          settings.bm = mergeBookmarks((await ConfigAPI.get('bm')) || [], settings.bm);
+        }
+        for (const [key, value] of Object.entries(settings)) await ConfigAPI.set(key, value);
+      } catch (err) {
+        this.notify(`Only part of the file could be saved: ${(err as Error).message}`, true);
+        return;
+      }
+      this.notify('Settings imported. Reloading…');
+      setTimeout(() => parent.location.reload(), 800);
+    });
   }
 
   static initClearSiteData() {
     const btn = document.querySelector<HTMLButtonElement>('[data-clear-site-data]');
     btn?.addEventListener('click', async () => {
-      if (
-        !confirm('Clear cookies and data saved by all sites? You will be logged out of every site.')
-      )
-        return;
-      btn.disabled = true;
-      await clearSiteData();
-      parent.location.reload();
+      if (btn.disabled) return;
+      const ok = await this.confirm(
+        'Clear cookies and site data?',
+        [
+          'Everything sites have saved in Persec in this browser is deleted: cookies, storage and caches.',
+          'You’ll be logged out of every site you use in Persec.',
+          'Your saved-logins backup on this server is deleted too, if you have one.',
+          'Your Persec settings and bookmarks are kept. Persec reloads when it’s done.',
+        ],
+        'Clear site data',
+      );
+      if (!ok) return;
+      await this.busy(btn, async () => {
+        try {
+          await clearSiteData();
+          this.notify('Site data cleared. Reloading…');
+          setTimeout(() => parent.location.reload(), 800);
+        } catch (err) {
+          this.notify(
+            `Some site data couldn’t be cleared (${(err as Error).message}). Try again, or clear this site’s data in your browser’s settings.`,
+            true,
+          );
+        }
+      });
     });
   }
 
@@ -167,6 +309,21 @@ export class SettingsManager {
     };
 
     const turnOn = async () => {
+      // Backing up from here replaces the other device's backup, so only on purpose.
+      if ((await getStatus())?.saved) {
+        const ok = await this.confirm(
+          'Replace the backup from another device?',
+          [
+            'This browser’s logins replace it, and the ones only in that backup are lost.',
+            'To keep them, choose Restore instead.',
+          ],
+          'Replace backup',
+        );
+        if (!ok) {
+          codeForm.hidden = true;
+          return show();
+        }
+      }
       await setConsent('saved');
       await backUpNow();
       codeForm.hidden = true;
@@ -175,12 +332,26 @@ export class SettingsManager {
 
     toggle.addEventListener('click', async () => {
       if (toggle.getAttribute('aria-checked') === 'true') {
-        if (!confirm('Turn off saved logins? Your backup on this server will be deleted.')) return;
-        await setConsent('essential');
-        await deleteBackup();
-        return show();
+        const ok = await this.confirm(
+          'Turn off saved logins?',
+          [
+            'Your encrypted backup on this server is deleted right away.',
+            'You stay logged in to sites in this browser until you clear site data.',
+          ],
+          'Turn off and delete backup',
+        );
+        if (!ok) return;
+        return this.busy(toggle, async () => {
+          try {
+            await setConsent('essential');
+            await deleteBackup();
+            await show('Off. Your backup was deleted.');
+          } catch (err) {
+            await show(`Couldn’t delete the backup: ${(err as Error).message}. Try again.`);
+          }
+        });
       }
-      if (await hasKey()) return turnOn();
+      if (await hasKey()) return this.busy(toggle, turnOn);
       codeForm.hidden = false;
       codeInput.focus();
     });
@@ -200,12 +371,25 @@ export class SettingsManager {
         codeInput.focus();
         return show('Enter your invite code first.');
       }
-      if (
-        !confirm('Restore your saved logins in this browser? Only do this on a device you trust.')
-      ) {
-        return;
+      const ok = await this.confirm(
+        'Restore saved logins here?',
+        [
+          'Your sites’ logins from the backup are copied into this browser, so anyone using it can use those accounts.',
+          'Only do this on a device you trust.',
+        ],
+        'Restore logins',
+      );
+      if (!ok) return;
+      let result: Awaited<ReturnType<typeof restore>>;
+      restoreBtn.disabled = true;
+      label.textContent = 'Restoring…';
+      try {
+        result = await restore();
+      } catch (err) {
+        return show(`Couldn’t restore: ${(err as Error).message}. Try again.`);
+      } finally {
+        restoreBtn.disabled = false;
       }
-      const result = await restore();
       if (result === 'locked') {
         return show(
           'Your backup was saved with a different invite code, so it can’t be unlocked here.',
@@ -218,128 +402,135 @@ export class SettingsManager {
     await show();
   }
 
-  static initNav() {
-    const items = document.querySelectorAll('[data-nav]');
+  // Marks a category current in both the side list and the phone bar.
+  static setActive(id: string) {
+    document.querySelectorAll('[data-nav]').forEach(n => {
+      const on = n.getAttribute('data-nav') === id;
+      n.classList.toggle('bg-[#6366f1]/10', on);
+      n.classList.toggle('text-[#6366f1]', on);
+      n.classList.toggle('text-text-secondary', !on);
+      if (on) n.setAttribute('aria-current', 'true');
+      else n.removeAttribute('aria-current');
+    });
+  }
 
-    items.forEach(item => {
+  static scrollTo(section: Element) {
+    // Below the sticky search bar, which covers the top of the page on phones.
+    const bar = document.querySelector('[data-filter-input]')?.closest('.sticky');
+    const offset = (bar && getComputedStyle(bar).position === 'sticky' ? bar.clientHeight : 0) + 20;
+    const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({
+      top: section.getBoundingClientRect().top + window.scrollY - offset,
+      behavior: smooth ? 'smooth' : 'auto',
+    });
+  }
+
+  static initNav() {
+    document.querySelectorAll('[data-nav]').forEach(item => {
       item.addEventListener('click', (e: Event) => {
         e.preventDefault();
-        const target = item.getAttribute('data-nav');
+        const target = item.getAttribute('data-nav')!;
+        // A category is a way out of a search, so show everything again first.
+        SettingsManager.filter('');
         const section = document.querySelector(`[data-section="${target}"]`);
-
-        if (section) {
-          items.forEach(n => {
-            n.classList.remove('bg-[#6366f1]/10', 'text-[#6366f1]');
-            n.classList.add('text-text-secondary');
-          });
-          item.classList.remove('text-text-secondary');
-          item.classList.add('bg-[#6366f1]/10', 'text-[#6366f1]');
-
-          const y = section.getBoundingClientRect().top + window.pageYOffset - 20;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-          try {
-            history.replaceState(null, '', `#${target}`);
-          } catch (err) {
-            // ignore
-          }
-        }
+        if (!section) return;
+        SettingsManager.setActive(target);
+        SettingsManager.scrollTo(section);
+        try {
+          history.replaceState(null, '', `#${target}`);
+        } catch {}
       });
     });
 
     const initialHash = (window.location.hash || '').replace('#', '');
-    if (initialHash) {
-      const initialItem = Array.from(items).find(
-        i => i.getAttribute('data-nav') === initialHash,
-      ) as HTMLElement | undefined;
-      const section = document.querySelector(`[data-section="${initialHash}"]`);
-      if (initialItem) {
-        items.forEach(n => {
-          n.classList.remove('bg-[#6366f1]/10', 'text-[#6366f1]');
-          n.classList.add('text-text-secondary');
-        });
-        initialItem.classList.remove('text-text-secondary');
-        initialItem.classList.add('bg-[#6366f1]/10', 'text-[#6366f1]');
-      }
-      if (section) {
-        const y = section.getBoundingClientRect().top + window.pageYOffset - 20;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      }
+    const section = initialHash && document.querySelector(`[data-section="${initialHash}"]`);
+    if (section) {
+      SettingsManager.setActive(initialHash);
+      SettingsManager.scrollTo(section);
+    } else {
+      SettingsManager.setActive('privacy');
     }
   }
 
-  static initSearch() {
-    const search = document.querySelector('[data-filter-input]') as HTMLInputElement;
-    const sections = document.querySelectorAll('[data-section]');
+  // The setting cards in a section: the children of its list, or the one card (About).
+  private static cards(section: Element): HTMLElement[] {
+    const body = section.children[1] as HTMLElement | undefined;
+    if (!body) return [];
+    return body.classList.contains('space-y-3')
+      ? (Array.from(body.children) as HTMLElement[])
+      : [body];
+  }
 
-    if (!search) return;
+  // Shows the cards whose name or description contains every word of the query.
+  static filter(query: string) {
+    const input = document.querySelector<HTMLInputElement>('[data-filter-input]');
+    const clear = document.querySelector<HTMLElement>('[data-filter-clear]');
+    const empty = document.querySelector<HTMLElement>('[data-filter-empty]');
+    if (input && input.value !== query) input.value = query;
+    if (clear) clear.hidden = !query;
+    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+    let shown = 0;
+    let first: string | null = null;
 
-    search.addEventListener('input', e => {
-      const q = (e.target as HTMLInputElement).value.toLowerCase().trim();
-
-      if (!q) {
-        sections.forEach(s => ((s as HTMLElement).style.display = 'block'));
-        document.querySelectorAll('[class*="rounded-xl"]').forEach(c => {
-          (c as HTMLElement).style.display = '';
-        });
-        return;
+    document.querySelectorAll<HTMLElement>('[data-section]').forEach(section => {
+      let found = false;
+      for (const card of SettingsManager.cards(section)) {
+        const text = (card.textContent || '').toLowerCase().replace(/\s+/g, ' ');
+        const match = words.every(w => text.includes(w));
+        // Inline style only, so a card hidden for another reason (hidden attribute) stays hidden.
+        card.style.display = match ? '' : 'none';
+        if (match && !card.hidden) found = true;
       }
+      section.style.display = found ? '' : 'none';
+      if (found) {
+        shown++;
+        first ??= section.getAttribute('data-section');
+      }
+    });
 
-      sections.forEach(section => {
-        const cards = section.querySelectorAll('[class*="rounded-xl"]');
-        let found = false;
+    if (empty) {
+      empty.textContent =
+        words.length && !shown
+          ? `No settings match “${query.trim()}”. Try another word, or clear the search.`
+          : '';
+    }
+    if (first) SettingsManager.setActive(first);
+  }
 
-        cards.forEach(card => {
-          const title = card.querySelector('h3')?.textContent?.toLowerCase() || '';
-          const desc = card.querySelector('p')?.textContent?.toLowerCase() || '';
-          const label = card.querySelector('label')?.textContent?.toLowerCase() || '';
-          const allText = card.textContent?.toLowerCase().replace(/\s+/g, ' ') || '';
-
-          const match =
-            title.includes(q) || desc.includes(q) || label.includes(q) || allText.includes(q);
-
-          (card as HTMLElement).style.display = match ? '' : 'none';
-          if (match) found = true;
-        });
-
-        (section as HTMLElement).style.display = found ? 'block' : 'none';
-      });
+  static initSearch() {
+    const search = document.querySelector<HTMLInputElement>('[data-filter-input]');
+    if (!search) return;
+    search.addEventListener('input', () => SettingsManager.filter(search.value));
+    search.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && search.value) {
+        e.preventDefault();
+        SettingsManager.filter('');
+      }
+    });
+    document.querySelector('[data-filter-clear]')?.addEventListener('click', () => {
+      SettingsManager.filter('');
+      search.focus();
     });
   }
 
   static initScrollSpy() {
-    const sections = document.querySelectorAll('[data-section]');
-    const items = document.querySelectorAll('[data-nav]');
-    let active = 'privacy';
     let ticking = false;
 
     const update = () => {
-      let current = 'privacy';
-      let lastSection: Element | null = null;
-      sections.forEach(section => {
-        const rect = section.getBoundingClientRect();
-        if (rect.top <= 120) {
-          current = section.getAttribute('data-section') || current;
-        }
-        lastSection = section;
-      });
-
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 2) {
-        current = (lastSection as Element | null)?.getAttribute('data-section') || current;
-      }
-      if (current !== active) {
-        active = current;
-        items.forEach(item => {
-          const nav = item.getAttribute('data-nav');
-          if (nav === active) {
-            item.classList.remove('text-text-secondary');
-            item.classList.add('bg-[#6366f1]/10', 'text-[#6366f1]');
-          } else {
-            item.classList.remove('bg-[#6366f1]/10', 'text-[#6366f1]');
-            item.classList.add('text-text-secondary');
-          }
-        });
-      }
       ticking = false;
+      // Sections hidden by a search have no position; leave the highlight to the search.
+      const visible = Array.from(document.querySelectorAll<HTMLElement>('[data-section]')).filter(
+        s => s.style.display !== 'none',
+      );
+      if (!visible.length) return;
+      let current = visible[0];
+      for (const section of visible) {
+        if (section.getBoundingClientRect().top <= 160) current = section;
+      }
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 2) {
+        current = visible[visible.length - 1];
+      }
+      SettingsManager.setActive(current.getAttribute('data-section') || 'privacy');
     };
 
     window.addEventListener('scroll', () => {
@@ -454,6 +645,7 @@ export class SettingsManager {
             default:
               break;
           }
+          this.syncSwitches();
           this.notify();
         }
       });
@@ -875,6 +1067,7 @@ export class SettingsManager {
 
     this.initAutoCloak(cfg.autoCloak === 'on');
     this.initExitPrompt(cfg.beforeUnload === 'on');
+    this.syncSwitches();
   }
 
   static async init() {
@@ -908,9 +1101,11 @@ export class SettingsManager {
     this.initProxyBackend();
     this.initPanicKey();
     this.initClearSiteData();
+    this.initConnectionCheck();
+    this.initPortableSettings();
     this.initSavedLogins();
 
-    const resetBtn = document.querySelector('[data-reset="reset"]');
-    resetBtn?.addEventListener('click', () => this.reset());
+    const resetBtn = document.querySelector<HTMLButtonElement>('[data-reset="reset"]');
+    resetBtn?.addEventListener('click', () => this.reset(resetBtn));
   }
 }

@@ -111,6 +111,9 @@ EOF
   echo "==> Building and starting Persec (this takes 5-10 minutes the first time)"
   docker compose --project-directory "$dir/deploy" -f "$dir/deploy/compose.yml" \
     up -d --build --remove-orphans
+  # Installs from before Persec ran as the unprivileged node user left root-owned backups.
+  docker compose --project-directory "$dir/deploy" -f "$dir/deploy/compose.yml" \
+    exec -T --user root persec chown -R node:node /app/data
   docker image prune -f >/dev/null
 
   echo
@@ -134,6 +137,8 @@ EOF
   echo "  persec revoke <name>          cancel someone's invites"
   echo "  persec domain add <name>      add another web address (persec domain remove <name>)"
   echo "  persec export                 set up a backup server that shares these invites"
+  echo "  persec status                 check that each web address answers over HTTPS"
+  echo "  persec logins export|import   copy saved-login backups to or from another server"
   echo "  persec update                 update to the latest version"
   echo "  persec logs                   see what the server is doing"
 }
