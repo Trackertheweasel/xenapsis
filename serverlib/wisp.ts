@@ -1,8 +1,9 @@
 import { logging, server as wisp } from '@mercuryworkshop/wisp-js/server';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
-import { ACCESS_COOKIE, readCookie, verifyToken } from './access';
+import { ACCESS_COOKIE, displayName, readCookie, tokenSubject } from './access';
 import type { AccessConfig } from './access';
+import { trackTunnel } from './stats';
 
 logging.set_level(logging.ERROR);
 Object.assign(wisp.options, {
@@ -36,7 +37,10 @@ export function routeWisp(
   head: Buffer,
 ): boolean {
   if (!req.url?.endsWith(wispPath)) return false;
-  if (!access || verifyToken(access, readCookie(req.headers.cookie, ACCESS_COOKIE))) {
+  const subject = access && tokenSubject(access, readCookie(req.headers.cookie, ACCESS_COOKIE));
+  if (!access || subject) {
+    // Usage counts only exist where the owner turned on the admin page (see serverlib/stats.ts).
+    if (subject && access?.adminPassword) trackTunnel(displayName(subject), socket);
     wisp.routeRequest(req, socket, head);
   } else {
     socket.destroy();

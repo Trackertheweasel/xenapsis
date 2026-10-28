@@ -47,19 +47,20 @@ Hosting platforms often shut down proxies. A small server of your own (a VPS) do
 
 The site runs over HTTPS (needed for the proxy to work) and is invite-only. Manage it from the same console:
 
-| Command                       | What it does                                                           |
-| ----------------------------- | ---------------------------------------------------------------------- |
-| `persec add <name> <code>`    | Lets someone in with a code you choose (also changes their code)       |
-| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days)                     |
-| `persec revoke <name>`        | Cancels that person's invites right away                               |
-| `persec domain add <name>`    | Adds another web address, e.g. a new DuckDNS name if one gets blocked  |
-| `persec domain remove <name>` | Stops using a web address                                              |
-| `persec domain`               | Lists the site's web addresses                                         |
-| `persec export`               | Prints a command to set up a backup server that shares these invites   |
-| `persec status`               | Checks that each web address answers over HTTPS (fails if one doesn't) |
-| `persec logins export/import` | Copies saved-login backups to or from another server (still encrypted) |
-| `persec update`               | Updates to the latest version                                          |
-| `persec logs`                 | Shows what the server is doing                                         |
+| Command                       | What it does                                                             |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `persec add <name> <code>`    | Lets someone in with a code you choose (also changes their code)         |
+| `persec invite <name> [days]` | Makes an invite code for someone (default 30 days)                       |
+| `persec revoke <name>`        | Cancels that person's invites right away                                 |
+| `persec domain add <name>`    | Adds another web address, e.g. a new DuckDNS name if one gets blocked    |
+| `persec domain remove <name>` | Stops using a web address                                                |
+| `persec domain`               | Lists the site's web addresses                                           |
+| `persec export`               | Prints a command to set up a backup server that shares these invites     |
+| `persec admin`                | Turns on a live usage page per person at `/admin` and shows its password |
+| `persec status`               | Checks that each web address answers over HTTPS (fails if one doesn't)   |
+| `persec logins export/import` | Copies saved-login backups to or from another server (still encrypted)   |
+| `persec update`               | Updates to the latest version                                            |
+| `persec logs`                 | Shows what the server is doing                                           |
 
 If the site shows a certificate error with the `sslip.io` address, or a single name gets blocked, add another name with `persec domain add` (your settings and invites are kept) and share it. It is worth keeping a spare name or two added so a block never cuts everyone off.
 
@@ -255,6 +256,8 @@ Most hosting providers forbid public proxies but allow private ones. In invite-o
    ```
 
 If Persec runs behind a reverse proxy other than the bundled Caddy, set `PERSEC_CLIENT_IP_HEADER` to the header that proxy puts the visitor's address in (for example `x-real-ip`), and only if the proxy always overwrites it. Persec uses it to count wrong codes per visitor. Without it, Persec counts by the connection's address and ignores such headers, because anyone could otherwise send a different fake address with every guess. `deploy/compose.yml` sets it for Caddy.
+
+With `PERSEC_ADMIN_PASSWORD` set (12+ characters; `persec admin` makes one), `/admin` shows each invite name's usage live: online now, data downloaded and uploaded, time connected, tabs opened and last seen. Open it signed in with your own code, then enter that password (any username). The counts are kept only in memory and reset on restart, sites visited are never recorded, and the privacy page tells people this can be on. Without the password, nothing is counted.
 
 People enter their code once and stay signed in as long as they come back at least once every 30 days, and their browser's password manager can save the code for them. The new tab page greets each person by their invite's name (the part before the `:`, or the name given to `persec invite`), so pick names you're happy for them to see. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
 
