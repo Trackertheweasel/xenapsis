@@ -140,6 +140,10 @@ export function tokenSubject(
   return isAllowed(config, subject, now) ? subject : null;
 }
 
+// The name an invite was given, for greeting people: minted subjects carry a prefix and expiry.
+export const displayName = (subject: string) =>
+  subject.startsWith(MINTED) ? subject.slice(MINTED.length).split(':')[0] : subject;
+
 export function verifyToken(
   config: AccessConfig,
   token: string | undefined,

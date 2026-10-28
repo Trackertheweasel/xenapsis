@@ -6,7 +6,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { createToken, loadAccess } from '../serverlib/access.ts';
+import { createToken, loadAccess, mintInvite } from '../serverlib/access.ts';
 import { buildApp } from '../serverlib/app.ts';
 import { deployPaths } from '../serverlib/env.ts';
 import { cacheControlFor, staticFileOptions } from '../serverlib/static.ts';
@@ -155,6 +155,17 @@ test("Without a reverse proxy, a visitor's own address header can't dodge the lo
     });
   for (let i = 0; i < 10; i++) assert.equal((await attempt('nope')).statusCode, 401);
   assert.equal((await attempt('abc123')).statusCode, 429);
+});
+
+test('Each person sees their own invite name, minted or not', async () => {
+  const app = await server(twoPeople);
+  const me = async (cookie: string) =>
+    (await app.inject({ url: '/api/me', headers: { cookie } })).json();
+  assert.deepEqual(await me((await signIn(app, 'abc123')).cookie), { name: 'alice' });
+  assert.deepEqual(await me((await signIn(app, 'xyz789')).cookie), { name: 'bob' });
+  const minted = mintInvite('test-secret', 'sam', 7);
+  assert.deepEqual(await me((await signIn(app, minted)).cookie), { name: 'sam' });
+  assert.equal((await app.inject({ url: '/api/me' })).statusCode, 401);
 });
 
 test('Saved-login backups round-trip and each person only reaches their own', async () => {
