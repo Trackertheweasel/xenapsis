@@ -1,12 +1,8 @@
 import localForage from 'localforage';
+import type { Bookmark } from './bookmarks';
+import { PREF_DEFAULTS, fillDefaults, seedBookmarks, type Prefs } from './personalize';
 
-interface Bookmark {
-  name: string;
-  logo: string;
-  redir: string;
-}
-
-interface ConfigDefaults {
+interface ConfigDefaults extends Prefs {
   engine: string;
   cloak: 'on' | 'off';
   adBlock: 'on' | 'off';
@@ -19,6 +15,7 @@ interface ConfigDefaults {
   panicKey: string;
   wispUrl: string;
   bm: Bookmark[];
+  shortcutsSeeded: boolean;
   [key: string]: any;
 }
 
@@ -26,7 +23,7 @@ type ConfigKey = string;
 
 const isBrowser = typeof location !== 'undefined';
 
-function wispUrl(): string {
+export function wispUrl(): string {
   if (!isBrowser) return '';
   const isHttps = location.protocol === 'https:';
   // WISP_PATH is injected at build time (see astro.config.ts) and must match the path the
@@ -48,6 +45,9 @@ const defaults: ConfigDefaults = {
   panicKey: '`',
   wispUrl: wispUrl(),
   bm: [],
+  // Whether the start page's first tiles have been added to `bm` (see loadBookmarks).
+  shortcutsSeeded: false,
+  ...PREF_DEFAULTS,
 };
 
 const store = localForage.createInstance({
@@ -59,17 +59,7 @@ let initialized = false;
 
 async function ensureInit(): Promise<void> {
   if (initialized) return;
-
-  const test = await store.getItem('engine');
-  if (test == null) {
-    const keys = Object.keys(defaults);
-    await Promise.all(
-      keys.map(function (key) {
-        return store.setItem(key, defaults[key]);
-      }),
-    );
-  }
-
+  await fillDefaults(store, defaults);
   initialized = true;
 }
 
@@ -118,5 +108,11 @@ const ConfigAPI = {
     return Object.fromEntries(entries);
   },
 };
+
+// The saved bookmarks, which are also the start page's tiles (see seedBookmarks).
+export async function loadBookmarks(): Promise<Bookmark[]> {
+  await ensureInit();
+  return seedBookmarks(store);
+}
 
 export default ConfigAPI;

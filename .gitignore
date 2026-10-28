@@ -5,3 +5,4 @@ download.sh
 package-lock.json
 deploy/.env
 /data
+graphify-out

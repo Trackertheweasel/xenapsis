@@ -4,8 +4,32 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      # The proxy engines and their transports. A bump here can pass the build and still break
+      # proxying at runtime (wisp-js 0.5.1 regressed DNS, #12), so review and device-test them
+      # together in one PR rather than five separate ones.
+      proxy-engines:
+        patterns:
+          - "@titaniumnetwork-dev/*"
+          - "@mercuryworkshop/*"
     ignore:
       # 0.5.1 breaks DNS resolution (resolve_with_fallback indexes the pending promise; see #12).
       # Stay on 0.4.x until upstream fixes it.
       - dependency-name: "@mercuryworkshop/wisp-js"
         versions: [">=0.5.0"]
+
+  # Workflow actions are pinned to commit SHAs; this keeps the SHAs (and their tag comments) current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # The Dockerfile pins node:22 by digest; this bumps the digest when the image is rebuilt upstream.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Moving to a new Node major is a deliberate change, not a routine bump.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

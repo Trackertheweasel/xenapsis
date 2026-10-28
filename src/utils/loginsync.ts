@@ -169,7 +169,7 @@ export async function deleteBackup(): Promise<void> {
   await fetch(API, { method: 'DELETE' }).catch(() => {});
 }
 
-// Asks the service worker (public/sw.js), which keeps Scramjet's cookies in memory.
+// Asks the service worker (src/sw.js), which keeps Scramjet's cookies in memory.
 async function askWorker<T>(type: string, data?: unknown): Promise<T | undefined> {
   const worker = (await navigator.serviceWorker?.getRegistration())?.active;
   if (!worker) return undefined;

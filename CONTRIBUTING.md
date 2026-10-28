@@ -12,7 +12,8 @@ Directions to install these are found in the readme
 ### Before creating a pull request
 
 Before creating a pull request, please run `pnpm run precommit` in your
-terminal. This will format the code.
+terminal. This will format the code. CI rejects pull requests that aren't
+formatted, fail `pnpm test`, or fail the type check in `pnpm build`.
 
 ### Adding games / apps
 

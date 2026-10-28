@@ -6,14 +6,13 @@ import Tabs from '../layouts/tab.astro';
 import SideBar from '../layouts/side.astro';
 ---
 
-<head>
-</head>
+<head></head>
 <body class="h-screen text-white">
   <Tabs />
-  <script is:inline src="/bm/index.js"></script>
-  <script is:inline src="/data/all.js"></script>
-  <script is:inline src="/tmp/config.js"></script>
-  <script is:inline src="/tmp/bundle.js"></script>
+  <script is:inline src={PERSEC_PATHS.files.bareMux}></script>
+  <script is:inline src={PERSEC_PATHS.files.scramjetAll}></script>
+  <script is:inline src={PERSEC_PATHS.files.uvConfig}></script>
+  <script is:inline src={PERSEC_PATHS.files.uvBundle}></script>
   <script src="@scripts/navigation"></script>
 
   <SideBar />
