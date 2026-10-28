@@ -7,11 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = (el as HTMLElement).getAttribute('data-short');
       if (url) {
         e.preventDefault();
-        const conn = new BareMux.BareMuxConnection('/bm/worker.js');
+        const conn = new BareMux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
         await ConfigAPI.init();
         const wisp = await ConfigAPI.get('wispUrl');
-        if ((await conn.getTransport()) !== '/lc/index.mjs') {
-          await conn.setTransport('/lc/index.mjs', [{ wisp }]);
+        if ((await conn.getTransport()) !== PERSEC_PATHS.files.libcurl) {
+          await conn.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
         }
         const input = window.parent.document.getElementById('urlbar') as HTMLInputElement | null;
         if (!input) return;

@@ -21,17 +21,60 @@ export function urlKey(raw = process.env.PUBLIC_PERSEC_URL_KEY): string {
   return raw?.trim() || randomBytes(16).toString('base64url');
 }
 
-// The URL path prefix each proxy engine uses (the defaults were /v1/data/ and /v1/tmp/). A fixed
-// prefix is the same on every Persec install, so a filter can match it to spot the proxy. Derive
-// two distinct prefixes per build instead, or keep them stable across builds/servers by setting
-// PUBLIC_PERSEC_PROXY_KEY. They are client-side only; the server never routes these paths.
-export function proxyPrefixes(raw = process.env.PUBLIC_PERSEC_PROXY_KEY): [string, string] {
+// The proxy runtime's files, by role, with the extension each must keep (browsers check the type of
+// .wasm and module scripts). Every name the runtime loads another file by comes from Persec's own
+// config (src/utils/pro.ts, the Ultraviolet config, the service worker), so they can all be renamed.
+const RUNTIME_FILES = {
+  scramjetAll: '.js',
+  scramjetSync: '.js',
+  scramjetWasm: '.wasm',
+  uvBundle: '.js',
+  uvHandler: '.js',
+  uvClient: '.js',
+  uvSw: '.js',
+  uvConfig: '.js',
+  bareMux: '.js',
+  bareMuxWorker: '.js',
+  libcurl: '.mjs',
+} as const;
+export type RuntimeFile = keyof typeof RUNTIME_FILES;
+
+export interface DeployPaths {
+  // Where proxied pages live, one prefix per engine (the defaults were /v1/data/ and /v1/tmp/).
+  scPrefix: string;
+  uvPrefix: string;
+  // The service worker. At the root, so it can control every page.
+  sw: string;
+  // The directory the whole proxy runtime is served from, and each file's URL in it.
+  runtime: string;
+  files: Record<RuntimeFile, string>;
+}
+
+// Fixed paths (/sw.js, /bm/worker.js, /v1/data/...) are the same on every Persec install, so a
+// filter can match them to spot the proxy. Every one is derived from a per-build seed instead, or
+// kept stable across builds/servers by setting PUBLIC_PERSEC_PROXY_KEY. This only beats matching on
+// paths: the files' contents are the public packages', and the browser can see every path.
+export function deployPaths(raw = process.env.PUBLIC_PERSEC_PROXY_KEY): DeployPaths {
   const seed = raw?.trim() || randomBytes(16).toString('hex');
   const h = createHash('sha256').update(seed).digest('hex');
-  const sc = `/${h.slice(0, 8)}/`;
-  const uv = `/${h.slice(8, 16)}/`;
-  // Same length, so neither can be a prefix of the other; equal only on an impossible hash clash.
-  if (sc === uv)
-    throw new Error('proxy prefixes collided; set a different PUBLIC_PERSEC_PROXY_KEY');
-  return [sc, uv];
+  // All names are 8 hex characters, so they clash only on an all-but-impossible hash collision.
+  const used = new Set<string>();
+  const unique = (n: string) => {
+    if (used.has(n)) throw new Error('paths collided; set a different PUBLIC_PERSEC_PROXY_KEY');
+    used.add(n);
+    return n;
+  };
+  const name = (role: string) =>
+    unique(createHash('sha256').update(`${seed}/${role}`).digest('hex').slice(0, 8));
+  const runtime = `/${name('runtime')}/`;
+  return {
+    // Unchanged from earlier builds, so a kept PUBLIC_PERSEC_PROXY_KEY keeps proxied URLs working.
+    scPrefix: `/${unique(h.slice(0, 8))}/`,
+    uvPrefix: `/${unique(h.slice(8, 16))}/`,
+    sw: `/${name('sw')}.js`,
+    runtime,
+    files: Object.fromEntries(
+      Object.entries(RUNTIME_FILES).map(([role, ext]) => [role, `${runtime}${name(role)}${ext}`]),
+    ) as Record<RuntimeFile, string>,
+  };
 }

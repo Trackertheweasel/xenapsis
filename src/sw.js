@@ -1,4 +1,6 @@
-importScripts('/data/all.js', '/tmp/config.js', '/tmp/bundle.js', '/tmp/sw.js');
+// Served by src/pages/[sw].js.ts, which defines PERSEC_PATHS (this build's paths) above this line.
+const { files } = PERSEC_PATHS;
+importScripts(files.scramjetAll, files.uvConfig, files.uvBundle, files.uvSw);
 
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
@@ -191,9 +193,9 @@ function targetUrl(requestUrl) {
   try {
     const u = new URL(requestUrl);
     if (u.origin !== self.location.origin) return null;
-    const scPrefix = scramjet.config?.prefix || '/v1/data/';
+    const scPrefix = scramjet.config?.prefix || PERSEC_PATHS.scPrefix;
     const uv = self.__uv$config;
-    // Both engines share one URL codec (src/utils/codec.ts), which /tmp/config.js provides here.
+    // Both engines share one URL codec (src/utils/codec.ts), which the Ultraviolet config provides here.
     if (uv && u.pathname.startsWith(scPrefix)) {
       return new URL(uv.decodeUrl(u.pathname.slice(scPrefix.length)));
     }

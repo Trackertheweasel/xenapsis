@@ -15,10 +15,10 @@ const aList = apList.aps;
     <title>Persec Apps</title>
   </head>
   <body>
-    <script is:inline src="/bm/index.js"></script>
-    <script is:inline src="/data/all.js"></script>
-    <script is:inline src="/tmp/config.js"></script>
-    <script is:inline src="/tmp/bundle.js"></script>
+    <script is:inline src={PERSEC_PATHS.files.bareMux}></script>
+    <script is:inline src={PERSEC_PATHS.files.scramjetAll}></script>
+    <script is:inline src={PERSEC_PATHS.files.uvConfig}></script>
+    <script is:inline src={PERSEC_PATHS.files.uvBundle}></script>
     <AppLayout list={aList} type="app" />
   </body>
 </html>

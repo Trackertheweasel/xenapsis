@@ -11,7 +11,7 @@ type CardItem = {
 document.addEventListener('DOMContentLoaded', async () => {
   scramjetWrapper.init();
   const sc = scramjetWrapper.getConfig();
-  const conn = new BareMux.BareMuxConnection(`/bm/worker.js`);
+  const conn = new BareMux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
   const input = document.querySelector<HTMLInputElement>('[data-input]');
   const box = document.querySelector<HTMLDivElement>('[data-container]');
   const empty = document.querySelector<HTMLDivElement>('[data-empty]');
@@ -126,8 +126,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const url = el.dataset.href;
       if (!url) return;
 
-      if ((await conn.getTransport()) !== `/lc/index.mjs`) {
-        await conn.setTransport(`/lc/index.mjs`, [{ wisp }]);
+      if ((await conn.getTransport()) !== PERSEC_PATHS.files.libcurl) {
+        await conn.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
       }
 
       // Opens with whichever engine is chosen in Settings ('u' is Ultraviolet), each with its own encoding.

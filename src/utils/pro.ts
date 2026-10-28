@@ -14,11 +14,11 @@ class ScramjetWrapper {
 
   getConfig() {
     return {
-      prefix: SC_PREFIX,
+      prefix: PERSEC_PATHS.scPrefix,
       files: {
-        wasm: '/data/wasm.wasm',
-        all: '/data/all.js',
-        sync: '/data/sync.js',
+        wasm: PERSEC_PATHS.files.scramjetWasm,
+        all: PERSEC_PATHS.files.scramjetAll,
+        sync: PERSEC_PATHS.files.scramjetSync,
       },
       flags: {
         captureErrors: false,

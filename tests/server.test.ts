@@ -8,6 +8,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { createToken, loadAccess } from '../serverlib/access.ts';
 import { buildApp } from '../serverlib/app.ts';
+import { deployPaths } from '../serverlib/env.ts';
 import { cacheControlFor, staticFileOptions } from '../serverlib/static.ts';
 import { wisp } from '../serverlib/wisp.ts';
 
@@ -51,12 +52,15 @@ test('Server prefers brotli', async () => {
 
 test('Static files get their own cache headers', () => {
   const root = path.join(tmpdir(), 'client');
-  const at = (rel: string) => cacheControlFor(root, path.join(root, ...rel.split('/')));
-  assert.equal(staticFileOptions(root).cacheControl, false, "not the plugin's max-age=0");
+  const paths = deployPaths('test-key');
+  const at = (url: string) => cacheControlFor(root, path.join(root, ...url.split('/')), paths);
+  assert.equal(staticFileOptions(root, paths).cacheControl, false, "not the plugin's max-age=0");
   assert.equal(at('st.html'), 'no-cache, no-store, must-revalidate');
   assert.equal(at('_astro/app.AbC123.js'), 'public, max-age=31536000, immutable');
-  assert.equal(at('sw.js'), 'no-cache');
-  assert.equal(at('tmp/config.js'), 'no-cache');
+  // The worker and the runtime it imports, wherever this build put them.
+  assert.equal(at(paths.sw), 'no-cache');
+  for (const file of Object.values(paths.files)) assert.equal(at(file), 'no-cache', file);
+  assert.equal(at('/sw.js'), 'public, max-age=3600', 'the old fixed name means nothing now');
   assert.equal(at('a/images/logo.webp'), 'public, max-age=3600');
 });
 
@@ -82,7 +86,7 @@ test('Without an invite, pages redirect to sign-in and everything else is refuse
   assert.equal(page.statusCode, 302);
   assert.equal(page.headers.location, '/enter');
   // Static files, the search API (a middie middleware) and the saved-logins API are all gated.
-  for (const url of ['/sw.js', '/api/query?q=hi', '/api/logins/status']) {
+  for (const url of ['/a/images/logo.webp', '/api/query?q=hi', '/api/logins/status']) {
     assert.equal((await app.inject({ url })).statusCode, 401, url);
   }
   for (const url of ['/enter', '/favicon.ico', '/robots.txt']) {
@@ -320,7 +324,7 @@ test('An old sign-in is renewed on pages only, never on cacheable responses', as
   assert.match(String(page.headers['set-cookie']), /^persec_access=[^;]+; .*HttpOnly/);
   assert.notEqual(page.headers['set-cookie'], cookie);
 
-  for (const url of ['/sw.js', '/api/query?q=hi']) {
+  for (const url of ['/a/images/logo.webp', '/api/query?q=hi']) {
     const res = await app.inject({ url, headers: { cookie } });
     assert.notEqual(res.statusCode, 401, url);
     assert.equal(res.headers['set-cookie'], undefined, url);

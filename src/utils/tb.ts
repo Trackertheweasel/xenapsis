@@ -22,7 +22,7 @@ const internalRoutes: Record<string, string> = {
 const defaultIcon = '/a/persec.svg';
 const faviconApi =
   'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&size=64&url=';
-const bmConnection = new baremux.BareMuxConnection(`/bm/worker.js`);
+const bmConnection = new baremux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
 const bmClient = new baremux.BareClient();
 
 const tabs: Tab[] = [];
@@ -79,9 +79,9 @@ function truncate(str: string, len = 12): string {
 async function loadFavicon(origin: string): Promise<string> {
   try {
     const transport = await bmConnection.getTransport();
-    if (transport !== `/lc/index.mjs`) {
+    if (transport !== PERSEC_PATHS.files.libcurl) {
       const wisp = await ConfigAPI.get('wispUrl');
-      await bmConnection.setTransport(`/lc/index.mjs`, [{ wisp }]);
+      await bmConnection.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
     }
     // Only the site's origin is sent to the favicon service, never the page's full URL.
     const res = await bmClient.fetch(faviconApi + encodeURIComponent(origin));
