@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import { createServer } from 'node:http';
 import { constants as zlibConstants } from 'node:zlib';
 import type { AccessConfig } from './access';
+import type { DeployPaths } from './env';
 import { registerAccessGate } from './routes/access';
 import { registerLoginRoutes } from './routes/logins';
 import { handleQuery } from './routes/query';
@@ -21,7 +22,8 @@ export interface AppOptions {
   // Where saved-login backups are stored (only used in invite-only mode).
   loginsDir: string;
   // The built site (dist/). Left out, only the server's own routes run, which is what tests use.
-  site?: { clientRoot: string; handler: NodeHandler };
+  // paths is the build's own (dist/server/paths.json), for cache headers.
+  site?: { clientRoot: string; handler: NodeHandler; paths: DeployPaths };
 }
 
 // Composition only: this wires the server's parts together. Put logic in the module it belongs to
@@ -64,7 +66,7 @@ export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions
   }
 
   await app.register(fastifyMiddie);
-  if (site) await app.register(fastifyStatic, staticFileOptions(site.clientRoot));
+  if (site) await app.register(fastifyStatic, staticFileOptions(site.clientRoot, site.paths));
 
   app.use('/api/query', handleQuery);
 

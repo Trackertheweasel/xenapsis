@@ -13,10 +13,11 @@ EventEmitter.defaultMaxListeners = 0;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT) || 6060;
 const entry = path.join(__dirname, 'dist', 'server', 'entry.mjs');
+const pathsFile = path.join(__dirname, 'dist', 'server', 'paths.json');
 
 // Start only what `pnpm build` produced. Building here instead made every first start slow, needed
 // the build tooling at runtime, and could never notice that dist/ was older than the code.
-if (!fs.existsSync(entry)) {
+if (!fs.existsSync(entry) || !fs.existsSync(pathsFile)) {
   console.error(chalk.red('Persec is not built. Run `pnpm build`, then `pnpm start`.'));
   process.exit(1);
 }
@@ -30,7 +31,11 @@ const app = await buildApp({
   loginsDir: process.env.PERSEC_DATA_DIR
     ? path.join(process.env.PERSEC_DATA_DIR, 'logins')
     : path.join(__dirname, 'data', 'logins'),
-  site: { clientRoot: path.join(__dirname, 'dist', 'client'), handler },
+  site: {
+    clientRoot: path.join(__dirname, 'dist', 'client'),
+    handler,
+    paths: JSON.parse(fs.readFileSync(pathsFile, 'utf8')),
+  },
 });
 
 app.listen({ host: '0.0.0.0', port }, err => {

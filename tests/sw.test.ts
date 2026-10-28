@@ -2,21 +2,25 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
-import { uvConfigSource } from '../src/pages/tmp/config.js.ts';
+import { deployPaths } from '../serverlib/env.ts';
+import { uvConfigSource } from '../src/pages/[runtime]/[uvconfig].js.ts';
 
 const origin = 'https://persec.test';
 
-// Build-time constant (see astro.config.ts): uvConfigSource() reads UV_PREFIX as it generates the
-// config source here in Node. URL_KEY, which the embedded codec reads, is set on the worker ctx below.
-(globalThis as any).UV_PREFIX = '/v1/tmp/';
+// This build's paths, a build-time constant (see astro.config.ts). uvConfigSource() reads them as it
+// generates the config source here in Node; the worker gets them on its ctx below, as
+// src/pages/[sw].js.ts defines them. URL_KEY, which the embedded codec reads, is set there too.
+const PATHS = deployPaths('test-key');
+(globalThis as any).PERSEC_PATHS = PATHS;
 
-// Runs public/sw.js with the proxy engines stubbed out, exposing its functions, its event
+// Runs src/sw.js with the proxy engines stubbed out, exposing its functions, its event
 // listeners, and what reached each engine or the network (ctx.calls).
 async function loadServiceWorker() {
   const calls = {
     scramjet: [] as { url: string; jar: string[] }[],
     uv: [] as string[],
     network: [] as string[],
+    imported: [] as string[],
   };
   const ctx: any = {
     calls,
@@ -37,13 +41,14 @@ async function loadServiceWorker() {
       calls.network.push(request.url),
       new Response('net')
     ),
-    importScripts: () => {},
+    PERSEC_PATHS: PATHS,
+    importScripts: (...urls: string[]) => calls.imported.push(...urls),
     $scramjetLoadWorker: () => ({
       ScramjetServiceWorker: class {
-        config = { prefix: '/v1/data/' };
+        config = { prefix: PATHS.scPrefix };
         async loadConfig() {}
         route(event: any) {
-          return event.request.url.startsWith(`${origin}/v1/data/`);
+          return event.request.url.startsWith(`${origin}${PATHS.scPrefix}`);
         }
         // A request with setCookie stands in for a site's server setting that cookie.
         async fetch(event: any) {
@@ -80,12 +85,12 @@ async function loadServiceWorker() {
   ctx.self = ctx;
   vm.createContext(ctx);
   vm.runInContext(uvConfigSource(), ctx);
-  vm.runInContext(await readFile(new URL('../public/sw.js', import.meta.url), 'utf8'), ctx);
+  vm.runInContext(await readFile(new URL('../src/sw.js', import.meta.url), 'utf8'), ctx);
   return ctx;
 }
 
 const sw = await loadServiceWorker();
-const scramjet = (url: string) => `${origin}/v1/data/${sw.__uv$config.encodeUrl(url)}`;
+const scramjet = (url: string) => `${origin}${PATHS.scPrefix}${sw.__uv$config.encodeUrl(url)}`;
 const uv = (url: string) => `${origin}${sw.__uv$config.prefix}${sw.__uv$config.encodeUrl(url)}`;
 const blocked = (proxied: string, request: Record<string, string> = { destination: 'script' }) => {
   const target = sw.targetUrl(proxied);
@@ -218,7 +223,7 @@ async function freshWorker({ adblock = true } = {}) {
   return worker;
 }
 const viaScramjet = (worker: any, url: string) =>
-  `${origin}/v1/data/${worker.__uv$config.encodeUrl(url)}`;
+  `${origin}${PATHS.scPrefix}${worker.__uv$config.encodeUrl(url)}`;
 const viaUv = (worker: any, url: string) =>
   `${origin}${worker.__uv$config.prefix}${worker.__uv$config.encodeUrl(url)}`;
 const AD = 'https://securepubads.g.doubleclick.net/tag/js/gpt.js';
@@ -346,4 +351,21 @@ test('A restore that is not a cookie jar is ignored', async () => {
     assert.equal(await message(worker, 'SET_COOKIES', bad), undefined);
   }
   assert.deepEqual(db.writes, []);
+});
+
+test("The worker loads the proxy runtime from this build's paths", async () => {
+  const worker = await freshWorker();
+  const { files } = PATHS;
+  assert.deepEqual(worker.calls.imported, [
+    files.scramjetAll,
+    files.uvConfig,
+    files.uvBundle,
+    files.uvSw,
+  ]);
+  const uv = worker.__uv$config;
+  assert.equal(uv.prefix, PATHS.uvPrefix);
+  assert.deepEqual(
+    [uv.handler, uv.client, uv.bundle, uv.config, uv.sw],
+    [files.uvHandler, files.uvClient, files.uvBundle, files.uvConfig, files.uvSw],
+  );
 });

@@ -30,12 +30,12 @@ let wisp: string;
 async function setup() {
   wisp = await ConfigAPI.get('wispUrl');
   scramjetWrapper.init();
-  await navigator.serviceWorker.register('./sw.js');
+  await navigator.serviceWorker.register(PERSEC_PATHS.sw);
 
-  const conn = new BareMux.BareMuxConnection('/bm/worker.js');
+  const conn = new BareMux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
   const trans = await conn.getTransport();
-  if (trans !== '/lc/index.mjs') {
-    await conn.setTransport('/lc/index.mjs', [{ wisp }]);
+  if (trans !== PERSEC_PATHS.files.libcurl) {
+    await conn.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
   }
 }
 
@@ -166,10 +166,10 @@ async function submit() {
     return;
   }
 
-  const conn = new BareMux.BareMuxConnection('/bm/worker.js');
+  const conn = new BareMux.BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
   const trans = await conn.getTransport();
-  if (trans !== '/lc/index.mjs') {
-    await conn.setTransport('/lc/index.mjs', [{ wisp }]);
+  if (trans !== PERSEC_PATHS.files.libcurl) {
+    await conn.setTransport(PERSEC_PATHS.files.libcurl, [{ wisp }]);
   }
 
   const val = await validateUrl(v);
