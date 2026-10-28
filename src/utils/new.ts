@@ -76,5 +76,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updatePing();
 
+  // Greets people by their invite's name. Open (no-invite) installs have no /api/me, so no greeting.
+  const greetingEl = document.getElementById('greeting');
+  fetch('/api/me', { cache: 'no-store' })
+    .then(res => (res.ok ? res.json() : null))
+    .then(me => {
+      if (!greetingEl || !me?.name) return;
+      const hour = new Date().getHours();
+      const part = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+      greetingEl.textContent = `Good ${part}, ${me.name}`;
+      greetingEl.classList.remove('hidden');
+    })
+    .catch(() => {});
+
   window.addEventListener('unload', cleanup);
 });

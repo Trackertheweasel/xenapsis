@@ -4,10 +4,12 @@ import {
   accessCookie,
   checkCode,
   createToken,
+  displayName,
   enterPage,
   readCookie,
   recordFailure,
   renewToken,
+  tokenSubject,
   tooManyAttempts,
   verifyToken,
 } from '../access';
@@ -41,6 +43,13 @@ export function registerAccessGate(app: FastifyInstance, access: AccessConfig) {
     }
     if (isPage) return reply.redirect('/enter');
     return reply.code(401).type('text/plain').send('Invite required');
+  });
+
+  // Behind the gate above, so only a signed-in person reaches it, and only their own name.
+  app.get('/api/me', (req, reply) => {
+    const subject = tokenSubject(access, readCookie(req.headers.cookie, ACCESS_COOKIE))!;
+    reply.header('Cache-Control', 'no-store');
+    return { name: displayName(subject) };
   });
 
   app.get('/enter', (_req, reply) => {
