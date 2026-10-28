@@ -17,3 +17,19 @@ updates:
       # Stay on 0.4.x until upstream fixes it.
       - dependency-name: "@mercuryworkshop/wisp-js"
         versions: [">=0.5.0"]
+
+  # Workflow actions are pinned to commit SHAs; this keeps the SHAs (and their tag comments) current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # The Dockerfile pins node:22 by digest; this bumps the digest when the image is rebuilt upstream.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Moving to a new Node major is a deliberate change, not a routine bump.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
