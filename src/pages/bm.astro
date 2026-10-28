@@ -60,25 +60,15 @@ import ImportLucide from '../layouts/lucide.astro';
       </section>
 
       <section aria-labelledby="bm-title">
-        <h2 id="bm-title" class="mb-3 text-lg font-semibold">
+        <h2 id="bm-title" class="mb-1 text-lg font-semibold">
           Saved bookmarks
         </h2>
+        <p class="text-text-secondary mb-3 text-sm">
+          The first 12 are the shortcuts on your start page. To reorder them, use the pencil on each one there.
+        </p>
         <ul data-list="bm" class="space-y-2"></ul>
         <p data-empty="bm" hidden class="text-text-secondary text-sm">
           No bookmarks yet. Press the bookmark icon at the end of the address bar on any site, or add one above.
-        </p>
-      </section>
-
-      <section aria-labelledby="sc-title">
-        <h2 id="sc-title" class="mb-1 text-lg font-semibold">
-          New tab shortcuts
-        </h2>
-        <p class="text-text-secondary mb-3 text-sm">
-          The tiles on the new tab page. Add a bookmark here with its “Add to new tab” button.
-        </p>
-        <ul data-list="shortcuts" class="space-y-2"></ul>
-        <p data-empty="shortcuts" hidden class="text-text-secondary text-sm">
-          No shortcuts on the new tab.
         </p>
       </section>
     </main>

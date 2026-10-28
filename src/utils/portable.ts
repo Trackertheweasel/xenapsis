@@ -2,10 +2,21 @@
 // address, so a backup server or a new domain starts empty; an exported file is the way across.
 // An imported file comes from outside, so every value is checked. The tunnel address (wispUrl) is
 // never carried: it is specific to one server, and a file that set it could send all of someone's
-// traffic to a server of the sender's choosing.
+// traffic to a server of the sender's choosing. Nothing tied to the invite (codes, the saved-logins
+// key) is a setting here, so none of it can be exported.
+import { isDisplayName, isTheme } from './personalize';
 
 const FORMAT = 'persec-settings';
-const TOGGLES = ['cloak', 'adBlock', 'autoCloak', 'beforeUnload', 'tabSwitchCloak'];
+const TOGGLES = [
+  'cloak',
+  'adBlock',
+  'autoCloak',
+  'beforeUnload',
+  'tabSwitchCloak',
+  'showClock',
+  'showSeconds',
+  'showQuote',
+];
 const URLS = ['engine', 'panicLoc'];
 const MAX_BOOKMARKS = 1000;
 
@@ -38,7 +49,10 @@ export function exportSettings(all: Record<string, unknown>) {
     'panicKey',
     'backend',
     'bm',
-    'shortcuts',
+    'shortcutsSeeded',
+    'displayName',
+    'theme',
+    'timeFormat',
   ]) {
     if (all[key] != null) settings[key] = all[key];
   }
@@ -87,15 +101,33 @@ export function parseSettings(text: string): Record<string, unknown> {
     if (s.backend !== 'sc' && s.backend !== 'u') throw bad('backend');
     out.backend = s.backend;
   }
-  // Saved bookmarks and the new-tab shortcuts are both lists of bookmarks.
+  if (s.displayName !== undefined) {
+    if (!isDisplayName(s.displayName)) throw bad('displayName');
+    out.displayName = s.displayName.trim();
+  }
+  if (s.theme !== undefined) {
+    if (!isTheme(s.theme)) throw bad('theme');
+    out.theme = s.theme;
+  }
+  if (s.timeFormat !== undefined) {
+    if (s.timeFormat !== '12' && s.timeFormat !== '24') throw bad('timeFormat');
+    out.timeFormat = s.timeFormat;
+  }
+  if (s.shortcutsSeeded !== undefined) {
+    if (typeof s.shortcutsSeeded !== 'boolean') throw bad('shortcutsSeeded');
+    out.shortcutsSeeded = s.shortcutsSeeded;
+  }
+  // Files from before the start page used the bookmarks carry its tiles as `shortcuts`.
+  const lists: Record<string, Bookmark[]> = {};
   for (const key of ['bm', 'shortcuts']) {
     if (s[key] === undefined) continue;
     if (!Array.isArray(s[key]) || s[key].length > MAX_BOOKMARKS) throw bad(key);
-    out[key] = s[key].map((b: any): Bookmark => {
+    lists[key] = s[key].map((b: any): Bookmark => {
       if (!isText(b?.name, 300) || !isLogo(b.logo) || !isWebUrl(b.redir)) throw bad(key);
       return { name: b.name, logo: b.logo, redir: b.redir };
     });
   }
+  if (lists.bm || lists.shortcuts) out.bm = mergeBookmarks(lists.shortcuts ?? [], lists.bm ?? []);
   return out;
 }
 

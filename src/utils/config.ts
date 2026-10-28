@@ -1,12 +1,8 @@
 import localForage from 'localforage';
+import type { Bookmark } from './bookmarks';
+import { PREF_DEFAULTS, fillDefaults, seedBookmarks, type Prefs } from './personalize';
 
-interface Bookmark {
-  name: string;
-  logo: string;
-  redir: string;
-}
-
-interface ConfigDefaults {
+interface ConfigDefaults extends Prefs {
   engine: string;
   cloak: 'on' | 'off';
   adBlock: 'on' | 'off';
@@ -19,7 +15,7 @@ interface ConfigDefaults {
   panicKey: string;
   wispUrl: string;
   bm: Bookmark[];
-  shortcuts: Bookmark[];
+  shortcutsSeeded: boolean;
   [key: string]: any;
 }
 
@@ -49,16 +45,9 @@ const defaults: ConfigDefaults = {
   panicKey: '`',
   wispUrl: wispUrl(),
   bm: [],
-  // The new-tab page's shortcuts, until someone edits them. Read with getIndecator, so people who
-  // visited before this key existed get them too.
-  shortcuts: [
-    { name: 'YouTube', redir: 'https://youtube.com/', logo: '/a/images/bm/yt.png' },
-    { name: 'X', redir: 'https://x.com/', logo: '/a/images/bm/x.svg' },
-    { name: 'GitHub', redir: 'https://github.com/', logo: '/a/images/bm/gh.ico' },
-    { name: 'Discord', redir: 'https://discord.com/', logo: '/a/images/bm/disc.ico' },
-    { name: 'Google', redir: 'https://google.com/', logo: '/a/images/bm/goo.ico' },
-    { name: 'Wikipedia', redir: 'https://wikipedia.org/', logo: '/a/images/bm/wiki.png' },
-  ],
+  // Whether the start page's first tiles have been added to `bm` (see loadBookmarks).
+  shortcutsSeeded: false,
+  ...PREF_DEFAULTS,
 };
 
 const store = localForage.createInstance({
@@ -70,17 +59,7 @@ let initialized = false;
 
 async function ensureInit(): Promise<void> {
   if (initialized) return;
-
-  const test = await store.getItem('engine');
-  if (test == null) {
-    const keys = Object.keys(defaults);
-    await Promise.all(
-      keys.map(function (key) {
-        return store.setItem(key, defaults[key]);
-      }),
-    );
-  }
-
+  await fillDefaults(store, defaults);
   initialized = true;
 }
 
@@ -129,5 +108,11 @@ const ConfigAPI = {
     return Object.fromEntries(entries);
   },
 };
+
+// The saved bookmarks, which are also the start page's tiles (see seedBookmarks).
+export async function loadBookmarks(): Promise<Bookmark[]> {
+  await ensureInit();
+  return seedBookmarks(store);
+}
 
 export default ConfigAPI;

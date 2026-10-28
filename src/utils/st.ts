@@ -168,7 +168,7 @@ export class SettingsManager {
     const ok = await this.confirm(
       'Clear all Persec data?',
       [
-        'Every Persec setting goes back to its default, and your bookmarks and new tab shortcuts are deleted from this browser.',
+        'Every Persec setting goes back to its default, and your bookmarks and start page shortcuts are deleted from this browser.',
         'Site cookies and saved logins are not touched; use Clear site data for those.',
         'This can’t be undone. Export your settings first if you might want them back.',
       ],
