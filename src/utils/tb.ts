@@ -48,7 +48,10 @@ function nextId() {
   return idCounter++;
 }
 
-export function decodeProxyUrl(path: string): string {
+// Takes the whole href: a GET form on an Ultraviolet page adds its query after the encoded path,
+// which the codec puts back (as src/sw.js does).
+export function decodeProxyUrl(href: string): string {
+  const { pathname: path, search } = new URL(href, location.origin);
   const scPrefix = scramjetWrapper.getConfig().prefix;
   const uvPrefix = vWrapper.getConfig().prefix;
   if (path.startsWith(scPrefix)) {
@@ -60,7 +63,7 @@ export function decodeProxyUrl(path: string): string {
     }
   }
   if (path.startsWith(uvPrefix)) {
-    return vWrapper.getConfig().decodeUrl(path.slice(uvPrefix.length));
+    return vWrapper.getConfig().decodeUrl(path.slice(uvPrefix.length) + search);
   }
   return '';
 }
@@ -160,8 +163,7 @@ async function handleFrameLoad(tab: Tab) {
     updateTabEl(tab, 'title');
     pollTitle(tab);
 
-    const pathname = new URL(doc?.location.href || '', location.origin).pathname;
-    const decoded = decodeProxyUrl(pathname);
+    const decoded = decodeProxyUrl(doc?.location.href || '');
     if (decoded) {
       fetchFavicon(decoded).then(icon => {
         tab.favicon = icon;
@@ -191,9 +193,10 @@ function updateUrlBar(tab: Tab) {
     const doc = tab.iframe.contentDocument;
     if (!doc) return;
 
-    const pathname = new URL(doc.location.href || '', location.origin).pathname;
+    const href = doc.location.href || '';
+    const pathname = new URL(href, location.origin).pathname;
     const route = Object.entries(internalRoutes).find(([, v]) => v === pathname);
-    urlInput.value = route ? route[0] : decodeProxyUrl(pathname);
+    urlInput.value = route ? route[0] : decodeProxyUrl(href);
   } catch {}
 }
 
@@ -354,8 +357,9 @@ function updateActive() {
 // again when reopened, with whichever engine is set then).
 function tabSource(tab: Tab): string {
   try {
-    const path = new URL(tab.iframe.contentWindow?.location.href || '', location.origin).pathname;
-    return Object.values(internalRoutes).includes(path) ? path : decodeProxyUrl(path);
+    const href = tab.iframe.contentWindow?.location.href || '';
+    const path = new URL(href, location.origin).pathname;
+    return Object.values(internalRoutes).includes(path) ? path : decodeProxyUrl(href);
   } catch {
     return '';
   }
@@ -512,8 +516,7 @@ function switchTab(id: number) {
         activeTab.title = title || 'New Tab';
         updateTabEl(activeTab, 'title');
 
-        const pathname = new URL(doc.location.href || '', location.origin).pathname;
-        const decoded = decodeProxyUrl(pathname);
+        const decoded = decodeProxyUrl(doc.location.href || '');
         if (decoded) {
           fetchFavicon(decoded).then(icon => {
             activeTab.favicon = icon;
@@ -538,7 +541,7 @@ function switchTab(id: number) {
       if (urlInput) {
         const pathname = new URL(href, location.origin).pathname;
         const route = Object.entries(internalRoutes).find(([, v]) => v === pathname);
-        urlInput.value = route ? route[0] : decodeProxyUrl(pathname);
+        urlInput.value = route ? route[0] : decodeProxyUrl(href);
       }
 
       if (tab) {
@@ -554,8 +557,7 @@ function switchTab(id: number) {
             updateTabEl(tab, 'title');
           }
 
-          const pathname = new URL(doc.location.href || '', location.origin).pathname;
-          const decoded = decodeProxyUrl(pathname);
+          const decoded = decodeProxyUrl(doc.location.href || '');
           if (decoded) {
             fetchFavicon(decoded).then(icon => {
               tab.favicon = icon;

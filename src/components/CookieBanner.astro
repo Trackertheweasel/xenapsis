@@ -171,16 +171,21 @@
       onNo: () => setConsent('essential'),
     });
 
-  const offerRestore = () =>
+  const offerRestore = (error?: string): void =>
     render({
       title: 'Welcome back',
       text:
         'You have saved logins from another visit. Restore them in this browser? Only do this on a device you ' +
         'trust: anyone using this browser will be signed in to your sites.',
-      note: RISK_NOTE,
+      note: error ?? RISK_NOTE,
       yes: 'Restore my logins',
       async onYes() {
-        const result = await restore();
+        let result: Awaited<ReturnType<typeof restore>>;
+        try {
+          result = await restore();
+        } catch {
+          return offerRestore('Couldn’t reach your backup. Check your connection and try again.');
+        }
         if (result === 'locked') return offerReplace();
         await keepBackingUp();
         render({

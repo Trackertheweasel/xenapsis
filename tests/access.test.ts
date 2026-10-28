@@ -58,6 +58,17 @@ test('Cookies are parsed and guessing is rate limited', () => {
   assert.ok(!tooManyAttempts(ip, Date.now() + 16 * 60 * 1000));
 });
 
+test('Wrong codes from many addresses at once keep the attempt list capped', () => {
+  const first = '198.51.100.1';
+  for (let i = 0; i < 10; i++) recordFailure(first);
+  // Fresh failures from 20,000 other addresses, none old enough to expire.
+  for (let i = 0; i < 20_000; i++) recordFailure(`2001:db8::${i.toString(16)}`);
+  const last = '2001:db8::4e1f'; // 19,999
+  for (let i = 0; i < 9; i++) recordFailure(last);
+  assert.ok(!tooManyAttempts(first), 'the oldest addresses are forgotten');
+  assert.ok(tooManyAttempts(last), 'recent ones are still limited');
+});
+
 test('Removing an unnamed code does not hand its name to another code', () => {
   const before = loadAccess({ PERSEC_INVITE_CODES: 'aaa,bbb,ccc', PERSEC_SECRET: 's' })!;
   const after = loadAccess({ PERSEC_INVITE_CODES: 'aaa,ccc', PERSEC_SECRET: 's' })!;

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import net from 'node:net';
 import type { AddressInfo } from 'node:net';
@@ -63,6 +63,30 @@ test('Static files get their own cache headers', () => {
   for (const file of Object.values(paths.files)) assert.equal(at(file), 'no-cache', file);
   assert.equal(at('/sw.js'), 'public, max-age=3600', 'the old fixed name means nothing now');
   assert.equal(at('a/images/logo.webp'), 'public, max-age=3600');
+});
+
+test('Served files carry those headers and stay behind the invite gate', async () => {
+  const clientRoot = await mkdtemp(path.join(tmpdir(), 'persec-client-'));
+  await mkdir(path.join(clientRoot, '_astro'));
+  await writeFile(path.join(clientRoot, '_astro', 'app.AbC123.js'), 'export {};');
+  await writeFile(path.join(clientRoot, 'st.html'), '<!doctype html>');
+  const app = await buildApp({
+    access: loadAccess(inviteOnly),
+    wispPath: '/w/',
+    loginsDir: await mkdtemp(path.join(tmpdir(), 'persec-logins-')),
+    site: { clientRoot, handler: (_req, _res, next) => next(), paths: deployPaths('test-key') },
+  });
+  assert.equal((await app.inject({ url: '/_astro/app.AbC123.js' })).statusCode, 401);
+  const cookie = `persec_access=${createToken(loadAccess(inviteOnly)!, 'tester')}`;
+  const js = await app.inject({ url: '/_astro/app.AbC123.js', headers: { cookie } });
+  assert.equal(js.statusCode, 200);
+  assert.equal(js.headers['cache-control'], 'public, max-age=31536000, immutable');
+  assert.equal(js.headers['x-content-type-options'], 'nosniff');
+  assert.equal(js.headers['x-frame-options'], 'SAMEORIGIN');
+  assert.equal(js.headers['referrer-policy'], 'strict-origin-when-cross-origin');
+  const page = await app.inject({ url: '/st', headers: { cookie } });
+  assert.equal(page.statusCode, 200);
+  assert.equal(page.headers['cache-control'], 'no-cache, no-store, must-revalidate');
 });
 
 const twoPeople = { PERSEC_INVITE_CODES: 'alice:abc123, bob:xyz789', PERSEC_SECRET: 'test-secret' };
