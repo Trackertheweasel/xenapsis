@@ -60,7 +60,10 @@ The site runs over HTTPS (needed for the proxy to work) and is invite-only. Mana
 | `persec status`               | Checks that each web address answers over HTTPS (fails if one doesn't)   |
 | `persec logins export/import` | Copies saved-login backups to or from another server (still encrypted)   |
 | `persec update`               | Updates to the latest version                                            |
+| `persec rollback`             | Goes back to the version from before the last update                     |
 | `persec logs`                 | Shows what the server is doing                                           |
+
+`persec update` installs whatever is newest on the `master` branch. To stay on a known version instead, name a release tag (or another branch): `PERSEC_BRANCH=<tag> persec update`. If an update misbehaves, `persec rollback` switches back to the build that ran before it in seconds, without rebuilding.
 
 If the site shows a certificate error with the `sslip.io` address, or a single name gets blocked, add another name with `persec domain add` (your settings and invites are kept) and share it. It is worth keeping a spare name or two added so a block never cuts everyone off.
 
@@ -181,10 +184,14 @@ A Render deploy starts invite-only with a generated `PERSEC_SECRET`. Copy that s
 
 ```bash
 docker build -t persec .
-docker run -d -p 8080:8080 --restart unless-stopped --name persec persec
+docker run -d -p 8080:8080 --restart unless-stopped --name persec \
+  -e PERSEC_INVITE_CODES="me:$(openssl rand -hex 8)" \
+  -e PERSEC_SECRET="$(openssl rand -hex 32)" \
+  persec
+docker inspect persec --format '{{range .Config.Env}}{{println .}}{{end}}' | grep INVITE_CODES
 ```
 
-Persec will be available at `http://localhost:8080`.
+Persec will be available at `http://localhost:8080`. Sign in with the code after `me:` that the last command prints. Without `PERSEC_INVITE_CODES` or `PERSEC_INVITE_ONLY`, Persec is open to everyone who finds it, so only leave them out on a computer nobody else can reach. The image has a health check at `/healthz`.
 
 ---
 
@@ -194,7 +201,7 @@ Persec will be available at `http://localhost:8080`.
 > Before deploying, install:
 >
 > - [Git](https://git-scm.com/downloads)
-> - [Node.js](https://nodejs.org/en/download/prebuilt-installer)
+> - [Node.js](https://nodejs.org/en/download/prebuilt-installer) 22.23.4 or newer (the version in `.nvmrc`; with nvm, run `nvm install`). Astro refuses to build on anything older.
 >
 > Then install **pnpm**:
 >

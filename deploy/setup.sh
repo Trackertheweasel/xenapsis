@@ -108,12 +108,19 @@ EOF
     ufw allow 443 >/dev/null
   fi
 
+  # Keep the running build, so `persec rollback` can go back to it if this update misbehaves.
+  if docker image inspect persec:latest >/dev/null 2>&1; then
+    docker image tag persec:latest persec:previous
+  fi
+
   echo "==> Building and starting Persec (this takes 5-10 minutes the first time)"
   docker compose --project-directory "$dir/deploy" -f "$dir/deploy/compose.yml" \
     up -d --build --remove-orphans
   # Installs from before Persec ran as the unprivileged node user left root-owned backups.
   docker compose --project-directory "$dir/deploy" -f "$dir/deploy/compose.yml" \
     exec -T --user root persec chown -R node:node /app/data
+  # Before compose named the image (see compose.yml), it was called persec-persec.
+  docker image rm persec-persec >/dev/null 2>&1 || true
   docker image prune -f >/dev/null
 
   echo
@@ -140,6 +147,7 @@ EOF
   echo "  persec status                 check that each web address answers over HTTPS"
   echo "  persec logins export|import   copy saved-login backups to or from another server"
   echo "  persec update                 update to the latest version"
+  echo "  persec rollback               go back to the version before the last update"
   echo "  persec logs                   see what the server is doing"
 }
 

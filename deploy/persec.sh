@@ -13,7 +13,7 @@ case "${1:-}" in
       echo "Usage: persec invite <name> [days]" >&2
       exit 1
     fi
-    compose exec -T persec pnpm -s invite "$2" "${3:-30}"
+    compose exec -T persec node dist/invite.mjs "$2" "${3:-30}"
     ;;
   add)
     if ! [[ "${2:-}" =~ ^[A-Za-z0-9_-]{1,32}$ && "${3:-}" =~ ^[A-Za-z0-9_.-]{8,}$ ]]; then
@@ -110,6 +110,20 @@ case "${1:-}" in
   update)
     curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | bash
     ;;
+  rollback)
+    # Swaps back to the build from before the last update, which setup.sh keeps as persec:previous.
+    # Settings, invites and saved logins are untouched. Running it again swaps forward.
+    if ! docker image inspect persec:previous >/dev/null 2>&1; then
+      echo "No earlier version is kept on this server yet. One is kept from the next 'persec update' on." >&2
+      exit 1
+    fi
+    docker image tag persec:latest persec:swap
+    docker image tag persec:previous persec:latest
+    docker image tag persec:swap persec:previous
+    docker image rm persec:swap >/dev/null
+    compose up -d --no-build persec
+    echo "Rolled back to the previous version. 'persec rollback' again undoes this; 'persec update' builds the latest."
+    ;;
   logs)
     compose logs --tail 100 -f persec
     ;;
@@ -182,7 +196,7 @@ case "${1:-}" in
     echo "  persec logins import < logins.tar (there)."
     ;;
   *)
-    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | export | status | admin | logins export|import | update | logs" >&2
+    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | export | status | admin | logins export|import | update | rollback | logs" >&2
     exit 1
     ;;
 esac

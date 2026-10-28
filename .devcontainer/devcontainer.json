@@ -1,5 +1,10 @@
 {
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  // Astro needs the exact minimum in package.json's engines field (also in .nvmrc); the image's
+  // own Node 22 can lag behind it.
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "22.23.4" }
+  },
   "postCreateCommand": "npm install -g pnpm && pnpm install",
   "forwardPorts": [4321, 6060, 8080]
 }

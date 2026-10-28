@@ -15,9 +15,6 @@ importers:
 
   .:
     dependencies:
-      '@astrojs/check':
-        specifier: ^0.9.12
-        version: 0.9.12(@emnapi/runtime@1.11.3)(prettier-plugin-astro@1.1.2(prettier@3.8.1))(prettier@3.8.1)(typescript@5.9.3)
       '@astrojs/node':
         specifier: ^11.1.9
         version: 11.1.9(astro@7.4.2(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.49.2)(tsx@4.23.15)(yaml@2.9.1))
@@ -33,6 +30,22 @@ importers:
       '@fastify/static':
         specifier: ^10.1.8
         version: 10.1.8
+      '@mercuryworkshop/wisp-js':
+        specifier: ^0.4.1
+        version: 0.4.1
+      astro:
+        specifier: ^7.4.2
+        version: 7.4.2(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.49.2)(tsx@4.23.15)(yaml@2.9.1)
+      chalk:
+        specifier: ^5.6.2
+        version: 5.6.2
+      fastify:
+        specifier: ^5.12.7
+        version: 5.12.7
+    devDependencies:
+      '@astrojs/check':
+        specifier: ^0.9.12
+        version: 0.9.12(@emnapi/runtime@1.11.3)(prettier-plugin-astro@1.1.2(prettier@3.8.1))(prettier@3.8.1)(typescript@5.9.3)
       '@fontsource/outfit':
         specifier: ^5.3.0
         version: 5.3.0
@@ -48,9 +61,6 @@ importers:
       '@mercuryworkshop/scramjet':
         specifier: ^1.1.0
         version: 1.1.0
-      '@mercuryworkshop/wisp-js':
-        specifier: ^0.4.1
-        version: 0.4.1
       '@playform/compress':
         specifier: ^0.2.5
         version: 0.2.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.6.1)(tsx@4.23.15)(yaml@2.9.1)
@@ -60,24 +70,24 @@ importers:
       '@titaniumnetwork-dev/ultraviolet':
         specifier: ^3.2.10
         version: 3.2.10
-      astro:
-        specifier: ^7.4.2
-        version: 7.4.2(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.49.2)(tsx@4.23.15)(yaml@2.9.1)
-      chalk:
-        specifier: ^5.6.2
-        version: 5.6.2
+      '@types/node':
+        specifier: ^26.6.5
+        version: 26.6.5
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
-      fastify:
-        specifier: ^5.12.7
-        version: 5.12.7
+      happy-dom:
+        specifier: ^21.0.4
+        version: 21.0.4(bufferutil@4.1.0)
       localforage:
         specifier: ^1.10.0
         version: 1.10.0
       lucide:
         specifier: ^1.61.0
         version: 1.62.0
+      prettier:
+        specifier: ^3.7.4
+        version: 3.8.1
       prettier-plugin-astro:
         specifier: ^1.1.2
         version: 1.1.2(prettier@3.8.1)
@@ -99,16 +109,6 @@ importers:
       vite-plugin-static-copy:
         specifier: ^4.1.1
         version: 4.1.1(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.6.1)(terser@5.49.2)(tsx@4.23.15)(yaml@2.9.1))
-    devDependencies:
-      '@types/node':
-        specifier: ^26.6.5
-        version: 26.6.5
-      happy-dom:
-        specifier: ^21.0.4
-        version: 21.0.4(bufferutil@4.1.0)
-      prettier:
-        specifier: ^3.7.4
-        version: 3.8.1
 
 packages:
 

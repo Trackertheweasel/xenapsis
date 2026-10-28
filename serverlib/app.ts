@@ -61,6 +61,12 @@ export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions
     brotliOptions: { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } },
   });
 
+  // For health checks (Dockerfile, Render). Open even in invite-only mode, and says nothing about
+  // the server beyond being up: a plain "ok" on /healthz is what countless other sites answer too.
+  app.get('/healthz', (_req, reply) => {
+    reply.header('Cache-Control', 'no-store').type('text/plain').send('ok');
+  });
+
   // Before middie, so the gate's hook runs ahead of the search API and Astro's pages.
   if (access) {
     registerAccessGate(app, access);
