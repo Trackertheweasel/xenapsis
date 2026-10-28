@@ -1,54 +1,24 @@
 ---
 import '@/main.css';
 import ImportLucide from './lucide.astro';
-const shortcuts = [
-  {
-    name: 'YouTube',
-    url: 'https://youtube.com',
-    icon: '/a/images/bm/yt.png',
-  },
-  {
-    name: 'X',
-    url: 'https://x.com',
-    icon: '/a/images/bm/x.svg',
-  },
-  {
-    name: 'GitHub',
-    url: 'https://github.com',
-    icon: '/a/images/bm/gh.ico',
-  },
-  {
-    name: 'Discord',
-    url: 'https://discord.com',
-    icon: '/a/images/bm/disc.ico',
-  },
-  {
-    name: 'Google',
-    url: 'https://google.com',
-    icon: '/a/images/bm/goo.ico',
-  },
-  {
-    name: 'Wikipedia',
-    url: 'https://wikipedia.org',
-    icon: '/a/images/bm/wiki.png',
-  },
-];
 ---
 
-<div class="relative mt-8 grid w-full max-w-sm grid-cols-3 gap-3 sm:mt-10 sm:flex sm:max-w-4xl sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-7 sm:px-2">
-  {shortcuts.map(shortcut => (
-    <a
-      data-short={shortcut.url}
-      class="shortcut-card bg-background-overlay/80 border-border-default/20 group relative flex cursor-pointer flex-col items-center justify-center space-y-2 rounded-2xl border p-3 shadow-lg backdrop-blur-md transition-all duration-200 hover:scale-105 sm:max-w-40 sm:min-w-30 sm:space-y-3 sm:p-5"
-    >
-      <div class="bg-background-overlay/90 border-border-default/20 flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border sm:h-16 sm:w-16">
-        <img src={shortcut.icon} class="shortcut-favicon h-8 w-8 object-contain sm:h-10 sm:w-10" alt="" />
-      </div>
-      <p class="text-text-header max-w-30 text-center text-sm font-semibold wrap-break-word sm:text-base">
-        {shortcut.name}
-      </p>
-    </a>
-  ))}
+<!-- Filled from the saved shortcuts by src/utils/shortcuts.ts. -->
+<div class="relative mt-8 flex w-full max-w-sm flex-col items-center sm:mt-10 sm:max-w-4xl sm:px-2">
+  <ul
+    id="shortcuts"
+    aria-label="Shortcuts"
+    class="grid w-full grid-cols-3 gap-3 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-7"
+  ></ul>
+  <p id="shortcuts-empty" hidden class="text-sm text-white/60">
+    No shortcuts yet.
+  </p>
+  <a
+    href="/bm"
+    class="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm text-white/60 hover:text-white/90"
+  >
+    <i data-lucide="pencil" class="h-4 w-4"></i>Edit shortcuts and bookmarks
+  </a>
 </div>
 <script src="@scripts/shortcuts.ts"></script>
 <ImportLucide />

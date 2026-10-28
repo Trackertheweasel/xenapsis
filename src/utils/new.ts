@@ -1,3 +1,5 @@
+import ConfigAPI from './config';
+
 document.addEventListener('DOMContentLoaded', () => {
   const hoursEl = document.getElementById('hours');
   const minutesEl = document.getElementById('minutes');
@@ -37,10 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // A HEAD request to this server: how fast it answers, nothing about the tunnel or sites.
+  let pinging = false;
   async function updatePing() {
-    if (!serverEl) return;
-    serverEl.textContent = 'Pinging...';
+    if (!serverEl || pinging) return;
+    pinging = true;
+    serverEl.textContent = 'Measuring server response…';
     const result = await pingServer(window.location.origin);
+    pinging = false;
     if (result.ok) {
       const color =
         result.latency >= 300
@@ -48,14 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
           : result.latency >= 100
             ? 'text-yellow-400'
             : 'text-green-400';
-      serverEl.innerHTML = `Server: <span class="${color} ml-1">${result.latency}ms</span>`;
+      const ms = document.createElement('span');
+      ms.className = `${color} ml-1`;
+      ms.textContent = `${result.latency}ms`;
+      serverEl.replaceChildren('Server response:', ms);
     } else {
-      serverEl.textContent = 'Offline';
+      serverEl.textContent = 'Server not responding';
     }
   }
 
   function handleRefreshClick() {
-    if (!refreshBtn) return;
+    if (!refreshBtn || pinging) return;
     refreshBtn.classList.add('animate-spin');
     updatePing().finally(() => {
       if (spinTimeout) clearTimeout(spinTimeout);
@@ -88,6 +97,27 @@ document.addEventListener('DOMContentLoaded', () => {
       greetingEl.classList.remove('hidden');
     })
     .catch(() => {});
+
+  // The guide's "seen" mark is kept with Persec's settings in this browser, never sent anywhere.
+  const guide = document.getElementById('guide');
+  const showGuide = (focus: boolean) => {
+    if (!guide) return;
+    guide.hidden = false;
+    if (focus) document.getElementById('guide-title')?.focus();
+  };
+  if (location.hash === '#guide') showGuide(true);
+  else
+    ConfigAPI.get('guideDone')
+      .then(done => !done && showGuide(false))
+      .catch(() => showGuide(false));
+  document.querySelector('[data-guide-open]')?.addEventListener('click', e => {
+    e.preventDefault();
+    showGuide(true);
+  });
+  document.querySelector('[data-guide-done]')?.addEventListener('click', () => {
+    if (guide) guide.hidden = true;
+    ConfigAPI.set('guideDone', true).catch(() => {});
+  });
 
   window.addEventListener('unload', cleanup);
 });
