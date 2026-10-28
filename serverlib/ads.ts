@@ -13,7 +13,8 @@
 // falls back to the static, self-served sponsor list in public/a/json/sponsors.json.
 
 import { randomUUID } from 'node:crypto';
-import sponsors from '../../public/a/json/sponsors.json';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import sponsors from '../public/a/json/sponsors.json';
 
 export interface StaticSponsor {
   enabled: boolean;
@@ -21,6 +22,13 @@ export interface StaticSponsor {
   text?: string;
   url: string;
   image?: string;
+}
+
+// What the pages get to render the slot: the server hands it to Astro as `Astro.locals.ads` (see
+// serverlib/app.ts, and astro.config.ts for the dev server), so the ad on the page and the /a/ad/*
+// routes below share this one module's state.
+export interface AdSlot {
+  getCurrentAd(): Promise<ServedAd | null>;
 }
 
 // What Sponsor.astro renders. A "network" ad is served through the /a/ad/* routes below; a
@@ -230,11 +238,9 @@ function staticAd(): ServedAd | null {
   return { kind: 'static', name: s.name, text: s.text ?? '', image: s.image, url: s.url };
 }
 
-// --- Used by the /a/ad/* routes. ---
+export const adSlot: AdSlot = { getCurrentAd };
 
-export function creativeFor(id: string): Creative | undefined {
-  return creatives.get(id);
-}
+// --- The /a/ad/* routes. ---
 
 // Record a view by firing the network's impression URL from the server, once per ad.
 export async function recordImpression(id: string): Promise<void> {
@@ -262,8 +268,59 @@ export async function recordClick(id: string): Promise<string | null> {
   return ad.clickTarget;
 }
 
-// A 1x1 transparent GIF, returned by the impression pixel. A plain Uint8Array so it is accepted as
-// a response body.
-export const PIXEL = new Uint8Array(
-  Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64'),
-);
+export function creativeFor(id: string): Creative | undefined {
+  return creatives.get(id);
+}
+
+// A 1x1 transparent GIF, returned by the impression pixel.
+const PIXEL = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+
+const AD_ROUTE = /^\/a\/ad\/(img|px|click)\/([^/?#]+)$/;
+
+// Serves /a/ad/img/<id>, /a/ad/px/<id> and /a/ad/click/<id>, and passes anything else on. A plain
+// Node handler so the production server and the dev server (astro.config.ts) run the same code.
+export async function handleAd(req: IncomingMessage, res: ServerResponse, next: () => void) {
+  const { pathname } = new URL(req.url ?? '/', 'http://localhost');
+  const match = AD_ROUTE.exec(pathname);
+  if (!match || (req.method !== 'GET' && req.method !== 'HEAD')) return next();
+  const [, kind, id] = match;
+
+  if (kind === 'img') {
+    // Served from Persec's own origin, so the visitor's browser never requests it from the network.
+    const creative = creativeFor(id);
+    if (!creative) {
+      res.writeHead(404, { 'content-type': 'text/plain' }).end('Not found');
+      return;
+    }
+    res
+      .writeHead(200, {
+        'content-type': creative.type,
+        // Private and short-lived: the slot rotates and creatives are per-session.
+        'cache-control': 'private, max-age=300',
+        'x-content-type-options': 'nosniff',
+      })
+      .end(creative.buf);
+    return;
+  }
+
+  if (kind === 'px') {
+    // The ad card loads this pixel when it is shown, so the server fires the network's impression
+    // callback and the visitor never contacts the network.
+    await recordImpression(id);
+    res
+      .writeHead(200, {
+        'content-type': 'image/gif',
+        'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff',
+      })
+      .end(PIXEL);
+    return;
+  }
+
+  // A click: recorded here (firing the network's click callback if any), then the visitor goes
+  // straight to the advertiser. Only ever to a real web address, never to javascript:/data: and
+  // the like.
+  const target = await recordClick(id);
+  const location = target && /^https?:\/\//i.test(target) ? target : '/new';
+  res.writeHead(302, { location }).end();
+}

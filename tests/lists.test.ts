@@ -61,9 +61,7 @@ test('No game points at a site that has gone offline', () => {
 
 test('Apps open with the engine chosen in Settings', async () => {
   const src = await read('src/utils/assets.ts');
-  // Settings stores Ultraviolet as 'u' (see src/utils/st.ts), and each engine encodes addresses its own way.
-  assert.match(
-    src,
-    /=== 'u'\s*\?\s*uv\.prefix \+ uv\.encodeUrl\(url\)\s*:\s*sc\.prefix \+ sc\.codec\.encode\(url\)/,
-  );
+  // Each engine encodes addresses its own way; encodeProxyUrl (src/utils/pro.ts, tested in
+  // routes.test.ts) picks the encoding from the saved setting.
+  assert.match(src, /encodeProxyUrl\(url, await ConfigAPI\.get\('backend'\)\)/);
 });

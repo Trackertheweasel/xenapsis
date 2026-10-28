@@ -1,6 +1,6 @@
 import ConfigAPI from './config';
 import { checkAndShow } from './diagnostics';
-import { scramjetWrapper, vWrapper } from './pro';
+import { encodeProxyUrl, scramjetWrapper } from './pro';
 import { ensureTransport } from './transport';
 
 type CardItem = {
@@ -12,7 +12,6 @@ type CardItem = {
 
 document.addEventListener('DOMContentLoaded', async () => {
   scramjetWrapper.init();
-  const sc = scramjetWrapper.getConfig();
   const input = document.querySelector<HTMLInputElement>('[data-input]');
   const box = document.querySelector<HTMLDivElement>('[data-container]');
   const empty = document.querySelector<HTMLDivElement>('[data-empty]');
@@ -134,11 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Opens with whichever engine is chosen in Settings ('u' is Ultraviolet), each with its own encoding.
-      const uv = vWrapper.getConfig();
-      window.location.href =
-        (await ConfigAPI.get('backend')) === 'u'
-          ? uv.prefix + uv.encodeUrl(url)
-          : sc.prefix + sc.codec.encode(url);
+      window.location.href = encodeProxyUrl(url, await ConfigAPI.get('backend'));
     });
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {

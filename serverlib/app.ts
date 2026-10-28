@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import { createServer } from 'node:http';
 import { constants as zlibConstants } from 'node:zlib';
 import type { AccessConfig } from './access';
+import { adSlot, handleAd } from './ads';
 import type { DeployPaths } from './env';
 import { registerAccessGate } from './routes/access';
 import { registerAdminRoutes } from './routes/admin';
@@ -15,7 +16,7 @@ import { handleQuery } from './routes/query';
 import { staticFileOptions } from './static';
 import { routeWisp } from './wisp';
 
-type NodeHandler = (req: any, res: any, next: (err?: unknown) => void) => void;
+type NodeHandler = (req: any, res: any, next: (err?: unknown) => void, locals?: App.Locals) => void;
 
 export interface AppOptions {
   access: AccessConfig | null;
@@ -28,7 +29,7 @@ export interface AppOptions {
 }
 
 // Composition only: this wires the server's parts together. Put logic in the module it belongs to
-// (routes/, access.ts, wisp.ts, static.ts) so it can be tested on its own.
+// (routes/, access.ts, ads.ts, wisp.ts, static.ts) so it can be tested on its own.
 export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions) {
   const app = Fastify({
     logger: false,
@@ -71,6 +72,11 @@ export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions
   if (site) await app.register(fastifyStatic, staticFileOptions(site.clientRoot, site.paths));
 
   app.use('/api/query', handleQuery);
+  app.use(handleAd);
+
+  // What every page Astro renders gets as Astro.locals. The ad slot lives here, in the server, so
+  // the page showing an ad and the /a/ad/* routes serving it share one module's state.
+  const locals: App.Locals = { ads: adSlot };
 
   if (site) {
     // Astro's middleware would try (and fail) to render prerendered pages itself, so send
@@ -84,7 +90,7 @@ export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions
     app.use((req: any, res: any, next: any) => {
       const { pathname } = new URL(req.url ?? '/', 'http://localhost');
       if (prerendered.has(pathname)) return next();
-      return site.handler(req, res, next);
+      return site.handler(req, res, next, locals);
     });
   }
 

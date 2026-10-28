@@ -48,6 +48,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "happy-dom": "^21.0.4",
     "prettier": "^3.7.4"
   },
   "pnpm": {

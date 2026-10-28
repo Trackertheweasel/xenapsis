@@ -1,6 +1,7 @@
 import * as baremux from '@mercuryworkshop/bare-mux';
 import ConfigAPI from './config';
-import { scramjetWrapper, vWrapper } from './pro';
+import { decodeProxyUrl, encodeProxyUrl, scramjetWrapper } from './pro';
+import { internalName } from './routes';
 import { ensureTransport } from './transport';
 
 interface Tab {
@@ -13,25 +14,19 @@ interface Tab {
   isReady: boolean;
 }
 
-const internalRoutes: Record<string, string> = {
-  'persec://settings': '/st',
-  'persec://new': '/new',
-  'persec://games': '/math',
-  'persec://apps': '/sci',
-  'persec://privacy': '/privacy',
-  'persec://bookmarks': '/bm',
-};
 const defaultIcon = '/a/persec.svg';
 const faviconApi =
   'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&size=64&url=';
 // Given the path: without one, bare-mux reads it from localStorage, which is empty on a first visit.
-const bmClient = new baremux.BareClient(PERSEC_PATHS.files.bareMuxWorker);
+// Made on first use, so loading this module starts no worker.
+let bmClient: baremux.BareClient | undefined;
 
 const tabs: Tab[] = [];
 let activeId: number | null = null;
 let idCounter = 1;
 let urlWatcher: ReturnType<typeof setInterval> | null = null;
 let loadTimer: ReturnType<typeof setTimeout> | null = null;
+let loadWatcher: ReturnType<typeof setInterval> | null = null;
 let isLoading = false;
 let prevHref = '';
 let onUrlChange: ((href: string) => void) | null = null;
@@ -48,37 +43,9 @@ function nextId() {
   return idCounter++;
 }
 
-// Takes the whole href: a GET form on an Ultraviolet page adds its query after the encoded path,
-// which the codec puts back (as src/sw.js does).
-export function decodeProxyUrl(href: string): string {
-  const { pathname: path, search } = new URL(href, location.origin);
-  const scPrefix = scramjetWrapper.getConfig().prefix;
-  const uvPrefix = vWrapper.getConfig().prefix;
-  if (path.startsWith(scPrefix)) {
-    // The codec already decodes; decoding twice corrupts URLs containing escapes like %2B.
-    try {
-      return scramjetWrapper.getConfig().codec.decode(path.slice(scPrefix.length)) || '';
-    } catch {
-      return '';
-    }
-  }
-  if (path.startsWith(uvPrefix)) {
-    return vWrapper.getConfig().decodeUrl(path.slice(uvPrefix.length) + search);
-  }
-  return '';
-}
-
-async function encodeProxyUrl(url: string): Promise<string> {
-  const backend = await ConfigAPI.get('backend');
-  if (backend === 'sc') {
-    const cfg = scramjetWrapper.getConfig();
-    return cfg.prefix + cfg.codec.encode(url);
-  }
-  if (backend === 'u') {
-    const cfg = vWrapper.getConfig();
-    return cfg.prefix + cfg.encodeUrl(url);
-  }
-  return url;
+// A site's address as a tab opens it, with the engine chosen in Settings.
+async function encodeForTab(url: string): Promise<string> {
+  return encodeProxyUrl(url, await ConfigAPI.get('backend'));
 }
 
 function truncate(str: string, len = 12): string {
@@ -89,6 +56,7 @@ async function loadFavicon(origin: string): Promise<string> {
   try {
     await ensureTransport();
     // Only the site's origin is sent to the favicon service, never the page's full URL.
+    bmClient ??= new baremux.BareClient(PERSEC_PATHS.files.bareMuxWorker);
     const res = await bmClient.fetch(faviconApi + encodeURIComponent(origin));
     if (!res.ok) return defaultIcon;
     const blob = await res.blob();
@@ -195,8 +163,7 @@ function updateUrlBar(tab: Tab) {
 
     const href = doc.location.href || '';
     const pathname = new URL(href, location.origin).pathname;
-    const route = Object.entries(internalRoutes).find(([, v]) => v === pathname);
-    urlInput.value = route ? route[0] : decodeProxyUrl(href);
+    urlInput.value = internalName(pathname) ?? decodeProxyUrl(href);
   } catch {}
 }
 
@@ -217,7 +184,7 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
       if (!win || !doc) return;
       win.open = (openUrl?: string | URL) => {
         if (!openUrl) return null;
-        encodeProxyUrl(openUrl.toString()).then(proxyUrl => {
+        encodeForTab(openUrl.toString()).then(proxyUrl => {
           openTab(proxyUrl);
         });
         return null;
@@ -359,7 +326,7 @@ function tabSource(tab: Tab): string {
   try {
     const href = tab.iframe.contentWindow?.location.href || '';
     const path = new URL(href, location.origin).pathname;
-    return Object.values(internalRoutes).includes(path) ? path : decodeProxyUrl(href);
+    return internalName(path) ? path : decodeProxyUrl(href);
   } catch {
     return '';
   }
@@ -540,8 +507,7 @@ function switchTab(id: number) {
       const urlInput = document.getElementById('urlbar') as HTMLInputElement | null;
       if (urlInput) {
         const pathname = new URL(href, location.origin).pathname;
-        const route = Object.entries(internalRoutes).find(([, v]) => v === pathname);
-        urlInput.value = route ? route[0] : decodeProxyUrl(href);
+        urlInput.value = internalName(pathname) ?? decodeProxyUrl(href);
       }
 
       if (tab) {
@@ -571,7 +537,7 @@ function switchTab(id: number) {
   }, 150);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function start() {
   tabBar = document.getElementById('tcontainer') as HTMLDivElement | null;
   frameContainer = document.getElementById('fcontainer') as HTMLDivElement | null;
   document.getElementById('add')?.addEventListener('click', () => openTab());
@@ -579,13 +545,13 @@ document.addEventListener('DOMContentLoaded', () => {
   urlbar?.addEventListener('keydown', e => {
     if (e.key === 'Enter') showLoader();
   });
-  setInterval(() => {
+  loadWatcher = setInterval(() => {
     if (!isLoading) return;
     const tab = tabs.find(t => t.id === activeId);
     if (tab?.iframe?.contentDocument?.readyState === 'complete') resetLoader();
   }, 400);
   openTab();
-});
+}
 
 function cleanup() {
   if (urlWatcher) {
@@ -596,12 +562,14 @@ function cleanup() {
     clearTimeout(loadTimer);
     loadTimer = null;
   }
+  if (loadWatcher) {
+    clearInterval(loadWatcher);
+    loadWatcher = null;
+  }
   for (const tab of tabs) {
     if (tab.titleTimer) clearInterval(tab.titleTimer);
   }
 }
-
-window.addEventListener('unload', cleanup);
 
 export const TabManager = {
   get activeTabId() {
@@ -618,7 +586,7 @@ export const TabManager = {
   async reopenClosed(): Promise<boolean> {
     const last = closed.shift();
     if (!last) return false;
-    openTab(last.src.startsWith('/') ? last.src : await encodeProxyUrl(last.src));
+    openTab(last.src.startsWith('/') ? last.src : await encodeForTab(last.src));
     return true;
   },
   onUrlChange: (cb: (href: string) => void) => {
@@ -626,4 +594,15 @@ export const TabManager = {
   },
 };
 
-(globalThis as any).TabManager = TabManager;
+// Sets up the tab strip in the page that has it (src/layouts/tab.astro). Loading this module does
+// nothing on its own, so other modules (and tests) can import TabManager without a tab strip.
+export function initTabs() {
+  // Read by pages in the tabs, which can't import this module (src/components/CookieBanner.astro).
+  (globalThis as any).TabManager = TabManager;
+  window.addEventListener('unload', cleanup);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
+}
