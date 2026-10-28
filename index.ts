@@ -10,7 +10,10 @@ import { wispPath } from 'serverlib/env';
 
 EventEmitter.defaultMaxListeners = 0;
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Runs from source (tsx index.ts) or as the bundle `pnpm build` writes to dist/start.mjs, which is
+// what the Docker image runs. Either way, paths below are relative to the repository root.
+const here = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.basename(here) === 'dist' ? path.dirname(here) : here;
 const port = Number(process.env.PORT) || 6060;
 const entry = path.join(__dirname, 'dist', 'server', 'entry.mjs');
 const pathsFile = path.join(__dirname, 'dist', 'server', 'paths.json');
@@ -45,3 +48,15 @@ app.listen({ host: '0.0.0.0', port }, err => {
   }
   printBanner(port, access);
 });
+
+// `docker stop` and hosts like Render send SIGTERM. Stop taking connections and let requests in
+// flight finish, but don't wait long: proxy tunnels stay open for as long as a tab does.
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.once(signal, () => {
+    setTimeout(() => process.exit(0), 5000).unref();
+    app.close().then(
+      () => process.exit(0),
+      () => process.exit(1),
+    );
+  });
+}

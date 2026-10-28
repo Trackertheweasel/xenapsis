@@ -1,8 +1,9 @@
 services:
   - type: web
     name: persec
-    env: docker
+    runtime: docker
     plan: free
+    healthCheckPath: /healthz
     envVars:
       # Every request reaches Persec from Render's proxy, so without this all visitors share one
       # wrong-code limit. Cloudflare, in front of Render, sets this header to the visitor's address.
