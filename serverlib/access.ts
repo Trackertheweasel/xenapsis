@@ -20,6 +20,10 @@ export interface AccessConfig {
   secret: string;
   // Only with a fixed PERSEC_SECRET: a random one would invalidate every minted invite on restart.
   minted: boolean;
+  // Header holding the visitor's address, set by a reverse proxy that overwrites it (deploy/Caddyfile
+  // does). Unset, the connection's own address is used: anyone can send this header themselves, and
+  // trusting it would let a guesser pick a fresh address for every wrong code.
+  clientIpHeader?: string;
 }
 
 const truthy = (v: string | undefined) => /^(1|true|yes|on)$/i.test(v?.trim() ?? '');
@@ -52,6 +56,7 @@ export function loadAccess(env: NodeJS.ProcessEnv = process.env): AccessConfig |
     revoked: new Set(list(env.PERSEC_REVOKED)),
     secret,
     minted: !!fixedSecret,
+    clientIpHeader: env.PERSEC_CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
   };
 }
 

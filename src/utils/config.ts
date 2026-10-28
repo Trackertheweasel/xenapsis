@@ -26,7 +26,7 @@ type ConfigKey = string;
 
 const isBrowser = typeof location !== 'undefined';
 
-function wispUrl(): string {
+export function wispUrl(): string {
   if (!isBrowser) return '';
   const isHttps = location.protocol === 'https:';
   // WISP_PATH is injected at build time (see astro.config.ts) and must match the path the

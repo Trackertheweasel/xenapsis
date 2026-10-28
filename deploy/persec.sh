@@ -2,7 +2,8 @@
 # Manages a Persec server installed with setup.sh. Installed as the `persec` command.
 set -euo pipefail
 
-dir=/opt/persec/deploy
+# PERSEC_DIR is only for the tests (tests/persec-cli.test.ts).
+dir=${PERSEC_DIR:-/opt/persec}/deploy
 env=$dir/.env
 compose() { docker compose --project-directory "$dir" -f "$dir/compose.yml" "$@"; }
 
@@ -27,6 +28,7 @@ case "${1:-}" in
     echo "PERSEC_REVOKED=$revoked" >>"$env"
     compose up -d persec
     echo "\"$2\" can now sign in with: $3"
+    echo "Backup servers don't pick this up: run the same command on each of them."
     ;;
   revoke)
     if ! [[ "${2:-}" =~ ^[A-Za-z0-9_-]{1,32}$ ]]; then
@@ -36,7 +38,8 @@ case "${1:-}" in
     current=$(sed -n 's/^PERSEC_REVOKED=//p' "$env")
     sed -i "s/^PERSEC_REVOKED=.*/PERSEC_REVOKED=${current:+$current,}$2/" "$env"
     compose up -d persec
-    echo "Revoked every invite for \"$2\"."
+    echo "Revoked every invite for \"$2\" on this server."
+    echo "Backup servers don't pick this up: run 'persec revoke $2' on each of them too."
     ;;
   domain)
     # DOMAIN holds every name the site answers on, separated by spaces.
@@ -96,6 +99,41 @@ case "${1:-}" in
   logs)
     compose logs --tail 100 -f persec
     ;;
+  status)
+    # Health check: asks each of the site's addresses for the sign-in page over HTTPS, which needs
+    # DNS, the certificate, Caddy and Persec all working. Exits non-zero if any fails, so it can run
+    # from cron or a monitor. It checks from here, not from the networks people use.
+    failed=0
+    for d in $(sed -n 's/^DOMAIN=//p' "$env"); do
+      code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://$d/enter" || true)
+      if [ "$code" = 200 ]; then
+        echo "ok    https://$d"
+      else
+        echo "FAIL  https://$d (answered ${code:-nothing}; check its DNS, certificate and 'persec logs')"
+        failed=1
+      fi
+    done
+    exit $failed
+    ;;
+  logins)
+    # Copies saved-login backups between servers. They are encrypted in people's browsers with a key
+    # made from their invite code, so this moves bytes neither server can read. Files are named after
+    # the person, the same way on every server; an import never replaces a newer backup.
+    case "${2:-}" in
+      export)
+        # Files only: GNU tar's --keep-newer-files fails on a directory entry that already exists.
+        compose exec -T persec sh -c 'mkdir -p /app/data/logins && cd /app/data && find logins -name "*.bin" -print0 | tar --null -T - -cf -'
+        ;;
+      import)
+        # Only backup files are taken from the archive, whatever else it holds.
+        compose exec -T persec sh -c 'mkdir -p /app/data/logins && cd /app/data && tar --keep-newer-files --wildcards -xf - "logins/*.bin"'
+        ;;
+      *)
+        echo "Usage: persec logins export > logins.tar   |   persec logins import < logins.tar" >&2
+        exit 1
+        ;;
+    esac
+    ;;
   export)
     # Prints a ready-to-paste command for standing up a backup server that shares this one's
     # invites. Because logins are signed with PERSEC_SECRET, a second server with the same
@@ -113,13 +151,24 @@ case "${1:-}" in
     line="curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | PERSEC_SECRET=$secret"
     [ -n "$codes" ] && line="$line PERSEC_INVITE_CODES=$codes"
     [ -n "$revoked" ] && line="$line PERSEC_REVOKED=$revoked"
+    # A hidden tunnel path stays hidden on the backup, but gets its own, made when the command runs
+    # there: finding one server's path then tells nobody the other's.
+    if grep -q '^PUBLIC_PERSEC_WISP_PATH=.' "$env"; then
+      line="$line PUBLIC_PERSEC_WISP_PATH=/\$(openssl rand -hex 6)/"
+    fi
     echo "  $line bash"
     echo
     echo "Then 'persec domain add' a name for that server and share it as a backup."
     echo "Keep this command private: anyone with the secret can mint invites."
+    echo
+    echo "Shared from now on: the secret, so minted invites ('persec invite') work on both."
+    echo "Copied once, NOT kept in sync: codes from 'persec add' and revokes from 'persec revoke'."
+    echo "  Run those on every server. A revoke done only here leaves that person able to use the backup."
+    echo "Not copied: saved logins. Move them with: persec logins export > logins.tar (here), then"
+    echo "  persec logins import < logins.tar (there)."
     ;;
   *)
-    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | export | update | logs" >&2
+    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | export | status | logins export|import | update | logs" >&2
     exit 1
     ;;
 esac

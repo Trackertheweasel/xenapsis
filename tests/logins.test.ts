@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, readFile, rm, utimes } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -78,4 +78,19 @@ test('Clearing site data keeps the saved-logins key and deletes the backup', asy
   const src = await read('src/utils/sitedata.ts');
   assert.match(src, /KEEP_DATABASES = new Set\(\[[^\]]*'PersecLogins'/);
   assert.match(src, /await deleteBackup\(\);\n\}/, 'deletes the backup last');
+});
+
+test('A backup copied to another server is found there for the same person', async () => {
+  const [a, b] = await Promise.all(
+    [1, 2].map(() => mkdtemp(path.join(tmpdir(), 'persec-logins-'))),
+  );
+  try {
+    await new BackupStore(a).put('alice', Buffer.from('ciphertext'));
+    const [file] = await readdir(a);
+    await writeFile(path.join(b, file), await readFile(path.join(a, file)));
+    assert.equal((await new BackupStore(b).get('alice'))?.data.toString(), 'ciphertext');
+    assert.equal(await new BackupStore(b).get('bob'), null);
+  } finally {
+    await Promise.all([a, b].map(d => rm(d, { recursive: true, force: true })));
+  }
 });

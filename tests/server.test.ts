@@ -15,7 +15,8 @@ import { wisp } from '../serverlib/wisp.ts';
 // The real server without the built site, so it runs without `pnpm build`.
 async function server(env: Record<string, string> = {}) {
   return buildApp({
-    access: loadAccess(env),
+    // As deploy/compose.yml runs it, behind Caddy, so each sign-in can come from its own address.
+    access: loadAccess({ PERSEC_CLIENT_IP_HEADER: 'cf-connecting-ip', ...env }),
     wispPath: '/w/',
     loginsDir: await mkdtemp(path.join(tmpdir(), 'persec-logins-')),
   });
@@ -128,6 +129,28 @@ test('Ten wrong codes from one address lock it out, even for the right code', as
       method: 'POST',
       url: '/enter',
       headers: { 'content-type': 'application/x-www-form-urlencoded', 'cf-connecting-ip': ip },
+      payload: `code=${code}`,
+    });
+  for (let i = 0; i < 10; i++) assert.equal((await attempt('nope')).statusCode, 401);
+  assert.equal((await attempt('abc123')).statusCode, 429);
+});
+
+test("Without a reverse proxy, a visitor's own address header can't dodge the lockout", async () => {
+  const app = await buildApp({
+    access: loadAccess(inviteOnly),
+    wispPath: '/w/',
+    loginsDir: await mkdtemp(path.join(tmpdir(), 'persec-logins-')),
+  });
+  const attempt = (code: string) =>
+    app.inject({
+      method: 'POST',
+      url: '/enter',
+      remoteAddress: '198.51.100.7',
+      // A new made-up address every time, as a guesser would send.
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'cf-connecting-ip': freshIp(),
+      },
       payload: `code=${code}`,
     });
   for (let i = 0; i < 10; i++) assert.equal((await attempt('nope')).statusCode, 401);
