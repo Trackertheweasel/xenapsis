@@ -195,10 +195,14 @@ async function request(worker: any, url: string, init: Record<string, string> = 
   return res;
 }
 
-async function message(worker: any, type: string, data?: unknown) {
+// Settings, a trusted Persec page, unless another sender is given.
+const settingsPage = { type: 'window', url: `${origin}/st` };
+
+async function message(worker: any, type: string, data?: unknown, source: unknown = settingsPage) {
   let reply: unknown;
   const waits: Promise<unknown>[] = [];
   worker.listeners.message({
+    source,
     data: { type, data },
     ports: [{ postMessage: (m: unknown) => (reply = m) }],
     waitUntil: (p: Promise<unknown>) => waits.push(p),
@@ -302,4 +306,44 @@ test('Restoring saved logins merges the cookies into the jar and saves them', as
   assert.deepEqual(Object.keys(jar).sort(), ['old', 'restored']);
   await request(worker, viaScramjet(worker, 'https://example.com/'));
   assert.deepEqual(worker.calls.scramjet[0].jar.sort(), ['old', 'restored']);
+});
+
+test('Only Persec pages that need them can use the cookie and settings messages', async () => {
+  const worker = await freshWorker();
+  const site = 'https://example.com/';
+  const untrusted = {
+    'a page proxied by Scramjet': { type: 'window', url: viaScramjet(worker, site) },
+    'a page proxied by Ultraviolet': { type: 'window', url: viaUv(worker, site) },
+    'a blank frame': { type: 'window', url: 'about:blank' },
+    'another origin': { type: 'window', url: 'https://evil.test/st' },
+    'a Persec page that never sends them': { type: 'window', url: `${origin}/new` },
+    'a worker at a trusted URL': { type: 'worker', url: `${origin}/st` },
+    'no sender': null,
+  };
+  for (const [who, source] of Object.entries(untrusted)) {
+    const w = await freshWorker({ adblock: false });
+    const db = cookieDb(w, { old: {} });
+    assert.equal(await message(w, 'GET_COOKIES', undefined, source), undefined, `${who}: read`);
+    assert.equal(await message(w, 'SET_COOKIES', { planted: {} }, source), undefined, who);
+    assert.equal(await message(w, 'CLEAR_SITE_DATA', undefined, source), undefined, who);
+    await message(w, 'ADBLOCK', { enabled: true }, source);
+    assert.deepEqual(db.writes, [], `${who}: nothing written`);
+    await request(w, viaScramjet(w, AD), { destination: 'script' });
+    assert.deepEqual(w.calls.scramjet[0].jar, ['old'], `${who}: jar neither cleared nor planted`);
+    assert.equal(w.reads, 1, `${who}: ad blocker not toggled`);
+  }
+  for (const page of ['/', '/st', '/?tab=1']) {
+    const source = { type: 'window', url: `${origin}${page}` };
+    cookieDb(worker, { old: {} });
+    assert.ok(await message(worker, 'GET_COOKIES', undefined, source), page);
+  }
+});
+
+test('A restore that is not a cookie jar is ignored', async () => {
+  const worker = await freshWorker();
+  const db = cookieDb(worker, { old: {} });
+  for (const bad of ['abc', ['x'], null, 42]) {
+    assert.equal(await message(worker, 'SET_COOKIES', bad), undefined);
+  }
+  assert.deepEqual(db.writes, []);
 });
