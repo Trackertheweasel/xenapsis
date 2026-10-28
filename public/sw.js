@@ -1,7 +1,5 @@
 importScripts('/data/all.js', '/tmp/config.js', '/tmp/bundle.js', '/tmp/sw.js');
 
-let playgroundData = null;
-
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
 const v = new UVServiceWorker();
@@ -76,10 +74,31 @@ function scheduleSave(event) {
   );
 }
 
+// Trust boundary. Proxied sites run on Persec's own origin, so any page they load could message
+// this worker and read or replace every site's cookies. Both engines remove navigator.serviceWorker
+// from proxied pages; as a second line, only Persec's own pages that need these messages are
+// answered: the home page (settings, cookie notice) and Settings, which opens in a tab frame.
+// A proxied page's URL is under an engine prefix, so it never matches. This is not a wall against
+// a site that escapes the engines' rewriting: with the origin's IndexedDB it could read the
+// saved jar directly. Scramjet's own messages (scramjet$type) go to its own listener, not here.
+const TRUSTED_PAGES = new Set(['/', '/st']);
+
+function isTrustedSender(source) {
+  if (source?.type !== 'window') return false;
+  try {
+    const url = new URL(source.url);
+    return url.origin === self.location.origin && TRUSTED_PAGES.has(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+const isJar = data => !!data && typeof data === 'object' && !Array.isArray(data);
+
 async function handleMessage(event) {
+  if (!isTrustedSender(event.source)) return;
   const { type, data } = event.data || {};
   const reply = event.ports[0];
-  if (type === 'playgroundData') playgroundData = event.data;
   if (type === 'ADBLOCK') adblockEnabled = !!data?.enabled;
   if (type === 'CLEAR_SITE_DATA') {
     // Scramjet keeps its cookie jar in memory as well as in IndexedDB, which the page clears.
@@ -93,7 +112,7 @@ async function handleMessage(event) {
     await loadJar();
     reply?.postMessage(currentJar());
   }
-  if (type === 'SET_COOKIES') {
+  if (type === 'SET_COOKIES' && isJar(data)) {
     await loadJar();
     scramjet.cookieStore.load(JSON.stringify({ ...currentJar(), ...data }));
     await saveJar();

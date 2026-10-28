@@ -1,4 +1,8 @@
 import { logging, server as wisp } from '@mercuryworkshop/wisp-js/server';
+import type { IncomingMessage } from 'node:http';
+import type { Duplex } from 'node:stream';
+import { ACCESS_COOKIE, readCookie, verifyToken } from './access';
+import type { AccessConfig } from './access';
 
 logging.set_level(logging.ERROR);
 Object.assign(wisp.options, {
@@ -19,3 +23,23 @@ Object.assign(wisp.options, {
 });
 
 export { wisp };
+
+// The one rule for who may open the tunnel, shared by the production server (serverlib/app.ts) and
+// the dev server (astro.config.ts). In invite-only mode it needs a valid sign-in cookie, or anyone
+// could use the server as an open proxy. Returns false for upgrades on other paths, which the
+// caller handles: production refuses them, the dev server leaves them to Vite's live reload.
+export function routeWisp(
+  access: AccessConfig | null,
+  wispPath: string,
+  req: IncomingMessage,
+  socket: Duplex,
+  head: Buffer,
+): boolean {
+  if (!req.url?.endsWith(wispPath)) return false;
+  if (!access || verifyToken(access, readCookie(req.headers.cookie, ACCESS_COOKIE))) {
+    wisp.routeRequest(req, socket, head);
+  } else {
+    socket.destroy();
+  }
+  return true;
+}
