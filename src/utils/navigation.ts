@@ -1,33 +1,18 @@
 import { add, has, remove } from './bookmarks';
 import ConfigAPI from './config';
 import { checkAndShow } from './diagnostics';
-import { scramjetWrapper, vWrapper } from './pro';
+import { decodeProxyUrl, encodeProxyUrl, scramjetWrapper } from './pro';
+import { internalName, internalPath } from './routes';
 import { notify } from './status';
-import { TabManager, decodeProxyUrl } from './tb';
+import { TabManager } from './tb';
 import { ensureTransport } from './transport';
 import { validateUrl } from './url';
 
-const reloadBtn = document.getElementById('refresh') as HTMLButtonElement | null;
-const backBtn = document.getElementById('back') as HTMLButtonElement | null;
-const fwdBtn = document.getElementById('forward') as HTMLButtonElement | null;
-const urlbar = document.getElementById('urlbar') as HTMLInputElement | null;
-const favBtn = document.getElementById('fav') as HTMLButtonElement | null;
-const homeBtn = document.getElementById('home') as HTMLElement | null;
-const sidebar = document.querySelector('aside');
+// The browser's toolbar, found by initNavigation().
+let reloadBtn: HTMLButtonElement | null = null;
+let urlbar: HTMLInputElement | null = null;
+let favBtn: HTMLButtonElement | null = null;
 
-const routes: Record<string, string> = {
-  'persec://settings': '/st',
-  'persec://new': '/new',
-  'persec://games': '/math',
-  'persec://apps': '/sci',
-  'persec://privacy': '/privacy',
-  'persec://bookmarks': '/bm',
-};
-
-const reverseRoutes = Object.fromEntries(Object.entries(routes).map(([k, v]) => [v, k]));
-
-const sc = scramjetWrapper.getConfig();
-const uv = vWrapper.getConfig();
 const hist = new Map<string, { stack: string[]; idx: number }>();
 
 // Registers the service worker, starts the engine and sets the transport, showing what failed.
@@ -125,7 +110,7 @@ async function toggleFav() {
   if (!urlbar) return;
 
   const f = frame();
-  if (!f || routes[urlbar.value]) return;
+  if (!f || internalPath(urlbar.value)) return;
 
   const d = currentUrl(f);
   if (!d) return notify('Open a website first, then bookmark it.');
@@ -145,12 +130,6 @@ async function toggleFav() {
   sync();
 }
 
-function encode(url: string, backend: unknown) {
-  return backend === 'u'
-    ? `${uv.prefix}${uv.encodeUrl(url)}`
-    : `${sc.prefix}${sc.codec.encode(url)}`;
-}
-
 // The person asked for this (Menu → Try the other engine), so it changes the saved engine and opens
 // the same page again with it.
 let switching = false;
@@ -167,7 +146,7 @@ async function retryOtherEngine() {
       `Trying ${next === 'u' ? 'Ultraviolet' : 'Scramjet'}… You can switch back in Settings → Browsing.`,
     );
     spin();
-    nav(encode(d, next));
+    nav(encodeProxyUrl(d, next));
   } catch {
     notify('Couldn’t switch engines. Try again from Settings → Browsing.');
   } finally {
@@ -180,9 +159,10 @@ async function submit() {
 
   const v = urlbar.value.trim();
 
-  if (routes[v]) {
+  const path = internalPath(v);
+  if (path) {
     spin();
-    nav(routes[v]);
+    nav(path);
     return;
   }
 
@@ -192,14 +172,14 @@ async function submit() {
     // Opening the page now would only hang; say what is wrong instead, and open it once a retry
     // of the checks passes, unless the person has gone somewhere else by then.
     setup(() => {
-      if (urlbar.value.trim() === v) submit();
+      if (urlbar?.value.trim() === v) submit();
     });
     return;
   }
 
   const val = await validateUrl(v);
   spin();
-  nav(encode(val, await ConfigAPI.get('backend')));
+  nav(encodeProxyUrl(val, await ConfigAPI.get('backend')));
 }
 
 function clickSide(e: MouseEvent) {
@@ -212,89 +192,98 @@ function clickSide(e: MouseEvent) {
   const url = btn.dataset.url;
   if (!url || !urlbar) return;
 
-  let r = reverseRoutes[url];
-  if (!r && url === '/') {
-    r = 'persec://new';
-  }
+  const name = internalName(url) ?? (url === '/' ? 'persec://new' : undefined);
 
-  urlbar.value = r || url;
-  const target = r ? routes[r] : url;
+  urlbar.value = name || url;
+  const target = (name && internalPath(name)) || url;
 
   spin();
   nav(target);
 }
 
-if (reloadBtn) {
-  reloadBtn.addEventListener('click', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    const h = history();
-    if (h.idx >= 0) {
-      nav(h.stack[h.idx], false);
-    }
-  });
-}
+// Wires up the toolbar and sidebar of the browser page (src/pages/welcome.astro) and starts the
+// proxy. Loading this module does nothing on its own.
+export function initNavigation() {
+  reloadBtn = document.getElementById('refresh') as HTMLButtonElement | null;
+  urlbar = document.getElementById('urlbar') as HTMLInputElement | null;
+  favBtn = document.getElementById('fav') as HTMLButtonElement | null;
+  const backBtn = document.getElementById('back') as HTMLButtonElement | null;
+  const fwdBtn = document.getElementById('forward') as HTMLButtonElement | null;
+  const homeBtn = document.getElementById('home') as HTMLElement | null;
+  const sidebar = document.querySelector('aside');
 
-if (backBtn) {
-  backBtn.addEventListener('click', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    spin();
-    back();
-  });
-}
+  if (reloadBtn) {
+    reloadBtn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const h = history();
+      if (h.idx >= 0) {
+        nav(h.stack[h.idx], false);
+      }
+    });
+  }
 
-if (fwdBtn) {
-  fwdBtn.addEventListener('click', e => {
+  if (backBtn) {
+    backBtn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      spin();
+      back();
+    });
+  }
+
+  if (fwdBtn) {
+    fwdBtn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      spin();
+      fwd();
+    });
+  }
+
+  // Phones show Forward in the menu (src/layouts/tab.astro).
+  document.getElementById('menu-forward')?.addEventListener('click', e => {
     e.preventDefault();
     e.stopPropagation();
+    document.getElementById('menu')?.classList.add('hidden');
+    document.getElementById('menubtn')?.setAttribute('aria-expanded', 'false');
     spin();
     fwd();
   });
-}
 
-// Phones show Forward in the menu (src/layouts/tab.astro).
-document.getElementById('menu-forward')?.addEventListener('click', e => {
-  e.preventDefault();
-  e.stopPropagation();
-  document.getElementById('menu')?.classList.add('hidden');
-  document.getElementById('menubtn')?.setAttribute('aria-expanded', 'false');
-  spin();
-  fwd();
-});
+  document.getElementById('menu-other-engine')?.addEventListener('click', retryOtherEngine);
 
-document.getElementById('menu-other-engine')?.addEventListener('click', retryOtherEngine);
-
-if (homeBtn) {
-  homeBtn.addEventListener('click', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    spin();
-    nav('/new');
-  });
-}
-
-if (favBtn) {
-  favBtn.addEventListener('click', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleFav();
-  });
-}
-
-if (urlbar) {
-  urlbar.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
+  if (homeBtn) {
+    homeBtn.addEventListener('click', e => {
       e.preventDefault();
-      submit();
-    }
-  });
+      e.stopPropagation();
+      spin();
+      nav('/new');
+    });
+  }
+
+  if (favBtn) {
+    favBtn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFav();
+    });
+  }
+
+  if (urlbar) {
+    urlbar.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submit();
+      }
+    });
+  }
+
+  if (sidebar) {
+    sidebar.addEventListener('click', clickSide);
+  }
+
+  TabManager.onUrlChange(sync);
+
+  setup();
 }
-
-if (sidebar) {
-  sidebar.addEventListener('click', clickSide);
-}
-
-TabManager.onUrlChange(sync);
-
-setup();

@@ -4,16 +4,17 @@ export const prerender = true;
 import '@/main.css';
 import Tabs from '../layouts/tab.astro';
 import SideBar from '../layouts/side.astro';
+import ProxyRuntime from '../components/ProxyRuntime.astro';
 ---
 
 <head></head>
 <body class="h-screen text-white">
   <Tabs />
-  <script is:inline src={PERSEC_PATHS.files.bareMux}></script>
-  <script is:inline src={PERSEC_PATHS.files.scramjetAll}></script>
-  <script is:inline src={PERSEC_PATHS.files.uvConfig}></script>
-  <script is:inline src={PERSEC_PATHS.files.uvBundle}></script>
-  <script src="@scripts/navigation"></script>
+  <ProxyRuntime />
+  <script>
+    import { initNavigation } from '../utils/navigation';
+    initNavigation();
+  </script>
 
   <SideBar />
 </body>

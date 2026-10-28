@@ -38,13 +38,24 @@ interface ScramjetOptions {
 declare class ScramjetController {
   constructor(options: ScramjetOptions);
   init(): any;
+  createFrame(frame: HTMLIFrameElement): unknown;
   decodeUrl(url: string): string;
   encodeUrl(url: string): string;
 }
 
+// Defined by Scramjet's page script (src/components/ProxyRuntime.astro); read only by src/utils/pro.ts.
+declare function $scramjetLoadController(): { ScramjetController: typeof ScramjetController };
+
 interface Window {
   sj: any;
   eruda: any;
+}
+
+// What the server hands each page it renders (serverlib/app.ts, and astro.config.ts in dev).
+declare namespace App {
+  interface Locals {
+    ads?: import('../serverlib/ads').AdSlot;
+  }
 }
 
 declare module '@mercuryworkshop/epoxy-transport';

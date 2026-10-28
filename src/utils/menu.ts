@@ -1,3 +1,4 @@
+import { openInAboutBlank } from './aboutblank';
 import ConfigAPI from './config';
 import { notify } from './status';
 import { TabManager } from './tb';
@@ -23,7 +24,7 @@ interface KeybindConfig {
   combo: string;
 }
 
-class MenuHandler {
+export class MenuHandler {
   private elements: MenuElements;
   private keyMap = new Map<string, HTMLButtonElement>();
   private isMenuOpen = false;
@@ -222,28 +223,8 @@ class MenuHandler {
     frame.contentDocument.head.appendChild(script);
   }
 
-  private async handleCloak(): Promise<void> {
-    if (top?.location.href === 'about:blank') return;
-
-    const newWindow = window.open();
-    if (!newWindow) return;
-
-    if (top?.window) {
-      const panicLoc = await this.getConfigValue('panicLoc', 'https://google.com');
-      top.window.location.href = panicLoc;
-    }
-
-    const viewport = newWindow.document.createElement('meta');
-    viewport.name = 'viewport';
-    viewport.content = 'width=device-width, initial-scale=1';
-    newWindow.document.head.appendChild(viewport);
-    const iframe = newWindow.document.createElement('iframe');
-    iframe.style.cssText =
-      'width:100%;height:100vh;height:100dvh;border:0;margin:0;padding:0;display:block';
-    iframe.src = `${location.origin}/`;
-    newWindow.document.body.style.margin = '0';
-    newWindow.document.title = 'about:blank';
-    newWindow.document.body.appendChild(iframe);
+  private handleCloak(): void {
+    openInAboutBlank();
   }
 
   private handleFullscreen(): void {
@@ -343,7 +324,9 @@ class MenuHandler {
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+// Finds the menu in the page that has it (src/layouts/tab.astro) and wires it up. Loading this module
+// does nothing on its own.
+export async function setupMenu(): Promise<MenuHandler | null> {
   const menuButton = document.querySelector<HTMLButtonElement>('#menubtn');
   const menuContainer = document.querySelector<HTMLDivElement>('#menu');
   const item = (id: string) => document.querySelector<HTMLButtonElement>(`#menu-${id}`);
@@ -364,11 +347,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (!menuButton || !menuContainer || ids.some(id => !items[id])) {
     console.error('Required menu elements not found');
-    return;
+    return null;
   }
 
   const elements = { menuButton, menuContainer, ...items } as MenuElements;
 
   const menuHandler = new MenuHandler(elements);
   await menuHandler.initialize();
-});
+  return menuHandler;
+}
+
+export function initMenu() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setupMenu(), { once: true });
+  } else {
+    setupMenu();
+  }
+}

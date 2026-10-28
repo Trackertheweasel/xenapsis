@@ -40,6 +40,7 @@
     "@titaniumnetwork-dev/ultraviolet": "^3.2.10",
     "@types/node": "^26.6.5",
     "esbuild": "^0.28.2",
+    "happy-dom": "^21.0.4",
     "localforage": "^1.10.0",
     "lucide": "^1.61.0",
     "prettier": "^3.7.4",

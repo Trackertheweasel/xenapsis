@@ -1,10 +1,9 @@
 ---
-import { getCurrentAd } from '@/utils/ads';
-
 // Self-served ads: only a local image and a plain link, no third-party scripts. A "network" ad is
-// fetched, cached and served entirely by this server (see src/utils/ads.ts); a "static" ad is a
-// sponsor from public/a/json/sponsors.json. Either way the browser only ever talks to this origin.
-const ad = await getCurrentAd();
+// fetched, cached and served entirely by this server (see serverlib/ads.ts, which the server passes
+// in as locals.ads); a "static" ad is a sponsor from public/a/json/sponsors.json. Either way the
+// browser only ever talks to this origin. Without a server to ask, the slot stays empty.
+const ad = (await Astro.locals.ads?.getCurrentAd()) ?? null;
 
 const cardClass =
   'border-border-default/20 bg-background-overlay/40 relative z-10 mt-8 flex max-w-md items-center gap-3 rounded-2xl border px-4 py-3 text-left transition hover:bg-white/5';

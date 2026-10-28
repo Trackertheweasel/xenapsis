@@ -1,0 +1,9 @@
+---
+// The proxy runtime's page scripts, which every page that opens sites needs before its own modules
+// run. They define the globals src/utils/pro.ts reads (Scramjet's loader, Ultraviolet's tmpConfig).
+---
+
+<script is:inline src={PERSEC_PATHS.files.bareMux}></script>
+<script is:inline src={PERSEC_PATHS.files.scramjetAll}></script>
+<script is:inline src={PERSEC_PATHS.files.uvConfig}></script>
+<script is:inline src={PERSEC_PATHS.files.uvBundle}></script>

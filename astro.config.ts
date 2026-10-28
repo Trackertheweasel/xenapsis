@@ -15,6 +15,7 @@ import type { Plugin } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { version } from './package.json';
 import { loadAccess } from './serverlib/access';
+import { adSlot, handleAd } from './serverlib/ads';
 import { deployPaths, urlKey, wispPath } from './serverlib/env';
 import type { RuntimeFile } from './serverlib/env';
 import { handleQuery } from './serverlib/routes/query';
@@ -65,6 +66,20 @@ function searchBackend(): Plugin {
     name: 'search-suggestions-vite',
     configureServer({ middlewares }) {
       middlewares.use('/api/query', handleQuery);
+    },
+  };
+}
+
+// The ad routes, and the ad slot handed to pages as Astro.locals.ads, as serverlib/app.ts does in
+// production. Astro's dev server reads a request's locals from this symbol.
+function adsBackend(): Plugin {
+  return {
+    name: 'persec-ads',
+    configureServer({ middlewares }) {
+      middlewares.use((req, res, next) => {
+        Reflect.set(req, Symbol.for('astro.locals'), { ads: adSlot } satisfies App.Locals);
+        handleAd(req, res, next);
+      });
     },
   };
 }
@@ -154,6 +169,7 @@ export default defineConfig({
       tailwindcss(),
       WispServer(),
       searchBackend(),
+      adsBackend(),
       viteStaticCopy({
         targets: Object.entries(RUNTIME_SOURCES).map(([role, src]) => ({
           src: normalizePath(src),

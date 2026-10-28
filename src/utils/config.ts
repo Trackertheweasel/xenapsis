@@ -1,25 +1,54 @@
 import localForage from 'localforage';
 import type { Bookmark } from './bookmarks';
+import type { Consent } from './loginsync';
+import type { Backend } from './pro';
 import { PREF_DEFAULTS, fillDefaults, seedBookmarks, type Prefs } from './personalize';
 
-interface ConfigDefaults extends Prefs {
+type OnOff = 'on' | 'off';
+
+// Every setting Persec saves, with its type: the one list to add a setting to. Those with a default
+// are filled in on first use (see `defaults` below); the rest stay unset until someone sets them.
+interface DefaultedSettings extends Prefs {
   engine: string;
-  cloak: 'on' | 'off';
-  adBlock: 'on' | 'off';
+  cloak: OnOff;
+  adBlock: OnOff;
   cloakTitle: string;
   cloakFavicon: string;
-  autoCloak: 'on' | 'off';
-  beforeUnload: 'on' | 'off';
-  backend: string;
+  autoCloak: OnOff;
+  beforeUnload: OnOff;
+  backend: Backend;
   panicLoc: string;
   panicKey: string;
   wispUrl: string;
   bm: Bookmark[];
   shortcutsSeeded: boolean;
-  [key: string]: any;
 }
 
-type ConfigKey = string;
+interface UnsetSettings {
+  tabSwitchCloak: OnOff;
+  loginConsent: Consent;
+  guideDone: boolean;
+}
+
+export type Settings = DefaultedSettings & UnsetSettings;
+export type SettingKey = keyof Settings;
+
+// The settings the Settings page shows and applies (src/utils/st.ts).
+export const PAGE_SETTINGS = [
+  'cloak',
+  'cloakTitle',
+  'cloakFavicon',
+  'tabSwitchCloak',
+  'autoCloak',
+  'beforeUnload',
+  'backend',
+  'adBlock',
+  'engine',
+  'wispUrl',
+  'panicLoc',
+  'panicKey',
+] as const satisfies readonly SettingKey[];
+export type PageSettings = { [K in (typeof PAGE_SETTINGS)[number]]: Settings[K] | null };
 
 const isBrowser = typeof location !== 'undefined';
 
@@ -32,7 +61,7 @@ export function wispUrl(): string {
   return `${isHttps ? 'wss' : 'ws'}://${location.host}${path}`;
 }
 
-const defaults: ConfigDefaults = {
+const defaults: DefaultedSettings = {
   engine: 'https://duckduckgo.com/?q=',
   cloak: 'off',
   adBlock: 'on',
@@ -59,28 +88,42 @@ let initialized = false;
 
 async function ensureInit(): Promise<void> {
   if (initialized) return;
-  await fillDefaults(store, defaults);
+  await fillDefaults(store, defaults as unknown as Record<string, unknown>);
   initialized = true;
 }
 
-const ConfigAPI = {
+// Known keys are typed by Settings; any other string still works (a key read from the page, such
+// as a toggle's data-toggle), and gives back unknown.
+interface ConfigStore {
+  config: LocalForage;
+  get<K extends SettingKey>(key: K): Promise<Settings[K] | null>;
+  get(key: string): Promise<unknown>;
+  set<K extends SettingKey>(key: K, value: Settings[K]): Promise<Settings[K]>;
+  set(key: string, value: unknown): Promise<unknown>;
+  getIndecator(key: string): Promise<any>;
+  init(): Promise<void>;
+  reset(): Promise<void>;
+  getAll(): Promise<Record<string, any>>;
+}
+
+const ConfigAPI: ConfigStore = {
   config: store,
 
-  async get(key: ConfigKey): Promise<any | null> {
+  async get(key: string): Promise<any> {
     await ensureInit();
     return store.getItem(key);
   },
 
-  async set(key: ConfigKey, value: any): Promise<any> {
+  async set(key: string, value: unknown): Promise<any> {
     await ensureInit();
     return store.setItem(key, value);
   },
 
-  async getIndecator(key: ConfigKey): Promise<any> {
+  async getIndecator(key: string): Promise<any> {
     await ensureInit();
     const value = await store.getItem(key);
     if (value != null) return value;
-    return defaults[key] ?? null;
+    return (defaults as unknown as Record<string, unknown>)[key] ?? null;
   },
 
   async init(): Promise<void> {
@@ -108,6 +151,12 @@ const ConfigAPI = {
     return Object.fromEntries(entries);
   },
 };
+
+// The page settings, each as saved (null if unset).
+export async function loadPageSettings(): Promise<PageSettings> {
+  const values = await Promise.all(PAGE_SETTINGS.map(key => ConfigAPI.get(key)));
+  return Object.fromEntries(PAGE_SETTINGS.map((key, i) => [key, values[i]])) as PageSettings;
+}
 
 // The saved bookmarks, which are also the start page's tiles (see seedBookmarks).
 export async function loadBookmarks(): Promise<Bookmark[]> {

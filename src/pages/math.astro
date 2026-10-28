@@ -3,6 +3,7 @@
 export const prerender = true;
 import '@/main.css';
 import GameLayout from '../components/asset.astro';
+import ProxyRuntime from '../components/ProxyRuntime.astro';
 import gaymes from '@assets/json/lists.json';
 
 const gList = gaymes.gms;
@@ -15,10 +16,7 @@ const gList = gaymes.gms;
     <title>Persec Games</title>
   </head>
   <body>
-    <script is:inline src={PERSEC_PATHS.files.bareMux}></script>
-    <script is:inline src={PERSEC_PATHS.files.scramjetAll}></script>
-    <script is:inline src={PERSEC_PATHS.files.uvConfig}></script>
-    <script is:inline src={PERSEC_PATHS.files.uvBundle}></script>
+    <ProxyRuntime />
     <GameLayout list={gList} type="games" />
   </body>
 </html>

@@ -44,8 +44,12 @@ const menuSections = [
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="@scripts/tb.ts"></script>
-    <script src="@scripts/menu.ts"></script>
+    <script>
+      import { initMenu } from '../utils/menu';
+      import { initTabs } from '../utils/tb';
+      initTabs();
+      initMenu();
+    </script>
     <script src="@scripts/suggestions.ts"></script>
   </head>
 
