@@ -78,13 +78,19 @@ export function initToggles() {
 // Saves a text field (on leaving it, or on Enter) and applies what depends on it.
 async function saveInput(el: HTMLInputElement) {
   const key = el.getAttribute('data-input');
-  if (!key || !el.value) return false;
+  // An empty tunnel address means this server's own; every other field needs a value.
+  if (!key || (!el.value && key !== 'wispUrl')) return false;
 
-  await ConfigAPI.set(key, el.value);
+  await ConfigAPI.set(key, key === 'wispUrl' ? el.value.trim() : el.value);
   notify();
 
   if (key === 'wispUrl') {
-    el.placeholder = el.value;
+    if (el.value.trim()) el.placeholder = el.value.trim();
+    // Loaded here only: the rest of Settings doesn't need the proxy's connection code.
+    const { applyTransport } = await import('../transport');
+    applyTransport().catch(() =>
+      notify('Saved. The new tunnel address applies when Persec reloads.'),
+    );
   }
 
   if (key === 'cloakTitle' || key === 'cloakFavicon') {

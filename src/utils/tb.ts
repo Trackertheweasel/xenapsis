@@ -30,6 +30,9 @@ let loadWatcher: ReturnType<typeof setInterval> | null = null;
 let isLoading = false;
 let prevHref = '';
 let onUrlChange: ((href: string) => void) | null = null;
+// Keys pressed inside a tab's page never reach this page's own listeners, so the menu's shortcuts
+// (the panic key above all) are handed each one too.
+let onFrameKeydown: ((e: KeyboardEvent) => void) | null = null;
 let tabBar: HTMLDivElement | null = null;
 let frameContainer: HTMLDivElement | null = null;
 // Keyed by site origin, so each site's icon is fetched once rather than on every page.
@@ -182,6 +185,8 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
       const win = frame.contentWindow;
       const doc = frame.contentDocument;
       if (!win || !doc) return;
+      // Every page is a new window: proxied sites run on Persec's origin, so this reaches them too.
+      win.addEventListener('keydown', e => onFrameKeydown?.(e), true);
       win.open = (openUrl?: string | URL) => {
         if (!openUrl) return null;
         encodeForTab(openUrl.toString()).then(proxyUrl => {
@@ -591,6 +596,9 @@ export const TabManager = {
   },
   onUrlChange: (cb: (href: string) => void) => {
     onUrlChange = cb;
+  },
+  onFrameKeydown: (cb: (e: KeyboardEvent) => void) => {
+    onFrameKeydown = cb;
   },
 };
 

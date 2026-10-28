@@ -7,6 +7,10 @@ services:
     envVars:
       # Every request reaches Persec from Render's proxy, so without this all visitors share one
       # wrong-code limit. Cloudflare, in front of Render, sets this header to the visitor's address.
+      # Render doesn't document that it replaces a True-Client-IP the visitor sent, so check once
+      # after deploying: a request with a made-up `True-Client-IP` must still be counted against
+      # your own address (the README shows how). If it isn't, delete this variable; wrong codes are
+      # then counted for all visitors together, which is strict but can't be dodged.
       - key: PERSEC_CLIENT_IP_HEADER
         value: true-client-ip
       # Invite-only from the first start, so a fresh deploy is never an open proxy. Copy the

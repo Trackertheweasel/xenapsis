@@ -267,6 +267,17 @@ Most hosting providers forbid public proxies but allow private ones. In invite-o
 
 If Persec runs behind a reverse proxy other than the bundled Caddy, set `PERSEC_CLIENT_IP_HEADER` to the header that proxy puts the visitor's address in (for example `x-real-ip`), and only if the proxy always overwrites it. Persec uses it to count wrong codes per visitor. Without it, Persec counts by the connection's address and ignores such headers, because anyone could otherwise send a different fake address with every guess. `deploy/compose.yml` sets it for Caddy.
 
+`render.yaml` sets it to `true-client-ip`, the header Cloudflare (in front of Render) fills in, but Render doesn't document that a visitor can't supply their own. Check it once after deploying: send 11 wrong codes, each with a different made-up address, and the last one must still be refused with "Too many attempts":
+
+```bash
+for i in $(seq 1 11); do
+  curl -s -o /dev/null -w '%{http_code}\n' -H "True-Client-IP: 203.0.113.$i" \
+    -d code=wrong https://<your-app>.onrender.com/enter
+done
+```
+
+If it ends in `401` instead of `429`, the header can be faked: delete `PERSEC_CLIENT_IP_HEADER` in the Render dashboard. Wrong codes are then counted for all visitors together, which is strict but can't be dodged. The check itself locks your own address out for 15 minutes.
+
 With `PERSEC_ADMIN_PASSWORD` set (12+ characters; `persec admin` makes one), `/admin` shows each invite name's usage live: online now, data downloaded and uploaded, time connected, tabs opened and last seen. Open it signed in with your own code, then enter that password (any username). The counts are kept only in memory and reset on restart, sites visited are never recorded, and the privacy page tells people this can be on. Without the password, nothing is counted.
 
 People enter their code once and stay signed in as long as they come back at least once every 30 days, and their browser's password manager can save the code for them. The new tab page greets each person by their invite's name (the part before the `:`, or the name given to `persec invite`), so pick names you're happy for them to see. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.

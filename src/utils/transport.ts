@@ -148,15 +148,43 @@ export async function pickTransport(
 
 let ready: Promise<void> | null = null;
 
+// What this browser last gave BareMux, kept where every Persec tab can see it. BareMux's worker is
+// shared by all of them and outlives any one page, and it only reports the transport's module,
+// so without this a new tunnel address from Settings was ignored until every tab was closed.
+const APPLIED_KEY = 'persec-transport';
+const readApplied = () => {
+  try {
+    return localStorage.getItem(APPLIED_KEY);
+  } catch {
+    return null;
+  }
+};
+const writeApplied = (key: string | null) => {
+  try {
+    if (key === null) localStorage.removeItem(APPLIED_KEY);
+    else localStorage.setItem(APPLIED_KEY, key);
+  } catch {}
+};
+
+type MuxConnection = Pick<BareMuxConnection, 'getTransport' | 'setTransport'>;
+const connectMux = (): MuxConnection => new BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
+
 // Makes sure BareMux has a transport before a proxied page loads. Fails within SET_TIMEOUT_MS
 // instead of hanging: bare-mux retries a worker that never answers forever. A failure is not
 // cached, so the next attempt (the next page the person opens) tries again.
-export function ensureTransport(transport: Transport = TRANSPORTS[0]): Promise<void> {
+export function ensureTransport(
+  transport: Transport = TRANSPORTS[0],
+  connect: () => MuxConnection = connectMux,
+): Promise<void> {
   ready ??= withTimeout(
     (async () => {
-      const conn = new BareMuxConnection(PERSEC_PATHS.files.bareMuxWorker);
-      if ((await conn.getTransport()) !== transport.module) {
-        await conn.setTransport(transport.module, await transport.options());
+      const conn = connect();
+      const options = await transport.options();
+      const key = JSON.stringify([transport.module, options]);
+      // Set again only when something changed: setting it restarts the transport for every tab.
+      if ((await conn.getTransport()) !== transport.module || readApplied() !== key) {
+        await conn.setTransport(transport.module, options);
+        writeApplied(key);
       }
     })(),
     SET_TIMEOUT_MS,
@@ -166,4 +194,14 @@ export function ensureTransport(transport: Transport = TRANSPORTS[0]): Promise<v
     throw err instanceof TransportError ? err : new TransportError('init', String(err));
   });
   return ready;
+}
+
+// After the tunnel address changes in Settings: gives BareMux the new one now, for every tab.
+export function applyTransport(
+  transport: Transport = TRANSPORTS[0],
+  connect: () => MuxConnection = connectMux,
+): Promise<void> {
+  ready = null;
+  writeApplied(null);
+  return ensureTransport(transport, connect);
 }

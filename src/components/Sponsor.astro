@@ -11,6 +11,8 @@ const imgClass = 'h-10 w-10 shrink-0 rounded-lg object-cover';
 const badgeClass =
   'ml-auto self-start rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-white/50 uppercase';
 
+// Never prefetched (astro.config.ts prefetches every link): a prefetch of the click route would
+// count a click on every view and fetch the advertiser's site from the visitor's browser.
 const href = ad ? (ad.kind === 'network' ? `/a/ad/click/${ad.id}` : ad.url) : '#';
 const image = ad ? (ad.kind === 'network' ? `/a/ad/img/${ad.id}` : ad.image) : undefined;
 ---
@@ -20,6 +22,7 @@ const image = ad ? (ad.kind === 'network' ? `/a/ad/img/${ad.id}` : ad.image) : u
     href={href}
     target="_blank"
     rel="sponsored noopener noreferrer"
+    data-astro-prefetch="false"
     title="Opens the sponsor's site outside Persec"
     class={cardClass}
   >
