@@ -17,34 +17,47 @@ const randomQuote = quotes[randomIndex]?.quote || '';
   </head>
 
   <body class="font-linux bg-background relative flex min-h-dvh w-full flex-col items-center justify-center overflow-x-hidden px-4 py-8 text-white sm:px-0 sm:py-24">
+    <!-- Theme backdrop: glows and the cross pattern come from the theme's CSS variables (main.css). -->
     <div
-      class="absolute inset-0 opacity-[0.02]"
-      style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"
+      aria-hidden="true"
+      class="pointer-events-none fixed inset-0"
+      style="background-image: radial-gradient(60rem 40rem at 15% -10%, var(--glow-1), transparent 70%), radial-gradient(50rem 35rem at 110% 110%, var(--glow-2), transparent 70%);"
+    ></div>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0"
+      style="opacity: var(--pattern); background-image: url('data:image/svg+xml,%3Csvg width=%2760%27 height=%2760%27 viewBox=%270 0 60 60%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cg fill=%27none%27 fill-rule=%27evenodd%27%3E%3Cg fill=%27%23ffffff%27 fill-opacity=%271%27%3E%3Cpath d=%27M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%27/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"
     ></div>
 
-    <div class="relative z-10 flex flex-col items-center space-y-5 sm:space-y-8">
-      <p id="greeting" class="hidden text-lg font-semibold text-white/80 sm:text-2xl"></p>
+    <!-- Hidden until the saved look is applied (new.ts), so a hidden clock never flashes up. -->
+    <div
+      id="hero"
+      class="relative z-10 flex flex-col items-center space-y-4 opacity-0 transition-opacity duration-300 sm:space-y-6"
+    >
+      <h1 id="greeting" class="text-center text-lg font-semibold text-white/85 sm:text-2xl"></h1>
       <div id="clock" class="flex items-baseline space-x-1 select-none">
         <span
           id="hours"
-          class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter text-white"
-          style="text-shadow: 0 0 40px rgba(255,255,255,0.1);"
+          class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter text-white tabular-nums"
+          style="text-shadow: 0 0 40px var(--glow-1);"
         >
           12
         </span>
         <span class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter opacity-40">:</span>
         <span
           id="minutes"
-          class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter text-white"
-          style="text-shadow: 0 0 40px rgba(255,255,255,0.1);"
+          class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter text-white tabular-nums"
+          style="text-shadow: 0 0 40px var(--glow-1);"
         >
           59
         </span>
-        <span class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter opacity-40">:</span>
+        <span data-seconds class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter opacity-40">
+          :
+        </span>
         <span
           id="seconds"
-          class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter text-white opacity-50"
-          style="text-shadow: 0 0 40px rgba(255,255,255,0.1);"
+          data-seconds
+          class="text-[clamp(3rem,10vw,7rem)] leading-none font-black tracking-tighter text-white tabular-nums opacity-50"
         >
           48
         </span>
@@ -53,8 +66,19 @@ const randomQuote = quotes[randomIndex]?.quote || '';
         </span>
       </div>
 
-      <div class="max-w-xl px-2 text-center sm:px-6">
-        <span class="text-base font-medium tracking-wide text-white/70 sm:text-lg">{randomQuote}</span>
+      <div id="quote-box" hidden={!randomQuote} class="flex max-w-xl items-start gap-2 px-2 text-center sm:px-6">
+        <p id="quote" class="text-base font-medium tracking-wide text-white/70 sm:text-lg">
+          {randomQuote}
+        </p>
+        <button
+          id="quote-next"
+          type="button"
+          aria-label="Show another quote"
+          title="Another quote"
+          class="hover:text-accent flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/40 transition hover:bg-white/5"
+        >
+          <i data-lucide="shuffle" class="h-4 w-4"></i>
+        </button>
       </div>
     </div>
 
@@ -142,6 +166,130 @@ const randomQuote = quotes[randomIndex]?.quote || '';
         </button>
       </div>
     </footer>
+
+    <!-- Opened by Customize under the shortcuts. Each change applies and saves at once (new.ts). -->
+    <dialog
+      id="customize"
+      aria-labelledby="customize-title"
+      class="border-border-default/60 bg-background-overlay m-auto max-h-[calc(100dvh-2rem)] w-[min(30rem,calc(100%-2rem))] overflow-y-auto rounded-2xl border text-white shadow-2xl backdrop:bg-black/60"
+    >
+      <div class="space-y-6 p-5 sm:p-6">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="customize-title" class="text-lg font-semibold text-white">
+            Customize
+          </h2>
+          <button
+            type="button"
+            data-close
+            aria-label="Close"
+            class="flex h-10 w-10 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <i data-lucide="x" class="h-5 w-5"></i>
+          </button>
+        </div>
+
+        <form id="name-form" class="space-y-2" novalidate>
+          <label for="display-name" class="block text-sm font-medium text-white/90">
+            Your name
+          </label>
+          <div class="flex gap-2">
+            <input
+              id="display-name"
+              name="displayName"
+              maxlength="40"
+              autocomplete="off"
+              placeholder="Your name"
+              aria-describedby="name-help name-error"
+              class="bg-background/80 focus:border-accent/70 focus-visible:ring-accent/40 min-w-0 flex-1 rounded-lg border border-white/10 px-3 py-2.5 text-sm text-white focus:outline-none focus-visible:ring-2"
+            />
+            <button
+              type="submit"
+              class="border-accent/40 bg-accent/15 hover:bg-accent/25 min-h-11 rounded-lg border px-4 text-sm font-medium"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              id="name-clear"
+              class="min-h-11 rounded-lg border border-white/10 bg-white/5 px-3 text-sm hover:bg-white/10"
+            >
+              Clear
+            </button>
+          </div>
+          <p id="name-help" class="text-xs text-white/55">
+            Shown in the greeting. Saved only in this browser, never sent to the server.
+          </p>
+          <p id="name-error" class="min-h-0 text-xs text-red-300"></p>
+        </form>
+
+        <fieldset class="space-y-2">
+          <legend class="mb-2 text-sm font-medium text-white/90">Theme</legend>
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              ['midnight', 'Midnight', '#232136', '#8b87ff'],
+              ['aurora', 'Aurora', '#0e1726', '#67d4f5'],
+              ['ember', 'Ember', '#1c1a19', '#f5b04a'],
+              ['minimal', 'Minimal', '#18181b', '#d4d4d8'],
+            ].map(([value, label, bg, accent]) => (
+              <label class="has-checked:border-accent has-focus-visible:outline-accent flex cursor-pointer flex-col gap-2 rounded-xl border border-white/10 p-2 text-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2 hover:border-white/25">
+                <input type="radio" name="theme" value={value} class="sr-only" />
+                <span
+                  aria-hidden="true"
+                  class="flex h-10 items-end justify-end rounded-lg border border-white/10 p-1.5"
+                  style={`background: linear-gradient(135deg, ${bg}, ${bg} 55%, ${accent}33)`}
+                >
+                  <span class="h-3 w-3 rounded-full" style={`background: ${accent}`} />
+                </span>
+                <span class="text-white/90">{label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-1">
+          <legend class="mb-2 text-sm font-medium text-white/90">Clock and quote</legend>
+          {[
+            ['showClock', 'Show the clock'],
+            ['showSeconds', 'Show seconds'],
+            ['showQuote', 'Show a quote'],
+          ].map(([name, label]) => (
+            <label class="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg px-1 text-sm hover:bg-white/5">
+              <span>{label}</span>
+              <input type="checkbox" name={name} class="accent-accent h-5 w-5" />
+            </label>
+          ))}
+          <div
+            class="flex min-h-11 items-center justify-between gap-3 px-1 text-sm"
+            role="radiogroup"
+            aria-labelledby="time-format-label"
+          >
+            <span id="time-format-label">Time format</span>
+            <div class="flex gap-1 rounded-lg border border-white/10 p-1">
+              {[
+                ['12', '12-hour'],
+                ['24', '24-hour'],
+              ].map(([value, label]) => (
+                <label class="has-checked:bg-accent/20 has-checked:text-white has-focus-visible:outline-accent cursor-pointer rounded-md px-3 py-1.5 text-white/70 has-focus-visible:outline-2">
+                  <input type="radio" name="timeFormat" value={value} class="sr-only" />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="flex items-center justify-between gap-3 border-t border-white/10 pt-4">
+          <p id="customize-status" role="status" class="text-sm text-white/60"></p>
+          <button
+            type="button"
+            data-close
+            class="border-accent/40 bg-accent/15 hover:bg-accent/25 min-h-11 rounded-lg border px-5 text-sm font-medium"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </dialog>
 
     <script src="@scripts/new"></script>
   </body>

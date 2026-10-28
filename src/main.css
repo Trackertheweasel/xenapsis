@@ -18,6 +18,7 @@
   --color-border-default: var(--border);
   --color-text-header: var(--text-header);
   --color-text-secondary: var(--text-secondary);
+  --color-accent: var(--accent);
   --animate-spin: spin 1s linear 1;
 
   @keyframes spin {
@@ -38,6 +39,38 @@
     --text-header: #e0def4;
     --text-secondary: #a19eb3;
     --background-disabled: #2a2b3c;
+    --accent: #8b87ff;
+    --glow-1: rgb(139 135 255 / 0.1);
+    --glow-2: rgb(196 167 231 / 0.06);
+    --pattern: 0.02;
+  }
+
+  /* Start page themes (Customize on the new tab). Midnight is the :root look above. Every
+     background stays dark enough for white text and the accent to keep high contrast. */
+  :root[data-theme="aurora"] {
+    --background: #0e1726;
+    --background-overlay: #121f33;
+    --border: #2a4566;
+    --accent: #67d4f5;
+    --glow-1: rgb(34 211 238 / 0.14);
+    --glow-2: rgb(167 139 250 / 0.14);
+  }
+  :root[data-theme="ember"] {
+    --background: #1c1a19;
+    --background-overlay: #24201d;
+    --border: #4a3f36;
+    --accent: #f5b04a;
+    --glow-1: rgb(245 158 11 / 0.12);
+    --glow-2: rgb(234 88 12 / 0.07);
+  }
+  :root[data-theme="minimal"] {
+    --background: #18181b;
+    --background-overlay: #1f1f23;
+    --border: #3f3f46;
+    --accent: #d4d4d8;
+    --glow-1: transparent;
+    --glow-2: transparent;
+    --pattern: 0;
   }
 
   html {
@@ -78,7 +111,7 @@ html {
 
 /* Outside the layers so it wins over focus:outline-none: keyboard users always see where they are. */
 :where(a, button, summary, [role="tab"], [role="switch"], [tabindex]):focus-visible {
-  outline: 2px solid #8b87ff;
+  outline: 2px solid var(--accent, #8b87ff);
   outline-offset: 2px;
 }
 

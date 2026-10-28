@@ -1,4 +1,4 @@
-// The bookmarks page (/bm, persec://bookmarks): saved bookmarks and the new-tab shortcuts.
+// The bookmarks page (/bm, persec://bookmarks). The first ones are also the start page's tiles.
 import {
   add,
   has,
@@ -10,9 +10,9 @@ import {
   DEFAULT_LOGO,
   type Bookmark,
 } from './bookmarks';
-import ConfigAPI from './config';
+import ConfigAPI, { loadBookmarks } from './config';
+import { MAX_SHORTCUTS } from './personalize';
 
-type Key = 'bm' | 'shortcuts';
 const status = document.querySelector<HTMLElement>('[data-status]')!;
 const btnClass =
   'min-h-11 rounded-lg border border-white/10 bg-white/5 px-3 text-sm hover:bg-white/10 disabled:opacity-50';
@@ -22,12 +22,10 @@ const say = (text: string, error = false) => {
   status.classList.toggle('text-red-300', error);
 };
 
-const read = async (key: Key): Promise<Bookmark[]> => (await ConfigAPI.getIndecator(key)) || [];
-
 // Reads the latest list before changing it, so two open tabs editing don't undo each other.
-async function change(key: Key, edit: (list: Bookmark[]) => Bookmark[], done: string) {
+async function change(edit: (list: Bookmark[]) => Bookmark[], done: string) {
   try {
-    await ConfigAPI.set(key, edit(await read(key)));
+    await ConfigAPI.set('bm', edit(await loadBookmarks()));
     say(done);
   } catch (err) {
     say(err instanceof Error ? err.message : 'That change couldn’t be saved.', true);
@@ -45,7 +43,7 @@ function button(text: string, label: string, onClick: () => void) {
   return b;
 }
 
-function row(key: Key, b: Bookmark, onNewTab: boolean): HTMLLIElement {
+function row(b: Bookmark, onStartPage: boolean): HTMLLIElement {
   const li = document.createElement('li');
   li.className =
     'bg-background-overlay/60 flex flex-wrap items-center gap-3 rounded-xl border border-white/6 p-3';
@@ -68,30 +66,21 @@ function row(key: Key, b: Bookmark, onNewTab: boolean): HTMLLIElement {
   const url = document.createElement('span');
   url.className = 'text-text-secondary block truncate text-xs';
   url.textContent = b.redir;
-  open.append(name, url);
+  if (onStartPage) {
+    const tag = document.createElement('span');
+    tag.className = 'text-text-secondary mt-0.5 block text-xs';
+    tag.textContent = 'On the start page';
+    open.append(name, url, tag);
+  } else open.append(name, url);
   open.setAttribute('aria-label', `Open ${b.name}`);
   open.addEventListener('click', () => openInPersec(b.redir));
 
   const actions = document.createElement('div');
   actions.className = 'flex flex-wrap gap-2';
-  if (key === 'bm') {
-    const pin = button(
-      onNewTab ? 'On new tab' : 'Add to new tab',
-      onNewTab ? `Remove ${b.name} from the new tab` : `Add ${b.name} to the new tab`,
-      () =>
-        change(
-          'shortcuts',
-          list => (onNewTab ? remove(list, b.redir) : add(list, b)),
-          onNewTab ? `Removed ${b.name} from the new tab.` : `Added ${b.name} to the new tab.`,
-        ),
-    );
-    pin.setAttribute('aria-pressed', String(onNewTab));
-    actions.append(pin);
-  }
   actions.append(
-    button('Rename', `Rename ${b.name}`, () => startRename(li, key, b)),
+    button('Rename', `Rename ${b.name}`, () => startRename(li, b)),
     button('Remove', `Remove ${b.name}`, () =>
-      change(key, list => remove(list, b.redir), `Removed ${b.name}.`),
+      change(list => remove(list, b.redir), `Removed ${b.name}.`),
     ),
   );
 
@@ -99,7 +88,7 @@ function row(key: Key, b: Bookmark, onNewTab: boolean): HTMLLIElement {
   return li;
 }
 
-function startRename(li: HTMLLIElement, key: Key, b: Bookmark) {
+function startRename(li: HTMLLIElement, b: Bookmark) {
   const form = document.createElement('form');
   form.className = 'flex w-full flex-wrap gap-2';
   const input = document.createElement('input');
@@ -117,7 +106,7 @@ function startRename(li: HTMLLIElement, key: Key, b: Bookmark) {
   form.addEventListener('submit', e => {
     e.preventDefault();
     // An empty name falls back to the site's address (cleanName).
-    change(key, list => rename(list, b.redir, input.value), 'Renamed.');
+    change(list => rename(list, b.redir, input.value), 'Renamed.');
   });
   input.addEventListener('keydown', e => {
     if (e.key === 'Escape') render();
@@ -128,16 +117,16 @@ function startRename(li: HTMLLIElement, key: Key, b: Bookmark) {
 }
 
 async function render() {
-  const [bm, shortcuts] = await Promise.all([read('bm'), read('shortcuts')]);
-  for (const [key, list] of [
-    ['bm', bm],
-    ['shortcuts', shortcuts],
-  ] as const) {
-    document
-      .querySelector(`[data-list="${key}"]`)!
-      .replaceChildren(...list.map(b => row(key, b, has(shortcuts, b.redir))));
-    document.querySelector<HTMLElement>(`[data-empty="${key}"]`)!.hidden = list.length > 0;
+  let bm: Bookmark[] = [];
+  try {
+    bm = await loadBookmarks();
+  } catch {
+    say('Your bookmarks couldn’t be loaded. Reload the page to try again.', true);
   }
+  document
+    .querySelector('[data-list="bm"]')!
+    .replaceChildren(...bm.map((b, i) => row(b, i < MAX_SHORTCUTS)));
+  document.querySelector<HTMLElement>('[data-empty="bm"]')!.hidden = bm.length > 0;
 }
 
 const form = document.querySelector<HTMLFormElement>('[data-add]')!;
@@ -149,11 +138,11 @@ form.addEventListener('submit', async e => {
     say('That isn’t a web address. Enter something like example.com or https://example.com.', true);
     return;
   }
-  if (has(await read('bm'), redir)) {
+  if (has(await loadBookmarks(), redir)) {
     say('That page is already bookmarked.');
     return;
   }
-  await change('bm', list => add(list, { name: String(data.get('name') || ''), redir }), 'Added.');
+  await change(list => add(list, { name: String(data.get('name') || ''), redir }), 'Added.');
   form.reset();
 });
 

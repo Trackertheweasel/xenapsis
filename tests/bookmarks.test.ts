@@ -55,10 +55,10 @@ test('Only saved or local icons are shown, so no icon is fetched around the prox
   }
 });
 
-test('New tab shortcuts move with exported settings and are checked like bookmarks', () => {
+test('Old files’ new tab shortcuts import as bookmarks and are checked like them', () => {
   const file = (settings: Record<string, unknown>) =>
     JSON.stringify({ format: 'persec-settings', version: 1, settings });
-  assert.deepEqual(parseSettings(file({ shortcuts: [page] })), { shortcuts: [page] });
+  assert.deepEqual(parseSettings(file({ shortcuts: [page] })), { bm: [page] });
   assert.throws(
     () => parseSettings(file({ shortcuts: [{ ...page, redir: 'javascript:alert(1)' }] })),
     /"shortcuts" setting isn't valid/,
