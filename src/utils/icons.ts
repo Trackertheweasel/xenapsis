@@ -8,6 +8,7 @@ import {
   Calculator,
   Check,
   CheckCircle,
+  CircleHelp,
   Code,
   createIcons,
   Download,
@@ -28,8 +29,10 @@ import {
   Maximize2,
   Menu,
   Moon,
+  Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Settings,
   Shield,
@@ -37,6 +40,7 @@ import {
   Trash2,
   Upload,
   Wrench,
+  X,
 } from 'lucide';
 
 // Only the icons Persec uses, instead of the whole Lucide set (~350 KB).
@@ -51,6 +55,7 @@ const icons = {
   Calculator,
   Check,
   CheckCircle,
+  CircleHelp,
   Code,
   Download,
   ExternalLink,
@@ -70,8 +75,10 @@ const icons = {
   Maximize2,
   Menu,
   Moon,
+  Pencil,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Settings,
   Shield,
@@ -79,6 +86,7 @@ const icons = {
   Trash2,
   Upload,
   Wrench,
+  X,
 };
 
 export function renderIcons() {

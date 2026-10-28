@@ -15,7 +15,7 @@ interface Bookmark {
   redir: string;
 }
 
-const isWebUrl = (v: unknown) => {
+export const isWebUrl = (v: unknown) => {
   try {
     return typeof v === 'string' && v.length <= 2048 && /^https?:$/.test(new URL(v).protocol);
   } catch {
@@ -38,6 +38,7 @@ export function exportSettings(all: Record<string, unknown>) {
     'panicKey',
     'backend',
     'bm',
+    'shortcuts',
   ]) {
     if (all[key] != null) settings[key] = all[key];
   }
@@ -86,10 +87,12 @@ export function parseSettings(text: string): Record<string, unknown> {
     if (s.backend !== 'sc' && s.backend !== 'u') throw bad('backend');
     out.backend = s.backend;
   }
-  if (s.bm !== undefined) {
-    if (!Array.isArray(s.bm) || s.bm.length > MAX_BOOKMARKS) throw bad('bm');
-    out.bm = s.bm.map((b: any): Bookmark => {
-      if (!isText(b?.name, 300) || !isLogo(b.logo) || !isWebUrl(b.redir)) throw bad('bm');
+  // Saved bookmarks and the new-tab shortcuts are both lists of bookmarks.
+  for (const key of ['bm', 'shortcuts']) {
+    if (s[key] === undefined) continue;
+    if (!Array.isArray(s[key]) || s[key].length > MAX_BOOKMARKS) throw bad(key);
+    out[key] = s[key].map((b: any): Bookmark => {
+      if (!isText(b?.name, 300) || !isLogo(b.logo) || !isWebUrl(b.redir)) throw bad(key);
       return { name: b.name, logo: b.logo, redir: b.redir };
     });
   }

@@ -1,6 +1,8 @@
+import { add, has, remove } from './bookmarks';
 import ConfigAPI from './config';
 import { checkAndShow } from './diagnostics';
 import { scramjetWrapper, vWrapper } from './pro';
+import { notify } from './status';
 import { TabManager, decodeProxyUrl } from './tb';
 import { ensureTransport } from './transport';
 import { validateUrl } from './url';
@@ -19,6 +21,7 @@ const routes: Record<string, string> = {
   'persec://games': '/math',
   'persec://apps': '/sci',
   'persec://privacy': '/privacy',
+  'persec://bookmarks': '/bm',
 };
 
 const reverseRoutes = Object.fromEntries(Object.entries(routes).map(([k, v]) => [v, k]));
@@ -28,7 +31,8 @@ const uv = vWrapper.getConfig();
 const hist = new Map<string, { stack: string[]; idx: number }>();
 
 // Registers the service worker, starts the engine and sets the transport, showing what failed.
-const setup = () => checkAndShow({ runtime: () => scramjetWrapper.init() });
+const setup = (onRecovered?: () => void) =>
+  checkAndShow({ runtime: () => scramjetWrapper.init(), onRecovered });
 
 function frame(): HTMLIFrameElement | null {
   const id = TabManager.activeTabId;
@@ -95,14 +99,6 @@ function currentUrl(f: HTMLIFrameElement): string {
   }
 }
 
-function norm(url: string): string {
-  try {
-    return decodeURIComponent(url).replace(/\/$/, '');
-  } catch {
-    return url.replace(/\/$/, '');
-  }
-}
-
 async function sync() {
   const f = frame();
   if (!f) return;
@@ -110,13 +106,18 @@ async function sync() {
   record(f.src);
 
   const d = currentUrl(f);
-  const bm = (await ConfigAPI.get('bm')) || [];
-  const active = bm.some((b: any) => norm(b.redir) === norm(d));
+  const active = !!d && has((await ConfigAPI.get('bm')) || [], d);
 
   const svg = favBtn?.querySelector('svg');
   if (svg) {
     svg.style.fill = active ? '#a8a3c7' : 'none';
     svg.style.stroke = active ? '#a8a3c7' : '';
+  }
+  if (favBtn) {
+    const label = active ? 'Remove bookmark' : 'Bookmark this page';
+    favBtn.setAttribute('aria-pressed', String(active));
+    favBtn.setAttribute('aria-label', label);
+    favBtn.title = label;
   }
 }
 
@@ -127,23 +128,51 @@ async function toggleFav() {
   if (!f || routes[urlbar.value]) return;
 
   const d = currentUrl(f);
-  if (!d) return;
+  if (!d) return notify('Open a website first, then bookmark it.');
   const bm = (await ConfigAPI.get('bm')) || [];
-
-  const i = bm.findIndex((b: any) => norm(b.redir) === norm(d));
-
-  if (i !== -1) {
-    bm.splice(i, 1);
-  } else {
-    bm.push({
-      name: f.contentDocument?.title || d,
-      logo: TabManager.activeFavicon,
-      redir: d,
-    });
+  const was = has(bm, d);
+  try {
+    await ConfigAPI.set(
+      'bm',
+      was
+        ? remove(bm, d)
+        : add(bm, { name: f.contentDocument?.title, logo: TabManager.activeFavicon, redir: d }),
+    );
+    notify(was ? 'Bookmark removed.' : 'Bookmarked. Find it in Menu → Bookmarks.');
+  } catch {
+    notify('That page can’t be bookmarked.');
   }
-
-  await ConfigAPI.set('bm', bm);
   sync();
+}
+
+function encode(url: string, backend: unknown) {
+  return backend === 'u'
+    ? `${uv.prefix}${uv.encodeUrl(url)}`
+    : `${sc.prefix}${sc.codec.encode(url)}`;
+}
+
+// The person asked for this (Menu → Try the other engine), so it changes the saved engine and opens
+// the same page again with it.
+let switching = false;
+async function retryOtherEngine() {
+  const f = frame();
+  const d = f && currentUrl(f);
+  if (!d) return notify('Open a website first: this reloads it with the other proxy engine.');
+  if (switching) return;
+  switching = true;
+  try {
+    const next = (await ConfigAPI.get('backend')) === 'u' ? 'sc' : 'u';
+    await ConfigAPI.set('backend', next);
+    notify(
+      `Trying ${next === 'u' ? 'Ultraviolet' : 'Scramjet'}… You can switch back in Settings → Browsing.`,
+    );
+    spin();
+    nav(encode(d, next));
+  } catch {
+    notify('Couldn’t switch engines. Try again from Settings → Browsing.');
+  } finally {
+    switching = false;
+  }
 }
 
 async function submit() {
@@ -160,19 +189,17 @@ async function submit() {
   try {
     await ensureTransport();
   } catch {
-    // Opening the page now would only hang; say what is wrong instead.
-    setup();
+    // Opening the page now would only hang; say what is wrong instead, and open it once a retry
+    // of the checks passes, unless the person has gone somewhere else by then.
+    setup(() => {
+      if (urlbar.value.trim() === v) submit();
+    });
     return;
   }
 
   const val = await validateUrl(v);
-  const backend = await ConfigAPI.get('backend');
-
-  const enc =
-    backend === 'u' ? `${uv.prefix}${uv.encodeUrl(val)}` : `${sc.prefix}${sc.codec.encode(val)}`;
-
   spin();
-  nav(enc);
+  nav(encode(val, await ConfigAPI.get('backend')));
 }
 
 function clickSide(e: MouseEvent) {
@@ -235,6 +262,8 @@ document.getElementById('menu-forward')?.addEventListener('click', e => {
   spin();
   fwd();
 });
+
+document.getElementById('menu-other-engine')?.addEventListener('click', retryOtherEngine);
 
 if (homeBtn) {
   homeBtn.addEventListener('click', e => {

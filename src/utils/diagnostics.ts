@@ -213,7 +213,7 @@ export async function runDiagnostics(opts: { runtime?: () => Promise<unknown> } 
 
 const PASSED =
   "Every check passed. If a site still doesn't load, the problem is likely that site (it may be " +
-  'down or block proxies): try the other proxy engine in Settings.';
+  'down or block proxies): open it, then choose Menu → Try the Other Engine.';
 
 // Writes the results as text into `el` (never as HTML: messages include browser error text).
 export function renderResults(el: HTMLElement, problems: Problem[]) {
@@ -233,11 +233,23 @@ export function renderResults(el: HTMLElement, problems: Problem[]) {
   }
 }
 
-// Shows a banner while there are problems; Retry runs the checks again.
-export async function checkAndShow(opts: Parameters<typeof runDiagnostics>[0] = {}) {
-  const problems = await runDiagnostics(opts);
+// Shows a banner while there are problems; Retry runs the checks again. `onRecovered` runs once a
+// retry passes (e.g. to open the page the person asked for). Calls while checks are running share
+// that run, so pressing Enter repeatedly doesn't stack banners.
+let running: Promise<Problem[]> | null = null;
+export function checkAndShow(
+  opts: Parameters<typeof runDiagnostics>[0] & { onRecovered?: () => void } = {},
+): Promise<Problem[]> {
+  running ??= runDiagnostics(opts).finally(() => (running = null));
+  return running.then(problems => {
+    show(problems, opts);
+    return problems;
+  });
+}
+
+function show(problems: Problem[], opts: Parameters<typeof checkAndShow>[0] = {}) {
   document.getElementById('persec-diag')?.remove();
-  if (!problems.length) return problems;
+  if (!problems.length) return;
 
   const box = document.createElement('div');
   box.id = 'persec-diag';
@@ -255,19 +267,38 @@ export async function checkAndShow(opts: Parameters<typeof runDiagnostics>[0] = 
   const button = (text: string, onClick: () => void) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'min-h-11 rounded-lg border border-white/10 bg-white/5 px-4 hover:bg-white/10';
+    b.className =
+      'min-h-11 rounded-lg border border-white/10 bg-white/5 px-4 hover:bg-white/10 disabled:opacity-60';
     b.textContent = text;
     b.addEventListener('click', onClick);
     return b;
   };
+  const retry = button('Retry', async () => {
+    retry.disabled = true;
+    retry.textContent = 'Checking again…';
+    title.textContent = 'Checking the connection…';
+    title.className = 'font-semibold text-white';
+    let again: Problem[];
+    try {
+      again = await runDiagnostics(opts);
+    } catch {
+      again = problems;
+    }
+    if (again.length) return show(again, opts);
+    title.textContent = 'Connected';
+    title.className = 'font-semibold text-green-300';
+    box.classList.replace('border-red-500/30', 'border-green-500/30');
+    list.textContent = opts.onRecovered
+      ? 'Every check passed. Opening your page…'
+      : 'Every check passed. You can browse now.';
+    actions.remove();
+    setTimeout(() => box.remove(), 3000);
+    opts.onRecovered?.();
+  });
   actions.append(
-    button('Retry', () => {
-      box.remove();
-      checkAndShow(opts);
-    }),
+    retry,
     button('Dismiss', () => box.remove()),
   );
   box.append(title, list, actions);
   document.body.append(box);
-  return problems;
 }

@@ -69,7 +69,7 @@ import ImportLucide from '../layouts/lucide.astro';
   <body class="bg-background font-linux text-text-header min-h-screen p-4 sm:p-6 md:p-8">
     <div class="mx-auto max-w-5xl">
       <div class="flex gap-8">
-        <nav class="hidden w-48 shrink-0 lg:block">
+        <nav aria-label="Settings categories" class="hidden w-48 shrink-0 lg:block">
           <div class="sticky top-6 space-y-1">
             <header class="mb-8">
               <h1 class="mb-1 text-2xl font-bold">Settings</h1>
@@ -77,28 +77,28 @@ import ImportLucide from '../layouts/lucide.astro';
             </header>
             <a
               href="#privacy"
-              class="nav-item hover:text-text-header flex items-center gap-2.5 rounded-lg bg-[#6366f1]/10 px-3 py-2 text-sm text-[#6366f1] hover:bg-white/5"
+              class="nav-item hover:text-text-header flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-[#8b87ff] bg-[#6366f1]/10 px-3 py-2 text-sm text-[#6366f1] hover:bg-white/5"
               data-nav="privacy"
             >
               <i data-lucide="shield" class="h-4 w-4"></i>Privacy
             </a>
             <a
               href="#browsing"
-              class="nav-item text-text-secondary hover:text-text-header flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-white/5"
+              class="nav-item text-text-secondary hover:text-text-header flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-[#8b87ff] px-3 py-2 text-sm hover:bg-white/5"
               data-nav="browsing"
             >
               <i data-lucide="globe" class="h-4 w-4"></i>Browsing
             </a>
             <a
               href="#advanced"
-              class="nav-item text-text-secondary hover:text-text-header flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-white/5"
+              class="nav-item text-text-secondary hover:text-text-header flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-[#8b87ff] px-3 py-2 text-sm hover:bg-white/5"
               data-nav="advanced"
             >
               <i data-lucide="wrench" class="h-4 w-4"></i>Advanced
             </a>
             <a
               href="#about"
-              class="nav-item text-text-secondary hover:text-text-header flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-white/5"
+              class="nav-item text-text-secondary hover:text-text-header flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-[#8b87ff] px-3 py-2 text-sm hover:bg-white/5"
               data-nav="about"
             >
               <i data-lucide="info" class="h-4 w-4"></i>About
@@ -106,7 +106,68 @@ import ImportLucide from '../layouts/lucide.astro';
           </div>
         </nav>
 
-        <main class="flex-1 space-y-10">
+        <main class="min-w-0 flex-1 space-y-10">
+          <!-- Search for every screen; the category bar is for screens without the side list. -->
+          <div class="bg-background sticky top-0 z-20 -mx-4 space-y-3 px-4 pt-1 pb-3 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0">
+            <h1 class="text-2xl font-bold lg:hidden">Settings</h1>
+            <div class="relative" role="search">
+              <i
+                data-lucide="search"
+                class="text-text-secondary pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+              ></i>
+              <label for="settings-search" class="sr-only">
+                Search settings
+              </label>
+              <input
+                id="settings-search"
+                type="search"
+                data-filter-input
+                autocomplete="off"
+                placeholder="Search settings"
+                class="bg-background-overlay/80 w-full rounded-lg border border-white/10 py-2.5 pr-11 pl-9 text-sm focus:border-[#8b87ff] focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+              />
+              <button
+                type="button"
+                data-filter-clear
+                hidden
+                aria-label="Clear search"
+                class="text-text-secondary hover:text-text-header absolute top-1/2 right-1 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-[#8b87ff]"
+              >
+                <i data-lucide="x" class="h-4 w-4"></i>
+              </button>
+            </div>
+            <nav aria-label="Settings categories" class="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:hidden">
+              <a
+                href="#privacy"
+                data-nav="privacy"
+                class="nav-item text-text-secondary flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-[#8b87ff]"
+              >
+                <i data-lucide="shield" class="h-4 w-4"></i>Privacy
+              </a>
+              <a
+                href="#browsing"
+                data-nav="browsing"
+                class="nav-item text-text-secondary flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-[#8b87ff]"
+              >
+                <i data-lucide="globe" class="h-4 w-4"></i>Browsing
+              </a>
+              <a
+                href="#advanced"
+                data-nav="advanced"
+                class="nav-item text-text-secondary flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-[#8b87ff]"
+              >
+                <i data-lucide="wrench" class="h-4 w-4"></i>Advanced
+              </a>
+              <a
+                href="#about"
+                data-nav="about"
+                class="nav-item text-text-secondary flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-sm hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-[#8b87ff]"
+              >
+                <i data-lucide="info" class="h-4 w-4"></i>About
+              </a>
+            </nav>
+          </div>
+          <p data-filter-empty role="status" class="text-text-secondary text-sm"></p>
           <section id="privacy" data-section="privacy">
             <h2 class="mb-4 flex items-center text-lg font-semibold">
               <i data-lucide="shield" class="mr-2 h-5 w-5 text-[#6366f1]"></i>
@@ -118,8 +179,8 @@ import ImportLucide from '../layouts/lucide.astro';
                 <h3 class="mb-2 font-medium">Clear site data</h3>
                 <p class="text-text-secondary mb-3 text-sm">
                   Sites you open in Persec can read each other's cookies. Clear them after logging in anywhere, and
-                  before visiting sites you don't trust. This also deletes your saved-logins backup. Your Persec
-                  settings are kept.
+                  before visiting sites you don't trust. You'll be logged out of every site, and your saved-logins
+                  backup on this server is deleted too. Your Persec settings and bookmarks are kept.
                 </p>
                 <button
                   data-clear-site-data
@@ -208,7 +269,14 @@ import ImportLucide from '../layouts/lucide.astro';
                       out among your tabs.
                     </p>
                   </div>
-                  <div class="toggle" data-toggle="cloak"></div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked="false"
+                    aria-label="Tab Cloak"
+                    class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                    data-toggle="cloak"
+                  ></button>
                 </div>
 
                 <div data-cloak-inputs class="space-y-3 border-t border-white/6 pt-4">
@@ -266,7 +334,14 @@ import ImportLucide from '../layouts/lucide.astro';
                     Persec again when you come back.
                   </p>
                 </div>
-                <div class="toggle" data-toggle="tabSwitchCloak"></div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked="false"
+                  aria-label="Tab Switch Cloak"
+                  class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                  data-toggle="tabSwitchCloak"
+                ></button>
               </div>
 
               <div class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5">
@@ -277,7 +352,14 @@ import ImportLucide from '../layouts/lucide.astro';
                     automatically.
                   </p>
                 </div>
-                <div class="toggle" data-toggle="beforeUnload"></div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked="false"
+                  aria-label="Anti-close"
+                  class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                  data-toggle="beforeUnload"
+                ></button>
               </div>
 
               <div class="bg-background-overlay/60 rounded-xl border border-white/6 p-5">
@@ -405,7 +487,14 @@ import ImportLucide from '../layouts/lucide.astro';
                     properly.
                   </p>
                 </div>
-                <div class="toggle" data-toggle="adBlock"></div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked="false"
+                  aria-label="Ad Blocker"
+                  class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                  data-toggle="adBlock"
+                ></button>
               </div>
             </div>
           </section>
@@ -473,7 +562,8 @@ import ImportLucide from '../layouts/lucide.astro';
                   Clear All Data
                 </h3>
                 <p class="text-text-secondary mb-3 text-sm">
-                  Resets every Persec setting and deletes your bookmarks in this browser. This can't be undone.
+                  Resets every Persec setting and deletes your bookmarks and new tab shortcuts in this browser. Site
+                  cookies and saved logins aren't touched (use Clear site data for those). This can't be undone.
                 </p>
                 <button
                   data-reset="reset"
@@ -538,12 +628,44 @@ import ImportLucide from '../layouts/lucide.astro';
         </main>
       </div>
 
-      <div data-notification role="status" class="toast fixed right-4 bottom-4 hidden sm:right-6 sm:bottom-6">
-        <div class="flex items-center gap-2 rounded-lg border border-[#10b981]/40 bg-[#10b981]/20 px-4 py-3 text-sm">
-          <i data-lucide="check" class="h-4 w-4 text-[#10b981]"></i>
-          <span>Settings saved</span>
+      <!-- Always in the page (hidden with a class) so screen readers announce each new message. -->
+      <div
+        data-notification
+        role="status"
+        class="toast pointer-events-none fixed right-4 bottom-4 z-30 opacity-0 sm:right-6 sm:bottom-6"
+      >
+        <div
+          data-notification-box
+          class="bg-background-overlay flex max-w-sm items-center gap-2 rounded-lg border border-[#10b981]/40 px-4 py-3 text-sm"
+        >
+          <span data-notification-text></span>
         </div>
       </div>
+
+      <!-- In-page confirmation for actions that delete things (SettingsManager.confirm). -->
+      <dialog
+        data-confirm
+        aria-labelledby="confirm-title"
+        class="bg-background-overlay text-text-header m-auto w-[min(28rem,calc(100vw-2rem))] rounded-xl border border-white/10 p-5 backdrop:bg-black/60"
+      >
+        <form method="dialog">
+          <h2 id="confirm-title" class="mb-2 font-semibold"></h2>
+          <div data-confirm-text class="text-text-secondary space-y-2 text-sm"></div>
+          <div class="mt-5 flex flex-wrap justify-end gap-2">
+            <button
+              value="cancel"
+              class="min-h-11 rounded-lg border border-white/10 bg-white/5 px-4 text-sm hover:bg-white/10"
+            >
+              Cancel
+            </button>
+            <button
+              value="ok"
+              data-confirm-ok
+              class="min-h-11 rounded-lg border border-red-500/30 bg-red-500/15 px-4 text-sm text-red-300 hover:bg-red-500/25"
+            ></button>
+          </div>
+        </form>
+      </dialog>
     </div>
 
     <ImportLucide />

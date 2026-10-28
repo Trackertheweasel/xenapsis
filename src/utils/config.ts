@@ -19,6 +19,7 @@ interface ConfigDefaults {
   panicKey: string;
   wispUrl: string;
   bm: Bookmark[];
+  shortcuts: Bookmark[];
   [key: string]: any;
 }
 
@@ -48,6 +49,16 @@ const defaults: ConfigDefaults = {
   panicKey: '`',
   wispUrl: wispUrl(),
   bm: [],
+  // The new-tab page's shortcuts, until someone edits them. Read with getIndecator, so people who
+  // visited before this key existed get them too.
+  shortcuts: [
+    { name: 'YouTube', redir: 'https://youtube.com/', logo: '/a/images/bm/yt.png' },
+    { name: 'X', redir: 'https://x.com/', logo: '/a/images/bm/x.svg' },
+    { name: 'GitHub', redir: 'https://github.com/', logo: '/a/images/bm/gh.ico' },
+    { name: 'Discord', redir: 'https://discord.com/', logo: '/a/images/bm/disc.ico' },
+    { name: 'Google', redir: 'https://google.com/', logo: '/a/images/bm/goo.ico' },
+    { name: 'Wikipedia', redir: 'https://wikipedia.org/', logo: '/a/images/bm/wiki.png' },
+  ],
 };
 
 const store = localForage.createInstance({

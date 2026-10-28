@@ -58,6 +58,45 @@ const randomQuote = quotes[randomIndex]?.quote || '';
       </div>
     </div>
 
+    <!-- First-run guide: shown until dismissed, and again from Menu → Getting Started (/new#guide). -->
+    <section
+      id="guide"
+      hidden
+      aria-labelledby="guide-title"
+      class="border-border-default/30 bg-background-overlay/90 relative z-20 mt-8 w-full max-w-xl rounded-2xl border p-5 text-sm text-white/80 shadow-xl"
+    >
+      <h2 id="guide-title" tabindex="-1" class="mb-3 text-lg font-semibold text-white focus:outline-none">
+        Getting started
+      </h2>
+      <ol class="list-decimal space-y-2 pl-5">
+        <li>
+          Type a web address (like <b>wikipedia.org</b>) or what you want to search for in the address bar at the top,
+          then press Enter.
+        </li>
+        <li>
+          If a site won't load or looks broken, open the menu (☰ at the top right) and choose
+          <b>Try the Other Engine</b>. If no site loads at all, use Settings → Advanced → <b>Check connection</b>.
+        </li>
+        <li>
+          Save a page with the bookmark icon at the end of the address bar; your bookmarks are in Menu →<b>Bookmarks</b>
+          . Cloaking and clearing site data are in Settings → Privacy.
+        </li>
+      </ol>
+      <p class="mt-3 text-white/60">
+        Persec is a web proxy: it gets past many blocks, not all, and it isn't a VPN or a way to be anonymous.
+        <a href="/privacy" class="underline hover:text-white">
+          Privacy &amp; safety
+        </a>
+      </p>
+      <button
+        type="button"
+        data-guide-done
+        class="mt-4 min-h-11 rounded-lg border border-white/15 bg-white/10 px-4 font-medium text-white hover:bg-white/15"
+      >
+        Got it
+      </button>
+    </section>
+
     <Shortcuts />
     <Sponsor />
 
@@ -69,15 +108,25 @@ const randomQuote = quotes[randomIndex]?.quote || '';
         <a href="/privacy" class="text-[12px] font-medium text-white/50 transition hover:text-white/80">
           Privacy &amp; safety
         </a>
+        <span class="h-3 w-px bg-white/20"></span>
+        <a href="#guide" data-guide-open class="text-[12px] font-medium text-white/50 transition hover:text-white/80">
+          Help
+        </a>
       </div>
       <div class="border-border-default/20 bg-background-overlay/50 z-50 flex items-center gap-3 rounded-full border px-4 py-2 shadow-xl backdrop-blur-md sm:fixed sm:bottom-5 sm:left-5">
-        <span id="sl" class="text-xs font-medium text-white/60 tabular-nums">
+        <!-- Only how fast this server answers a request: not a test of the proxy tunnel or of any site. -->
+        <span
+          id="sl"
+          role="status"
+          title="How long this Persec server takes to answer. It doesn't test the proxy connection or the sites you open."
+          class="text-xs font-medium text-white/60 tabular-nums"
+        >
           ...
         </span>
         <div class="h-4 w-px bg-white/20"></div>
         <button
           id="refresh"
-          aria-label="Check server speed again"
+          aria-label="Measure server response time again"
           class="text-white/40 transition-all duration-200 hover:rotate-180 hover:text-white/80 focus:outline-none"
         >
           <svg

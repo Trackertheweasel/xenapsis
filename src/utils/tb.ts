@@ -19,6 +19,7 @@ const internalRoutes: Record<string, string> = {
   'persec://games': '/math',
   'persec://apps': '/sci',
   'persec://privacy': '/privacy',
+  'persec://bookmarks': '/bm',
 };
 const defaultIcon = '/a/persec.svg';
 const faviconApi =
@@ -38,6 +39,10 @@ let tabBar: HTMLDivElement | null = null;
 let frameContainer: HTMLDivElement | null = null;
 // Keyed by site origin, so each site's icon is fetched once rather than on every page.
 const faviconCache = new Map<string, Promise<string>>();
+// Recently closed tabs, newest first, for Reopen Closed Tab. Kept in memory only: just the address
+// and title, never saved, so nothing outlives this page.
+const closed: { src: string; title: string }[] = [];
+const MAX_CLOSED = 10;
 
 function nextId() {
   return idCounter++;
@@ -111,6 +116,10 @@ function updateTabEl(tab: Tab, field: 'title' | 'icon') {
   if (field === 'title') {
     const span = tab.el.querySelector('.tab-title');
     if (span) span.textContent = truncate(tab.title);
+    // The visible title is cut short; screen readers get all of it.
+    tab.el.querySelector('[role="tab"]')?.setAttribute('aria-label', tab.title);
+    tab.el.querySelector('.tab-close')?.setAttribute('aria-label', `Close ${tab.title}`);
+    tab.iframe?.setAttribute('title', tab.title);
   } else {
     const img = tab.el.querySelector('.tab-favicon') as HTMLImageElement | null;
     if (img && img.src !== tab.favicon) {
@@ -223,12 +232,20 @@ function getTabClass(active: boolean): string {
     : `${base} bg-[color:var(--background-overlay)] hover:bg-[color:var(--background)] text-[color:var(--text-secondary)] opacity-70 hover:opacity-90`;
 }
 
+// Each tab is a select button (role="tab") and a separate close button, so closing never also
+// selects. Arrow keys, Home and End move between tabs; Delete closes the focused one.
 function createTabEl(tab: Tab): HTMLDivElement {
   const el = document.createElement('div');
   el.className = getTabClass(tab.id === activeId);
+  el.setAttribute('role', 'presentation');
 
-  const left = document.createElement('div');
-  left.className = 'flex items-center gap-2 flex-1 min-w-0';
+  const left = document.createElement('button');
+  left.type = 'button';
+  left.setAttribute('role', 'tab');
+  left.setAttribute('aria-label', tab.title);
+  left.setAttribute('aria-controls', `frame-${tab.id}`);
+  left.className =
+    'flex items-center gap-2 flex-1 min-w-0 text-left rounded-md focus-visible:outline-2 focus-visible:outline-[#8b87ff]';
   left.style.height = '100%';
 
   const icon = document.createElement('img');
@@ -254,10 +271,11 @@ function createTabEl(tab: Tab): HTMLDivElement {
   left.append(icon, title);
 
   const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
   closeBtn.className =
-    'flex items-center justify-center w-7 h-7 -mr-1.5 sm:w-5 sm:h-5 sm:mr-0 flex-shrink-0 rounded-full bg-transparent hover:bg-[color:var(--background-disabled)] text-[color:var(--text-secondary)] hover:text-red-400 transition-all duration-200 text-base leading-none';
+    'tab-close focus-visible:outline-2 focus-visible:outline-[#8b87ff] flex items-center justify-center w-7 h-7 -mr-1.5 sm:w-5 sm:h-5 sm:mr-0 flex-shrink-0 rounded-full bg-transparent hover:bg-[color:var(--background-disabled)] text-[color:var(--text-secondary)] hover:text-red-400 transition-all duration-200 text-base leading-none';
   closeBtn.textContent = '×';
-  closeBtn.setAttribute('aria-label', 'Close tab');
+  closeBtn.setAttribute('aria-label', `Close ${tab.title}`);
   closeBtn.style.fontWeight = '400';
   closeBtn.style.padding = '0';
   closeBtn.style.lineHeight = '1';
@@ -267,7 +285,32 @@ function createTabEl(tab: Tab): HTMLDivElement {
   };
 
   el.append(left, closeBtn);
-  el.onclick = () => switchTab(tab.id);
+  left.onclick = () => switchTab(tab.id);
+  left.onkeydown = e => {
+    const i = tabs.indexOf(tab);
+    const to =
+      e.key === 'ArrowRight'
+        ? tabs[(i + 1) % tabs.length]
+        : e.key === 'ArrowLeft'
+          ? tabs[(i - 1 + tabs.length) % tabs.length]
+          : e.key === 'Home'
+            ? tabs[0]
+            : e.key === 'End'
+              ? tabs[tabs.length - 1]
+              : null;
+    if (to) {
+      e.preventDefault();
+      switchTab(to.id);
+      to.el?.querySelector<HTMLElement>('[role="tab"]')?.focus();
+    } else if (e.key === 'Delete') {
+      e.preventDefault();
+      closeTab(tab.id);
+      tabs
+        .find(t => t.id === activeId)
+        ?.el?.querySelector<HTMLElement>('[role="tab"]')
+        ?.focus();
+    }
+  };
   tab.el = el;
   return el;
 }
@@ -294,15 +337,39 @@ function renderTabs() {
 
 function updateActive() {
   for (const tab of tabs) {
-    if (tab.el) tab.el.className = getTabClass(tab.id === activeId);
+    if (!tab.el) continue;
+    const active = tab.id === activeId;
+    tab.el.className = getTabClass(active);
+    // Only the selected tab and its close button are in the Tab order; arrows reach the rest.
+    const select = tab.el.querySelector('[role="tab"]');
+    select?.setAttribute('aria-selected', String(active));
+    select?.setAttribute('tabindex', active ? '0' : '-1');
+    tab.el.querySelector('.tab-close')?.setAttribute('tabindex', active ? '0' : '-1');
   }
   // On narrow screens the tab row scrolls, so keep the active tab in view.
   tabs.find(t => t.id === activeId)?.el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
+// What to open to bring a tab back: an internal page's path, or the site's real address (encoded
+// again when reopened, with whichever engine is set then).
+function tabSource(tab: Tab): string {
+  try {
+    const path = new URL(tab.iframe.contentWindow?.location.href || '', location.origin).pathname;
+    return Object.values(internalRoutes).includes(path) ? path : decodeProxyUrl(path);
+  } catch {
+    return '';
+  }
+}
+
 function closeTab(id: number) {
   const idx = tabs.findIndex(t => t.id === id);
   if (idx === -1) return;
+  const src = tabSource(tabs[idx]);
+  // A blank new tab isn't worth bringing back.
+  if (src && src !== '/new') {
+    closed.unshift({ src, title: tabs[idx].title });
+    closed.length = Math.min(closed.length, MAX_CLOSED);
+  }
 
   if (tabs.length === 1) {
     openTab();
@@ -545,6 +612,13 @@ export const TabManager = {
     if (id !== null) switchTab(id);
   },
   openTab,
+  // Returns false when there's nothing to reopen.
+  async reopenClosed(): Promise<boolean> {
+    const last = closed.shift();
+    if (!last) return false;
+    openTab(last.src.startsWith('/') ? last.src : await encodeProxyUrl(last.src));
+    return true;
+  },
   onUrlChange: (cb: (href: string) => void) => {
     onUrlChange = cb;
   },
