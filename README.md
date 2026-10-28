@@ -172,11 +172,13 @@ What ECH does not do: it hides only the name. A filter can still block the serve
 
 All of these options are free to use.
 
-| Platform          | Config file                       | Notes                                                                                                          |
-| ----------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Render            | `render.yaml`                     | Free web service. Sleeps after 15 minutes without traffic and takes about a minute to wake up.                 |
-| GitHub Codespaces | `.devcontainer/devcontainer.json` | Free monthly hours for personal accounts. Run `pnpm build && pnpm start`, then open the forwarded port `6060`. |
-| Docker            | `Dockerfile`                      | Run it on your own computer or server (see below).                                                             |
+| Platform          | Config file                       | Notes                                                                                                                   |
+| ----------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Render            | `render.yaml`                     | Free web service. Sleeps after 15 minutes without traffic and takes about a minute to wake up. Invite-only (see below). |
+| GitHub Codespaces | `.devcontainer/devcontainer.json` | Free monthly hours for personal accounts. Run `pnpm build && pnpm start`, then open the forwarded port `6060`.          |
+| Docker            | `Dockerfile`                      | Run it on your own computer or server (see below).                                                                      |
+
+A Render deploy starts invite-only with a generated `PERSEC_SECRET`. Copy that secret from the service's Environment page and mint your first invite on your own computer with `PERSEC_SECRET="<secret>" pnpm invite <name>` (see [Handing out invites without restarting](#handing-out-invites-without-restarting)), or add `PERSEC_INVITE_CODES` there.
 
 ### Docker
 
@@ -280,7 +282,7 @@ PERSEC_SECRET="<your secret>" pnpm invite sam 30   # prints a code that works fo
 - To cancel one early, add the name to `PERSEC_REVOKED` (for example `PERSEC_REVOKED="sam,lee"`) and restart. This works for listed codes too.
 - Give each person their own name: revoking a name cancels every invite minted with it.
 - To use only minted invites, set `PERSEC_INVITE_ONLY=true` instead of `PERSEC_INVITE_CODES`.
-- Anyone with `PERSEC_SECRET` can mint invites, so keep it as private as the codes. Changing it signs everyone out and cancels every minted invite.
+- Anyone with `PERSEC_SECRET` can mint invites, so keep it as private as the codes. It also recreates every minted code, so together with the backups it unlocks everyone's saved logins: treat `deploy/.env` and `persec export` output accordingly. Changing it signs everyone out and cancels every minted invite.
 
 Share codes privately (in person or an encrypted messenger), never on a public page. After 10 wrong codes, an address has to wait 15 minutes.
 
@@ -288,7 +290,7 @@ Share codes privately (in person or an encrypted messenger), never on a public p
 
 On an invite-only Persec, a cookie notice on the first visit asks people whether to save their logins. If they agree, Persec keeps an encrypted backup of the cookies and site data that sites save in Persec, so they are still signed in to those sites when they come back, even on a new device or after their browser was cleared: they enter their invite code and tap **Restore my logins**. They can turn it off, or restore, in Settings → Privacy & Cloaking. Without invite codes, the notice only explains Persec's cookies.
 
-- The backup is encrypted in the browser with a key made from the person's invite code, so the server only stores data it can't read on its own. Anyone with the code can unlock it, and that includes you, since you hand out the codes. The cookie notice and privacy page say so.
+- The backup is encrypted in the browser with a key made from the person's invite code, so the server only stores data it can't read on its own. Anyone with the code can unlock it, and that includes you, since you hand out the codes, and anyone who gets hold of `PERSEC_SECRET` or `PERSEC_INVITE_CODES`, since those are enough to recreate every code. The cookie notice and privacy page say so.
 - Proxied sites run on Persec's own address, so Persec relies on the proxy engines (Scramjet and Ultraviolet) to keep a site's scripts away from other sites' cookies and from saved logins. As a second line, the service worker only reads, restores or clears cookies when Persec's home page or Settings asks. A site that breaks out of the engines could still read what the browser stores for Persec. The privacy page warns about this.
 - **Give each person their own code.** Everyone who signs in with the same code shares one backup.
 - Backups are stored in `data/logins` (with Docker Compose, the `persec_data` volume, which `persec update` keeps). Set `PERSEC_DATA_DIR` to store them elsewhere. Render and Codespaces have no lasting disk, so backups there are lost on every restart.

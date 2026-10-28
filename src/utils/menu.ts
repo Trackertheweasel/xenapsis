@@ -270,7 +270,11 @@ class MenuHandler {
       }
 
       const script = frame.contentDocument.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+      // Runs with full access to Persec's origin, so pinned to one version and checked against its hash
+      // (the same file as the npm tarball). Bump both together.
+      script.src = 'https://cdn.jsdelivr.net/npm/eruda@3.4.3/eruda.js';
+      script.integrity = 'sha384-weDBY9jeIj4NqaiZF9f6PMAMMY4lIu+0CAI+TjBIE73RctCQOxDoEHltYnstRszI';
+      script.crossOrigin = 'anonymous';
       script.onload = () => win.eruda?.init?.();
       frame.contentDocument.head.appendChild(script);
     } catch (error) {

@@ -30,6 +30,18 @@ test('Wisp only allows TCP to web ports and uses malware-blocking DNS', () => {
   assert.equal(wisp.options.wisp_motd, '', 'no fixed MOTD to fingerprint');
 });
 
+// wisp-js treats ::ffff:a.b.c.d as neither loopback nor private, so these reached internal hosts.
+test('Wisp refuses IPv6 literals, which could name internal IPv4 addresses', () => {
+  const blocked = (host: string) =>
+    (wisp.options.hostname_blacklist as RegExp[]).some(r => r.test(host));
+  for (const host of ['::ffff:127.0.0.1', '::ffff:169.254.169.254', '::ffff:7f00:1', '::1']) {
+    assert.ok(blocked(host), host);
+  }
+  for (const host of ['example.com', 'xn--bcher-kva.example', '93.184.215.14']) {
+    assert.ok(!blocked(host), host);
+  }
+});
+
 test('Server sends real 404s', async () => {
   const app = await server();
   const res = await app.inject({ url: '/definitely-not-here' });
@@ -274,7 +286,12 @@ test('Saved-login backups round-trip and each person only reaches their own', as
 });
 
 // Resolves with the HTTP status the server answered the upgrade with, or 'closed' if it hung up.
-function upgrade(port: number, path: string, cookie?: string): Promise<number | 'closed'> {
+function upgrade(
+  port: number,
+  path: string,
+  cookie?: string,
+  extra: Record<string, string> = {},
+): Promise<number | 'closed'> {
   return new Promise(resolve => {
     const req = http.request({
       host: '127.0.0.1',
@@ -286,6 +303,7 @@ function upgrade(port: number, path: string, cookie?: string): Promise<number | 
         'Sec-WebSocket-Version': '13',
         'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==',
         ...(cookie ? { cookie } : {}),
+        ...extra,
       },
     });
     req.on('upgrade', (res, socket) => {
@@ -345,6 +363,24 @@ async function checkTunnelRule(port: number) {
     assert.doesNotMatch(await raw(port, request), /^HTTP\/1\.1 101/, why);
   }
   assert.equal(await upgrade(port, '/w/', valid), 101, 'still serving after all that');
+
+  // Another site can't open the tunnel with the visitor's cookie.
+  const host = `127.0.0.1:${port}`;
+  assert.equal(
+    await upgrade(port, '/w/', valid, { origin: 'https://evil.sslip.io' }),
+    'closed',
+    'cross-site Origin',
+  );
+  assert.equal(await upgrade(port, '/w/', valid, { origin: 'null' }), 'closed', 'opaque Origin');
+  assert.equal(await upgrade(port, '/w/', valid, { origin: `http://${host}` }), 101, 'same Origin');
+  assert.equal(
+    await upgrade(port, '/w/', valid, {
+      origin: 'https://persec.example',
+      'x-forwarded-host': 'persec.example',
+    }),
+    101,
+    'same Origin behind a proxy that rewrites Host',
+  );
 }
 
 test('The Wisp tunnel needs a valid invite and only answers on its own path', async () => {
