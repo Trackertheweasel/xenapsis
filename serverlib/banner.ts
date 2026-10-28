@@ -1,30 +1,13 @@
 import chalk from 'chalk';
 import { version } from '../package.json' with { type: 'json' };
 import type { AccessConfig } from './access';
-import { updateChecker } from './check';
-import { findProvider } from './provider';
 
 export function printBanner(port: number, access: AccessConfig | null) {
-  const updateStatus = updateChecker();
-  type StatusKey = 'u' | 'n' | 'f';
-  const statusMap: Record<
-    StatusKey,
-    { icon: string; text: string; color: string; extra?: string }
-  > = {
-    u: { icon: '✅', text: 'Up to date', color: '#2ecc71' },
-    n: {
-      icon: '❌',
-      text: `Update available (${updateStatus.commitId})`,
-      color: '#f1c40f',
-      extra: chalk.hex('#95a5a6')('→ https://github.com/Trackertheweasel/xenapsis'),
-    },
-    f: { icon: '❌', text: 'Failed to check for updates', color: '#e74c3c' },
-  };
-  const statusKey = (
-    ['u', 'n', 'f'].includes(updateStatus.status) ? updateStatus.status : 'f'
-  ) as StatusKey;
-  const status = statusMap[statusKey];
-  const deploymentURL = findProvider(port);
+  // The two hosts the README supports; anywhere else the local address is shown.
+  const deploymentURL =
+    process.env.RENDER_EXTERNAL_URL ||
+    (process.env.CODESPACES &&
+      `https://${process.env.CODESPACE_NAME}-${port}.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`);
 
   console.log();
   console.log(chalk.hex('#8e44ad').bold('╭────────────────────────────────────────────╮'));
@@ -37,16 +20,10 @@ export function printBanner(port: number, access: AccessConfig | null) {
   console.log();
   console.log(chalk.hex('#00cec9')('Information:'));
   console.log(
-    chalk.hex('#bdc3c7')('   ├─ ') +
+    chalk.hex('#bdc3c7')('   └─ ') +
       chalk.hex('#ecf0f1')('Version: ') +
       chalk.hex('#f39c12')(`v${version}`),
   );
-  console.log(
-    chalk.hex('#bdc3c7')('   └─ ') +
-      chalk.hex('#ecf0f1')('Up to date: ') +
-      chalk.hex(status.color)(`${status.icon} ${status.text}`),
-  );
-  if (status.extra) console.log('       ' + status.extra);
   console.log();
   console.log(
     chalk.hex('#bdc3c7')('   Access: ') +

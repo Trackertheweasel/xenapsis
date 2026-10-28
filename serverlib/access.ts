@@ -197,6 +197,9 @@ export function recordFailure(ip: string, now = Date.now()) {
   // Drop expired entries now and then so random addresses can't grow the map forever.
   if (failures.size >= 10_000) {
     for (const [key, f] of failures) if (f.reset <= now) failures.delete(key);
+    // Still full of fresh ones (many addresses at once): forget the oldest half, so the map stays
+    // capped and this scan runs once per thousands of failures, not on every one.
+    while (failures.size >= 5_000) failures.delete(failures.keys().next().value!);
   }
   const f = failures.get(ip);
   if (!f || f.reset <= now) failures.set(ip, { count: 1, reset: now + 15 * 60 * 1000 });

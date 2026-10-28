@@ -309,6 +309,21 @@ export class SettingsManager {
     };
 
     const turnOn = async () => {
+      // Backing up from here replaces the other device's backup, so only on purpose.
+      if ((await getStatus())?.saved) {
+        const ok = await this.confirm(
+          'Replace the backup from another device?',
+          [
+            'This browser’s logins replace it, and the ones only in that backup are lost.',
+            'To keep them, choose Restore instead.',
+          ],
+          'Replace backup',
+        );
+        if (!ok) {
+          codeForm.hidden = true;
+          return show();
+        }
+      }
       await setConsent('saved');
       await backUpNow();
       codeForm.hidden = true;
