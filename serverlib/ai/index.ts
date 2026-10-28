@@ -148,12 +148,17 @@ export interface RateLimit {
 export interface AiConfig {
   apiKey: string | null;
   defaultModel: string;
-  // Unset: any model OpenRouter lists. 'free': only free ones. Otherwise the listed IDs only.
+  // Unset or 'free': only free models, so invitees can't spend the owner's credits. 'all': any
+  // model OpenRouter lists. Otherwise the listed IDs only.
   allowedModels: 'all' | 'free' | Set<string>;
   maxOutputTokens: number | null;
   // Explicit opt-in to run PerSec AI on a server with no invite codes, where anyone could spend
   // the owner's OpenRouter allowance.
   allowOpen: boolean;
+  // Header holding the visitor's address (PERSEC_CLIENT_IP_HEADER, see serverlib/access.ts), for
+  // the per-address limit on an open server. Behind a reverse proxy every request otherwise comes
+  // from the proxy, and all visitors would share one allowance.
+  clientIpHeader?: string;
   limits: AiLimits;
   rateLimit: RateLimit;
   timeouts: Timeouts;
@@ -172,20 +177,22 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
   return {
     apiKey: env.OPENROUTER_API_KEY?.trim() || null,
     defaultModel: env.OPENROUTER_DEFAULT_MODEL?.trim() || DEFAULT_MODEL,
-    allowedModels: !allowed
-      ? 'all'
-      : allowed.toLowerCase() === 'free'
+    allowedModels:
+      !allowed || allowed.toLowerCase() === 'free'
         ? 'free'
-        : new Set(
-            allowed
-              .split(',')
-              .map(s => s.trim())
-              .filter(Boolean),
-          ),
+        : allowed.toLowerCase() === 'all'
+          ? 'all'
+          : new Set(
+              allowed
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean),
+            ),
     maxOutputTokens: env.OPENROUTER_MAX_TOKENS?.trim()
       ? positive(env.OPENROUTER_MAX_TOKENS, 0) || null
       : null,
     allowOpen: truthy(env.PERSEC_AI_ALLOW_OPEN),
+    clientIpHeader: env.PERSEC_CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
     limits: {
       maxBodyBytes: 256 * 1024,
       maxMessages: 100,

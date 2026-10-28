@@ -117,7 +117,7 @@ const alice = { cookie: `persec_access=${createToken(access, 'alice')}` };
 const bob = { cookie: `persec_access=${createToken(access, 'bob')}` };
 
 async function server(
-  env: Record<string, string> = { OPENROUTER_API_KEY: KEY },
+  env: Record<string, string> = { OPENROUTER_API_KEY: KEY, OPENROUTER_ALLOWED_MODELS: 'all' },
   { invite = true, tweak }: { invite?: boolean; tweak?: (c: AiConfig) => void } = {},
 ) {
   const config = loadAiConfig(env);
@@ -270,9 +270,10 @@ test('The model list comes from OpenRouter, normalized, with the free router fir
   assert.equal(seen[0].headers.authorization, `Bearer ${KEY}`);
 });
 
-test('OPENROUTER_ALLOWED_MODELS=free offers and accepts only free models', async () => {
+// What a server offering only free models shows and accepts.
+async function onlyFree(env: Record<string, string>) {
   serve(okChat);
-  const app = await server({ OPENROUTER_API_KEY: KEY, OPENROUTER_ALLOWED_MODELS: 'free' });
+  const app = await server(env);
   const ids = (await app.inject({ url: '/api/ai/models', headers: alice }))
     .json()
     .models.map((m: any) => m.id);
@@ -281,6 +282,16 @@ test('OPENROUTER_ALLOWED_MODELS=free offers and accepts only free models', async
   assert.equal(paid.statusCode, 400);
   assert.equal(paid.json().error.code, 'invalid_model');
   assert.equal(seen.filter(s => s.url.endsWith('/chat/completions')).length, 0);
+}
+
+test('Only free models are offered and accepted unless OPENROUTER_ALLOWED_MODELS says otherwise', async () => {
+  for (const env of [
+    { OPENROUTER_API_KEY: KEY } as Record<string, string>,
+    { OPENROUTER_API_KEY: KEY, OPENROUTER_ALLOWED_MODELS: 'free' },
+  ]) {
+    seen.length = 0;
+    await onlyFree(env);
+  }
 });
 
 test('Model IDs are checked: no URLs or odd strings, and only models OpenRouter lists', async () => {
@@ -407,9 +418,44 @@ test('AI requests are rate limited per person', async () => {
   assert.equal(seen.filter(s => s.url.endsWith('/chat/completions')).length, 3);
 });
 
+test('A refused model does not use up the rate limit', async () => {
+  serve(okChat);
+  const app = await server({
+    OPENROUTER_API_KEY: KEY,
+    AI_RATE_LIMIT_MAX_REQUESTS: '1',
+    AI_RATE_LIMIT_WINDOW_MS: '60000',
+  });
+  for (let i = 0; i < 3; i++) {
+    const res = await chat(app, hello({ model: 'openai/gpt-4o' }));
+    assert.equal(res.json().error.code, 'invalid_model');
+  }
+  assert.equal((await chat(app, hello())).statusCode, 200);
+});
+
+test('On an open server, the limit is per visitor address from PERSEC_CLIENT_IP_HEADER', async () => {
+  serve(okChat);
+  const app = await server(
+    {
+      OPENROUTER_API_KEY: KEY,
+      PERSEC_AI_ALLOW_OPEN: 'true',
+      PERSEC_CLIENT_IP_HEADER: 'CF-Connecting-IP',
+      AI_RATE_LIMIT_MAX_REQUESTS: '1',
+    },
+    { invite: false },
+  );
+  const from = (ip: string) => ({ 'cf-connecting-ip': ip });
+  assert.equal((await chat(app, hello(), from('203.0.113.1'))).statusCode, 200);
+  assert.equal((await chat(app, hello(), from('203.0.113.1'))).statusCode, 429);
+  assert.equal((await chat(app, hello(), from('203.0.113.2'))).statusCode, 200, 'another visitor');
+});
+
 test('The OpenRouter request carries the model, system prompt and history, and nothing from the browser', async () => {
   serve(okChat);
-  const app = await server({ OPENROUTER_API_KEY: KEY, OPENROUTER_MAX_TOKENS: '512' });
+  const app = await server({
+    OPENROUTER_API_KEY: KEY,
+    OPENROUTER_ALLOWED_MODELS: 'all',
+    OPENROUTER_MAX_TOKENS: '512',
+  });
   const res = await chat(
     app,
     {
