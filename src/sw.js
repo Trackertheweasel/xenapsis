@@ -1,6 +1,6 @@
-importScripts('/data/all.js', '/tmp/config.js', '/tmp/bundle.js', '/tmp/sw.js');
-
-let playgroundData = null;
+// Served by src/pages/[sw].js.ts, which defines PERSEC_PATHS (this build's paths) above this line.
+const { files } = PERSEC_PATHS;
+importScripts(files.scramjetAll, files.uvConfig, files.uvBundle, files.uvSw);
 
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
@@ -76,10 +76,31 @@ function scheduleSave(event) {
   );
 }
 
+// Trust boundary. Proxied sites run on Persec's own origin, so any page they load could message
+// this worker and read or replace every site's cookies. Both engines remove navigator.serviceWorker
+// from proxied pages; as a second line, only Persec's own pages that need these messages are
+// answered: the home page (settings, cookie notice) and Settings, which opens in a tab frame.
+// A proxied page's URL is under an engine prefix, so it never matches. This is not a wall against
+// a site that escapes the engines' rewriting: with the origin's IndexedDB it could read the
+// saved jar directly. Scramjet's own messages (scramjet$type) go to its own listener, not here.
+const TRUSTED_PAGES = new Set(['/', '/st']);
+
+function isTrustedSender(source) {
+  if (source?.type !== 'window') return false;
+  try {
+    const url = new URL(source.url);
+    return url.origin === self.location.origin && TRUSTED_PAGES.has(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+const isJar = data => !!data && typeof data === 'object' && !Array.isArray(data);
+
 async function handleMessage(event) {
+  if (!isTrustedSender(event.source)) return;
   const { type, data } = event.data || {};
   const reply = event.ports[0];
-  if (type === 'playgroundData') playgroundData = event.data;
   if (type === 'ADBLOCK') adblockEnabled = !!data?.enabled;
   if (type === 'CLEAR_SITE_DATA') {
     // Scramjet keeps its cookie jar in memory as well as in IndexedDB, which the page clears.
@@ -93,7 +114,7 @@ async function handleMessage(event) {
     await loadJar();
     reply?.postMessage(currentJar());
   }
-  if (type === 'SET_COOKIES') {
+  if (type === 'SET_COOKIES' && isJar(data)) {
     await loadJar();
     scramjet.cookieStore.load(JSON.stringify({ ...currentJar(), ...data }));
     await saveJar();
@@ -102,8 +123,19 @@ async function handleMessage(event) {
 }
 
 self.addEventListener('message', event => {
+  // Scramjet's own listener (added first) takes the config a page sends, but keeps the URL codec
+  // from the first config it read, so after a rebuild (new URL key) every new URL was decoded with
+  // the old key. The page saves the config to IndexedDB before sending it, so drop it here and the
+  // next request reads it back from there, codec included. Not a trust decision: the stored config
+  // is what any page of this origin wrote.
+  if (event.data?.scramjet$type === 'loadConfig') scramjet.config = null;
   event.waitUntil(handleMessage(event));
 });
+
+// A new build ships new URL keys and prefixes. Take over at once, instead of leaving the old
+// worker, with the old keys, in charge until every Persec tab has been closed.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 
 // Reads Persec's adBlock setting without creating the settings database if it doesn't exist yet.
 function readAdblockSetting() {
@@ -172,9 +204,9 @@ function targetUrl(requestUrl) {
   try {
     const u = new URL(requestUrl);
     if (u.origin !== self.location.origin) return null;
-    const scPrefix = scramjet.config?.prefix || '/v1/data/';
+    const scPrefix = scramjet.config?.prefix || PERSEC_PATHS.scPrefix;
     const uv = self.__uv$config;
-    // Both engines share one URL codec (src/utils/codec.ts), which /tmp/config.js provides here.
+    // Both engines share one URL codec (src/utils/codec.ts), which the Ultraviolet config provides here.
     if (uv && u.pathname.startsWith(scPrefix)) {
       return new URL(uv.decodeUrl(u.pathname.slice(scPrefix.length)));
     }

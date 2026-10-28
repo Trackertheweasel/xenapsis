@@ -1,0 +1,2 @@
+# Store and check out text files with LF everywhere, so Windows checkouts match CI and Prettier.
+* text=auto eol=lf

@@ -5,7 +5,7 @@
 //
 // URL_KEY is replaced with a string literal at build time (astro.config.ts) and these functions
 // must not use anything else from this module: Scramjet stringifies its codec and re-creates it
-// in the service worker, and /tmp/config.js embeds the same source for Ultraviolet.
+// in the service worker, and the Ultraviolet config ([uvconfig].js.ts) embeds the same source for Ultraviolet.
 
 export const encodeUrl = (url: string): string => {
   if (!url) return url;
