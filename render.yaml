@@ -8,3 +8,9 @@ services:
       # wrong-code limit. Cloudflare, in front of Render, sets this header to the visitor's address.
       - key: PERSEC_CLIENT_IP_HEADER
         value: true-client-ip
+      # Invite-only from the first start, so a fresh deploy is never an open proxy. Copy the
+      # generated secret from the dashboard and mint codes with `pnpm invite` (see the README).
+      - key: PERSEC_INVITE_ONLY
+        value: "true"
+      - key: PERSEC_SECRET
+        generateValue: true
