@@ -26,7 +26,7 @@ export function clientIp(access: AccessConfig, req: FastifyRequest): string {
 // Called on the root instance, not through app.register: a hook added inside a plugin only covers
 // that plugin's routes, which would leave static files, the search API and pages ungated.
 export function registerAccessGate(app: FastifyInstance, access: AccessConfig) {
-  const OPEN_PATHS = new Set(['/enter', '/favicon.ico', '/robots.txt']);
+  const OPEN_PATHS = new Set(['/enter', '/favicon.ico', '/healthz', '/robots.txt']);
 
   app.addContentTypeParser(
     'application/x-www-form-urlencoded',

@@ -6,6 +6,8 @@ name: persec
 
 services:
   persec:
+    # Named so `persec rollback` can swap back to the previous build (setup.sh keeps it).
+    image: persec:latest
     build:
       context: ..
       # Interpolated from deploy/.env so the client bundle and the server agree on the path.
@@ -14,6 +16,7 @@ services:
         PUBLIC_PERSEC_URL_KEY: ${PUBLIC_PERSEC_URL_KEY:-}
         PUBLIC_PERSEC_PROXY_KEY: ${PUBLIC_PERSEC_PROXY_KEY:-}
     restart: unless-stopped
+    # The image's health check (/healthz) marks it unhealthy in `docker ps` if it stops answering.
     env_file: .env
     environment:
       # Caddy always overwrites this header with the visitor's real address (see Caddyfile).

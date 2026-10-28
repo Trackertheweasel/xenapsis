@@ -119,6 +119,15 @@ test('Without an invite, pages redirect to sign-in and everything else is refuse
   }
 });
 
+test('The health check answers without an invite, in both modes', async () => {
+  for (const env of [{}, inviteOnly]) {
+    const res = await (await server(env)).inject({ url: '/healthz' });
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body, 'ok');
+    assert.equal(res.headers['cache-control'], 'no-store');
+  }
+});
+
 test('Open mode has no gate', async () => {
   const app = await server();
   const page = await app.inject({ url: '/', headers: { accept: 'text/html' } });

@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { version } from '../package.json' with { type: 'json' };
+import pkg from '../package.json' with { type: 'json' };
 import type { AccessConfig } from './access';
 
 export function printBanner(port: number, access: AccessConfig | null) {
@@ -22,7 +22,7 @@ export function printBanner(port: number, access: AccessConfig | null) {
   console.log(
     chalk.hex('#bdc3c7')('   └─ ') +
       chalk.hex('#ecf0f1')('Version: ') +
-      chalk.hex('#f39c12')(`v${version}`),
+      chalk.hex('#f39c12')(`v${pkg.version}`),
   );
   console.log();
   console.log(
