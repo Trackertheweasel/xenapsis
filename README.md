@@ -342,6 +342,26 @@ The model picker lists what OpenRouter offers right now (fetched by the server a
 
 The Astro dev server (`pnpm dev`) has no `/api/ai` routes; run `pnpm build && pnpm start` to try PerSec AI locally.
 
+## Web AI (ChatGPT and Claude)
+
+`/webai` (`persec://webai`, or **Web AI** at the top of the PerSec AI page) opens the real [ChatGPT](https://chatgpt.com/) and [Claude](https://claude.ai/) websites through the normal proxy. It is not PerSec AI and doesn't use OpenRouter. People use the sites themselves, with their own accounts. Persec doesn't touch either company's API, sign-in or credentials.
+
+Both sites are behind Cloudflare and may show a "Just a moment…" or "couldn't verify your browser" check when opened through a proxy. Persec doesn't try to get past these; if one won't clear, the site can't be used through this server. [docs/web-ai.md](docs/web-ai.md) has the proxy audit (WebSockets, streaming, cookies, storage, security headers), the known limits, and a compatibility checklist to run on your deployment.
+
+### Browser mode (optional, off by default)
+
+An owner with a spare machine can also run [Camoufox](https://github.com/daijro/camoufox) as a separate browser service. Each signed-in person then gets an isolated server-side browser session for ChatGPT or Claude. It needs invite-only mode, at least 2 GB of RAM for the browser service, `playwright-core` installed next to Persec, and these settings:
+
+| Variable                      | What it does                                                    |
+| ----------------------------- | --------------------------------------------------------------- |
+| `CAMOUFOX_ENABLED`            | `true` to turn browser mode on                                  |
+| `CAMOUFOX_WS_ENDPOINT`        | The browser service's Playwright endpoint, on a private network |
+| `CAMOUFOX_MAX_SESSIONS`       | Browsers open at once (default 2)                               |
+| `CAMOUFOX_SESSION_TIMEOUT_MS` | Longest a session lives (default 30 minutes)                    |
+| `CAMOUFOX_IDLE_TIMEOUT_MS`    | How long an unused session stays open (default 5 minutes)       |
+
+Sessions can be viewed and moved between pages, but typing into them isn't implemented yet. See [docs/browser-runtime.md](docs/browser-runtime.md) for the evaluation, security model, deployment steps and remaining work.
+
 ---
 
 ## Sponsors (ads)
