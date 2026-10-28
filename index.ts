@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadAccess } from 'serverlib/access';
+import { loadAiConfig } from 'serverlib/ai/index';
 import { buildApp } from 'serverlib/app';
 import { printBanner } from 'serverlib/banner';
 import { wispPath } from 'serverlib/env';
@@ -34,6 +35,8 @@ const app = await buildApp({
   loginsDir: process.env.PERSEC_DATA_DIR
     ? path.join(process.env.PERSEC_DATA_DIR, 'logins')
     : path.join(__dirname, 'data', 'logins'),
+  // OPENROUTER_API_KEY and friends. Without a key, PerSec AI reports itself off and nothing else changes.
+  ai: { config: loadAiConfig() },
   site: {
     clientRoot: path.join(__dirname, 'dist', 'client'),
     handler,

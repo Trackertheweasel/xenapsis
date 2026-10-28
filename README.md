@@ -16,6 +16,7 @@
 - Tab system
 - Keyboard shortcuts
 - Optional saved logins: an encrypted backup of your site logins, tied to your invite code
+- PerSec AI: a built-in chat assistant powered by OpenRouter, free models by default
 - And much more
 
 ---
@@ -296,6 +297,50 @@ On an invite-only Persec, a cookie notice on the first visit asks people whether
 - Backups are stored in `data/logins` (with Docker Compose, the `persec_data` volume, which `persec update` keeps). Set `PERSEC_DATA_DIR` to store them elsewhere. Render and Codespaces have no lasting disk, so backups there are lost on every restart.
 - A backup is deleted when its owner turns saved logins off or clears site data, and automatically when it hasn't been updated for 90 days.
 - Backup servers (`persec export`) share invites but not backups: each server keeps its own. Copy them across with `persec logins export` and `persec logins import`; neither server can read them.
+
+---
+
+## PerSec AI
+
+PerSec AI is a chat assistant at `/ai` (`persec://ai`, or the sparkles button in the sidebar). It runs through [OpenRouter](https://openrouter.ai), one API that reaches models from many companies, including a pool of free ones:
+
+```
+browser  ->  Persec /api/ai/*  ->  OpenRouter  ->  the chosen model
+```
+
+The browser only ever talks to Persec. Persec holds the OpenRouter key and makes the request itself, so the key never reaches a page, a cookie, browser storage or a saved-logins backup. Clients pick a model by its ID and nothing else; they can't name an upstream address, header or provider, so the AI routes can't be used as a general proxy.
+
+### Turning it on
+
+1. Create a key at [openrouter.ai/keys](https://openrouter.ai/keys). A free account works with the free models. Setting a credit limit on the key is a good idea.
+2. Add it to the server's environment (with Docker Compose, `deploy/.env`) and restart:
+
+   ```
+   OPENROUTER_API_KEY=sk-or-v1-...
+   ```
+
+Without a key, Persec runs normally and the AI page says PerSec AI isn't set up. PerSec AI also needs [invite-only mode](#invite-only-mode): on a server open to everyone, anyone who found it could spend your OpenRouter allowance, so it stays off unless you set `PERSEC_AI_ALLOW_OPEN=true` as well.
+
+| Variable                     | What it does                                                                                                                                                                            |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENROUTER_API_KEY`         | Your OpenRouter key. Required; PerSec AI is off without it                                                                                                                              |
+| `OPENROUTER_DEFAULT_MODEL`   | The model chosen until someone picks another (default `openrouter/free`, which lets OpenRouter pick whichever free model is available)                                                  |
+| `OPENROUTER_ALLOWED_MODELS`  | Unset or `free`: free models only, so nobody can run up a bill. `all`: every model OpenRouter lists. Or a comma-separated list of model IDs                                             |
+| `OPENROUTER_MAX_TOKENS`      | Longest reply, in tokens (unset: the model's own limit)                                                                                                                                 |
+| `AI_RATE_LIMIT_WINDOW_MS`    | Length of the rate-limit window (default 60000, one minute)                                                                                                                             |
+| `AI_RATE_LIMIT_MAX_REQUESTS` | Messages each invite may send per window (default 20). Each invite may also have two replies generating at once                                                                         |
+| `AI_UPSTREAM_TIMEOUT_MS`     | How long to wait for a model to start answering (default 60000)                                                                                                                         |
+| `PERSEC_AI_ALLOW_OPEN`       | `true` to run PerSec AI on a server with no invite codes, rate limited per address instead (behind a reverse proxy, set `PERSEC_CLIENT_IP_HEADER` so each visitor gets their own limit) |
+
+The model picker lists what OpenRouter offers right now (fetched by the server and cached for 10 minutes), with each model's provider, context length and whether it's free. Only free models are offered unless you set `OPENROUTER_ALLOWED_MODELS=all` (or list the IDs you want); paid models use your OpenRouter credits.
+
+### What happens to messages
+
+- Conversations are kept in each person's own browser (IndexedDB), never on the Persec server. People can turn that off or clear a conversation on the page.
+- The server logs no messages, replies or keys. Failures are logged by their error code only (for example `PerSec AI: upstream_auth` when the key is wrong).
+- Each message, with the rest of its conversation, goes to OpenRouter and on to the company running the chosen model. OpenRouter sees the server's address, not the visitor's. The page and the privacy page say so; it is not local or end-to-end private.
+
+The Astro dev server (`pnpm dev`) has no `/api/ai` routes; run `pnpm build && pnpm start` to try PerSec AI locally.
 
 ---
 

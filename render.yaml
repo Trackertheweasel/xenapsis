@@ -15,3 +15,7 @@ services:
         value: "true"
       - key: PERSEC_SECRET
         generateValue: true
+      # PerSec AI (see the README). Render asks for the value when the service is created; leave it
+      # empty to keep PerSec AI off.
+      - key: OPENROUTER_API_KEY
+        sync: false
