@@ -25,6 +25,9 @@ export function initToggles() {
         if (key === 'adBlock') {
           postToServiceWorker({ type: 'ADBLOCK', data: { enabled: on } });
         }
+        if (key === 'blockWebRTC') {
+          postToServiceWorker({ type: 'WEBRTC', data: { enabled: on } });
+        }
 
         switch (key) {
           case 'cloak': {

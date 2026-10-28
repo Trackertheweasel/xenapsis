@@ -74,6 +74,9 @@ export class SettingsManager {
       }
     }
 
+    const webrtcToggle = document.querySelector('[data-toggle="blockWebRTC"]') as HTMLElement;
+    webrtcToggle?.classList.toggle('active', cfg.blockWebRTC !== 'off');
+
     const exitToggle = document.querySelector('[data-toggle="beforeUnload"]') as HTMLElement;
     if (cfg.beforeUnload === 'on') exitToggle?.classList.add('active');
 
@@ -127,6 +130,7 @@ export class SettingsManager {
     await this.apply(cfg);
 
     if (cfg.adBlock === 'on') postToServiceWorker({ type: 'ADBLOCK', data: { enabled: true } });
+    if (cfg.blockWebRTC !== 'off') postToServiceWorker({ type: 'WEBRTC', data: { enabled: true } });
 
     initNav();
     initScrollSpy();
