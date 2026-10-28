@@ -90,9 +90,12 @@ export async function registerAiRoutes(app: FastifyInstance, options: AiRouteOpt
   const limiter = new AiLimiter(config.rateLimit);
 
   // Who a request counts against: the invite it signed in with, or, on an open server that allows
-  // PerSec AI, its address.
+  // PerSec AI, its address (from the reverse proxy's header when one is set).
   const keyOf = (req: FastifyRequest): string => {
-    if (!access) return `ip:${req.ip}`;
+    if (!access) {
+      const header = config.clientIpHeader && req.headers[config.clientIpHeader];
+      return `ip:${(typeof header === 'string' && header) || req.ip}`;
+    }
     const subject = tokenSubject(access, readCookie(req.headers.cookie, ACCESS_COOKIE));
     if (subject === null) throw Object.assign(new Error('Invite required'), { statusCode: 401 });
     return `invite:${subject}`;
@@ -137,12 +140,13 @@ export async function registerAiRoutes(app: FastifyInstance, options: AiRouteOpt
           const key = keyOf(req);
           const chat = parseChatBody(req.body, config.limits, config.defaultModel);
 
+          // Checked before the limit is charged, so a refused model doesn't use up the allowance.
+          await catalog.check(chat.model);
           const wait = limiter.take(key);
           if (wait) {
             reply.header('Retry-After', String(wait));
             throw new AiError('rate_limited');
           }
-          await catalog.check(chat.model);
           const release = limiter.openStream(key);
           if (!release) throw new AiError('too_many_streams');
 
