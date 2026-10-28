@@ -16,15 +16,18 @@ import {
 import type { Transport } from '../src/utils/transport.ts';
 
 // A WebSocket stand-in that plays back one scripted connection.
-function fakeSocket(script: 'greets' | 'refuses' | 'silent' | 'hangs-up') {
+function fakeSocket(script: 'greets' | 'refuses' | 'errors' | 'silent' | 'hangs-up') {
   return class {
     onopen: (() => void) | null = null;
     onmessage: (() => void) | null = null;
+    onerror: (() => void) | null = null;
     onclose: (() => void) | null = null;
     closed = false;
     constructor() {
       setTimeout(() => {
         if (script === 'refuses') return this.onclose?.();
+        // Node 22's WebSocket when the server drops the handshake: an error and no close.
+        if (script === 'errors') return this.onerror?.();
         this.onopen?.();
         if (script === 'greets') this.onmessage?.();
         if (script === 'hangs-up') this.onclose?.();
@@ -45,6 +48,7 @@ const kindOf = (p: Promise<unknown>) =>
 test('The probe tells a working tunnel from a blocked, silent or closed one', async () => {
   assert.equal(await kindOf(probeWisp('ws://x/w/', 200, fakeSocket('greets'))), 'ok');
   assert.equal(await kindOf(probeWisp('ws://x/w/', 200, fakeSocket('refuses'))), 'refused');
+  assert.equal(await kindOf(probeWisp('ws://x/w/', 200, fakeSocket('errors'))), 'refused');
   assert.equal(await kindOf(probeWisp('ws://x/w/', 50, fakeSocket('silent'))), 'timeout');
   assert.equal(await kindOf(probeWisp('ws://x/w/', 200, fakeSocket('hangs-up'))), 'closed');
   assert.equal(await kindOf(probeWisp('not a url', 200)), 'refused', 'a bad address fails cleanly');

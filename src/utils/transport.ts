@@ -77,7 +77,7 @@ export function probeWisp(
     let opened = false;
     const done = (err?: TransportError) => {
       clearTimeout(timer);
-      ws.onopen = ws.onmessage = ws.onclose = null;
+      ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
       try {
         ws.close();
       } catch {}
@@ -96,7 +96,9 @@ export function probeWisp(
     );
     ws.onopen = () => (opened = true);
     ws.onmessage = () => done();
-    ws.onclose = () =>
+    // Either ends it: browsers send error then close, but some clients (Node 22) only send error
+    // when the server drops the connection during the handshake.
+    ws.onerror = ws.onclose = () =>
       done(
         opened
           ? new TransportError('closed', 'The server closed the tunnel before answering.')
