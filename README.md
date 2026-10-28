@@ -321,18 +321,18 @@ The browser only ever talks to Persec. Persec holds the OpenRouter key and makes
 
 Without a key, Persec runs normally and the AI page says PerSec AI isn't set up. PerSec AI also needs [invite-only mode](#invite-only-mode): on a server open to everyone, anyone who found it could spend your OpenRouter allowance, so it stays off unless you set `PERSEC_AI_ALLOW_OPEN=true` as well.
 
-| Variable                     | What it does                                                                                                                           |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `OPENROUTER_API_KEY`         | Your OpenRouter key. Required; PerSec AI is off without it                                                                             |
-| `OPENROUTER_DEFAULT_MODEL`   | The model chosen until someone picks another (default `openrouter/free`, which lets OpenRouter pick whichever free model is available) |
-| `OPENROUTER_ALLOWED_MODELS`  | Unset: every model OpenRouter lists. `free`: free models only, so nobody can run up a bill. Or a comma-separated list of model IDs     |
-| `OPENROUTER_MAX_TOKENS`      | Longest reply, in tokens (unset: the model's own limit)                                                                                |
-| `AI_RATE_LIMIT_WINDOW_MS`    | Length of the rate-limit window (default 60000, one minute)                                                                            |
-| `AI_RATE_LIMIT_MAX_REQUESTS` | Messages each invite may send per window (default 20). Each invite may also have two replies generating at once                        |
-| `AI_UPSTREAM_TIMEOUT_MS`     | How long to wait for a model to start answering (default 60000)                                                                        |
-| `PERSEC_AI_ALLOW_OPEN`       | `true` to run PerSec AI on a server with no invite codes, rate limited per address instead                                             |
+| Variable                     | What it does                                                                                                                                                                            |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENROUTER_API_KEY`         | Your OpenRouter key. Required; PerSec AI is off without it                                                                                                                              |
+| `OPENROUTER_DEFAULT_MODEL`   | The model chosen until someone picks another (default `openrouter/free`, which lets OpenRouter pick whichever free model is available)                                                  |
+| `OPENROUTER_ALLOWED_MODELS`  | Unset or `free`: free models only, so nobody can run up a bill. `all`: every model OpenRouter lists. Or a comma-separated list of model IDs                                             |
+| `OPENROUTER_MAX_TOKENS`      | Longest reply, in tokens (unset: the model's own limit)                                                                                                                                 |
+| `AI_RATE_LIMIT_WINDOW_MS`    | Length of the rate-limit window (default 60000, one minute)                                                                                                                             |
+| `AI_RATE_LIMIT_MAX_REQUESTS` | Messages each invite may send per window (default 20). Each invite may also have two replies generating at once                                                                         |
+| `AI_UPSTREAM_TIMEOUT_MS`     | How long to wait for a model to start answering (default 60000)                                                                                                                         |
+| `PERSEC_AI_ALLOW_OPEN`       | `true` to run PerSec AI on a server with no invite codes, rate limited per address instead (behind a reverse proxy, set `PERSEC_CLIENT_IP_HEADER` so each visitor gets their own limit) |
 
-The model picker lists what OpenRouter offers right now (fetched by the server and cached for 10 minutes), with each model's provider, context length and whether it's free. Paid models use your OpenRouter credits; set `OPENROUTER_ALLOWED_MODELS=free` if you only want to offer free ones.
+The model picker lists what OpenRouter offers right now (fetched by the server and cached for 10 minutes), with each model's provider, context length and whether it's free. Only free models are offered unless you set `OPENROUTER_ALLOWED_MODELS=all` (or list the IDs you want); paid models use your OpenRouter credits.
 
 ### What happens to messages
 
