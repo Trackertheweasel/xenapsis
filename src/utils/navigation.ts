@@ -93,7 +93,7 @@ function fwd() {
 function currentUrl(f: HTMLIFrameElement): string {
   try {
     const href = f.contentWindow?.location.href || f.src;
-    return decodeProxyUrl(new URL(href, location.origin).pathname);
+    return decodeProxyUrl(href);
   } catch {
     return '';
   }

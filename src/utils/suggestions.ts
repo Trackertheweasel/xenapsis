@@ -152,7 +152,8 @@ function move(by: 1 | -1): void {
 function esc(text: string): string {
   const t = document.createElement('div');
   t.textContent = text;
-  return t.innerHTML;
+  // innerHTML leaves " as is, and these strings also go inside data-value="...".
+  return t.innerHTML.replace(/"/g, '&quot;');
 }
 
 function render(sugg: string[], qm: [string, string][], math: string | null, sq: string): void {

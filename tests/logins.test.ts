@@ -94,3 +94,44 @@ test('A backup copied to another server is found there for the same person', asy
     await Promise.all([a, b].map(d => rm(d, { recursive: true, force: true })));
   }
 });
+
+test('A backup that fails to download is never taken for no backup', async () => {
+  // Just enough IndexedDB for loginsync.ts to find the key the sign-in page kept.
+  const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const later = (fn: () => void) => setTimeout(fn);
+  (globalThis as any).indexedDB = {
+    open() {
+      const req: any = {};
+      later(() => {
+        req.result = {
+          objectStoreNames: { contains: () => true },
+          transaction: () => {
+            const tx: any = {};
+            const get: any = { result: key };
+            tx.objectStore = () => ({ get: () => get });
+            later(() => tx.oncomplete());
+            return tx;
+          },
+          close() {},
+        };
+        req.onsuccess();
+      });
+      return req;
+    },
+  };
+  const { restore } = await import('../src/utils/loginsync.ts');
+  const realFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response(null, { status: 204 });
+    assert.equal(await restore(), 'none');
+    globalThis.fetch = async () => new Response('', { status: 500 });
+    await assert.rejects(restore());
+    globalThis.fetch = async () => {
+      throw new TypeError('offline');
+    };
+    await assert.rejects(restore());
+  } finally {
+    globalThis.fetch = realFetch;
+    delete (globalThis as any).indexedDB;
+  }
+});

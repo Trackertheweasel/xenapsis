@@ -3,3 +3,8 @@ services:
     name: persec
     env: docker
     plan: free
+    envVars:
+      # Every request reaches Persec from Render's proxy, so without this all visitors share one
+      # wrong-code limit. Cloudflare, in front of Render, sets this header to the visitor's address.
+      - key: PERSEC_CLIENT_IP_HEADER
+        value: true-client-ip

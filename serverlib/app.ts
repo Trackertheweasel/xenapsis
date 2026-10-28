@@ -89,8 +89,7 @@ export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions
   }
 
   app.setNotFoundHandler((_, reply) => {
-    const notFoundText = fs.existsSync('404') ? fs.readFileSync('404', 'utf8') : '404 Not Found';
-    reply.code(404).type('text/plain').send(notFoundText);
+    reply.code(404).type('text/plain').send('404 Not Found');
   });
 
   return app;
