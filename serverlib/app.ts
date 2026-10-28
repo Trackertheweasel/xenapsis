@@ -9,6 +9,7 @@ import { constants as zlibConstants } from 'node:zlib';
 import type { AccessConfig } from './access';
 import type { DeployPaths } from './env';
 import { registerAccessGate } from './routes/access';
+import { registerAdminRoutes } from './routes/admin';
 import { registerLoginRoutes } from './routes/logins';
 import { handleQuery } from './routes/query';
 import { staticFileOptions } from './static';
@@ -63,6 +64,7 @@ export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions
   if (access) {
     registerAccessGate(app, access);
     registerLoginRoutes(app, access, loginsDir);
+    if (access.adminPassword) registerAdminRoutes(app, access, access.adminPassword);
   }
 
   await app.register(fastifyMiddie);

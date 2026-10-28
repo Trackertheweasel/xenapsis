@@ -100,3 +100,17 @@ test('saved logins move as an archive, never replacing a newer backup', { skip: 
   );
   assert.equal(persec(install, 'logins').status, 1);
 });
+
+test('admin makes a password once and keeps showing the same one', { skip: !hasBash }, () => {
+  const first = persec(install, 'admin');
+  assert.equal(first.status, 0);
+  const [, password] = first.env.match(/^PERSEC_ADMIN_PASSWORD=([0-9a-f]{24})$/m) ?? [];
+  assert.ok(password, 'a generated password is saved');
+  assert.match(first.calls, /docker compose .* up -d persec/);
+  assert.match(first.stdout, /https:\/\/up\.example\.net\/admin/);
+  assert.ok(first.stdout.includes(password));
+
+  const again = persec(first.env, 'admin');
+  assert.ok(again.stdout.includes(password));
+  assert.equal(again.calls, '', 'no restart when it was already on');
+});

@@ -24,6 +24,8 @@ export interface AccessConfig {
   // does). Unset, the connection's own address is used: anyone can send this header themselves, and
   // trusting it would let a guesser pick a fresh address for every wrong code.
   clientIpHeader?: string;
+  // PERSEC_ADMIN_PASSWORD turns on per-person usage stats and the /admin page (routes/admin.ts).
+  adminPassword?: string;
 }
 
 const truthy = (v: string | undefined) => /^(1|true|yes|on)$/i.test(v?.trim() ?? '');
@@ -50,6 +52,11 @@ export function loadAccess(env: NodeJS.ProcessEnv = process.env): AccessConfig |
   const fixedSecret = env.PERSEC_SECRET?.trim();
   // Without a fixed secret, everyone has to re-enter their code whenever the server restarts.
   const secret = fixedSecret || crypto.randomBytes(32).toString('hex');
+  let adminPassword = env.PERSEC_ADMIN_PASSWORD?.trim() || undefined;
+  if (adminPassword && adminPassword.length < 12) {
+    console.warn('PERSEC_ADMIN_PASSWORD is shorter than 12 characters, so /admin stays off.');
+    adminPassword = undefined;
+  }
   return {
     codes,
     names: new Set(codes.values()),
@@ -57,6 +64,7 @@ export function loadAccess(env: NodeJS.ProcessEnv = process.env): AccessConfig |
     secret,
     minted: !!fixedSecret,
     clientIpHeader: env.PERSEC_CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
+    adminPassword,
   };
 }
 
@@ -71,7 +79,7 @@ const signInvite = (secret: string, data: string) =>
     .subarray(0, 16)
     .toString('base64url');
 
-function safeEqual(a: string, b: string): boolean {
+export function safeEqual(a: string, b: string): boolean {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
   return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);

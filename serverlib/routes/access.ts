@@ -18,6 +18,11 @@ import type { AccessConfig } from '../access';
 export const isSecure = (req: FastifyRequest) =>
   req.headers['x-forwarded-proto'] === 'https' || !!(req.raw.socket as any).encrypted;
 
+export function clientIp(access: AccessConfig, req: FastifyRequest): string {
+  const header = access.clientIpHeader && req.headers[access.clientIpHeader];
+  return (typeof header === 'string' && header) || req.ip;
+}
+
 // Called on the root instance, not through app.register: a hook added inside a plugin only covers
 // that plugin's routes, which would leave static files, the search API and pages ungated.
 export function registerAccessGate(app: FastifyInstance, access: AccessConfig) {
@@ -57,8 +62,7 @@ export function registerAccessGate(app: FastifyInstance, access: AccessConfig) {
   });
 
   app.post('/enter', (req, reply) => {
-    const header = access.clientIpHeader && req.headers[access.clientIpHeader];
-    const ip = (typeof header === 'string' && header) || req.ip;
+    const ip = clientIp(access, req);
     reply.header('Cache-Control', 'no-store').type('text/html');
     if (tooManyAttempts(ip)) {
       return reply.code(429).send(enterPage('Too many attempts. Try again in 15 minutes.'));

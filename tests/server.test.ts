@@ -168,6 +168,40 @@ test('Each person sees their own invite name, minted or not', async () => {
   assert.equal((await app.inject({ url: '/api/me' })).statusCode, 401);
 });
 
+test('The admin page needs an invite and the admin password, and is off without one', async () => {
+  const basic = (pass: string) => `Basic ${Buffer.from(`admin:${pass}`).toString('base64')}`;
+  const app = await server({ ...twoPeople, PERSEC_ADMIN_PASSWORD: 'correct-horse-battery' });
+  const { cookie } = await signIn(app, 'abc123');
+  const stats = (headers: Record<string, string>) => app.inject({ url: '/admin/stats', headers });
+
+  assert.equal((await stats({ authorization: basic('correct-horse-battery') })).statusCode, 401);
+  const noPass = await stats({ cookie });
+  assert.equal(noPass.statusCode, 401);
+  assert.match(String(noPass.headers['www-authenticate']), /^Basic/);
+  assert.equal((await stats({ cookie, authorization: basic('wrong-password!') })).statusCode, 401);
+  const ok = await stats({ cookie, authorization: basic('correct-horse-battery') });
+  assert.equal(ok.statusCode, 200);
+  assert.ok(Array.isArray(ok.json().people));
+  const page = await app.inject({
+    url: '/admin',
+    headers: { cookie, authorization: basic('correct-horse-battery'), accept: 'text/html' },
+  });
+  assert.match(page.body, /Usage by person/);
+
+  const off = await server(twoPeople);
+  const offCookie = (await signIn(off, 'abc123')).cookie;
+  assert.equal(
+    (await off.inject({ url: '/admin/stats', headers: { cookie: offCookie } })).statusCode,
+    404,
+  );
+  const short = await server({ ...twoPeople, PERSEC_ADMIN_PASSWORD: 'short' });
+  assert.equal(
+    short.hasRoute({ method: 'GET', url: '/admin' }),
+    false,
+    'weak passwords keep it off',
+  );
+});
+
 test('Saved-login backups round-trip and each person only reaches their own', async () => {
   const app = await server(twoPeople);
   const alice = (await signIn(app, 'abc123')).cookie;

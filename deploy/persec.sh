@@ -93,6 +93,20 @@ case "${1:-}" in
     echo "The site answers on:"
     for d in $domains; do echo "  https://$d"; done
     ;;
+  admin)
+    # Turns on the usage page (/admin) with a generated password, or shows the existing one.
+    password=$(sed -n 's/^PERSEC_ADMIN_PASSWORD=//p' "$env")
+    if [ -z "$password" ]; then
+      password=$(openssl rand -hex 12)
+      sed -i '/^PERSEC_ADMIN_PASSWORD=/d' "$env"
+      echo "PERSEC_ADMIN_PASSWORD=$password" >>"$env"
+      compose up -d persec
+    fi
+    echo "Usage stats for each person, live:"
+    for d in $(sed -n 's/^DOMAIN=//p' "$env"); do echo "  https://$d/admin"; done
+    echo "Sign in with your own invite code first, then this password (any username): $password"
+    echo "Keep it private. It shows when each person is online and how much they use, never which sites."
+    ;;
   update)
     curl -fsSL https://raw.githubusercontent.com/Trackertheweasel/xenapsis/master/deploy/setup.sh | bash
     ;;
@@ -168,7 +182,7 @@ case "${1:-}" in
     echo "  persec logins import < logins.tar (there)."
     ;;
   *)
-    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | export | status | logins export|import | update | logs" >&2
+    echo "Usage: persec add <name> <code> | invite <name> [days] | revoke <name> | domain [add|remove <name>] | export | status | admin | logins export|import | update | logs" >&2
     exit 1
     ;;
 esac
