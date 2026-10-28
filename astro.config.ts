@@ -158,7 +158,8 @@ export default defineConfig({
         targets: Object.entries(RUNTIME_SOURCES).map(([role, src]) => ({
           src: normalizePath(src),
           dest: PATHS.runtime.slice(1, -1),
-          rename: path.basename(PATHS.files[role as RuntimeFile]),
+          // v4 keeps the source's folders unless told to strip them; the runtime is one flat folder.
+          rename: { stripBase: true, name: path.basename(PATHS.files[role as RuntimeFile]) },
           overwrite: false,
         })),
       }) as any, // DO NOT REMOVE "AS ANY"
