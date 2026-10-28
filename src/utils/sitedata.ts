@@ -4,7 +4,15 @@ import { deleteBackup } from './loginsync';
 // site can be read by others. This wipes everything sites have saved, and the saved-logins
 // backup of it, but keeps Persec's own settings and the proxy engines' configuration.
 
-const KEEP_DATABASES = new Set(['PersecDB', 'PersecLogins', '$scramjet', '__op', 'localforage']);
+// PersecAI is the PerSec AI conversation (src/utils/aichat.ts), which has its own Clear button.
+const KEEP_DATABASES = new Set([
+  'PersecDB',
+  'PersecLogins',
+  'PersecAI',
+  '$scramjet',
+  '__op',
+  'localforage',
+]);
 // Object stores holding site data inside the proxy engines' own databases.
 const SITE_STORES: Record<string, string[]> = {
   $scramjet: ['cookies', 'redirectTrackers', 'referrerPolicies'],

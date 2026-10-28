@@ -1,0 +1,193 @@
+---
+// Static page: built once at deploy time instead of rendered on every request.
+export const prerender = true;
+import '@/main.css';
+import ImportLucide from '../layouts/lucide.astro';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>PerSec AI</title>
+    <style>
+      .ai-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: currentColor;
+        animation: ai-dot 1.2s infinite ease-in-out;
+      }
+      .ai-dot:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .ai-dot:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      @keyframes ai-dot {
+        0%,
+        80%,
+        100% {
+          opacity: 0.25;
+          transform: translateY(0);
+        }
+        40% {
+          opacity: 1;
+          transform: translateY(-3px);
+        }
+      }
+    </style>
+  </head>
+
+  <body class="bg-background font-linux text-text-header h-dvh overflow-hidden">
+    <div class="mx-auto flex h-full max-w-4xl flex-col px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-6">
+      <header class="flex flex-wrap items-start justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#6366f1]/15 text-[#a5a3ff]">
+            <i data-lucide="sparkles" class="h-5 w-5"></i>
+          </span>
+          <div>
+            <h1 class="text-xl leading-tight font-bold">PerSec AI</h1>
+            <p class="text-text-secondary text-xs">Powered by OpenRouter</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button
+            type="button"
+            data-new
+            class="flex min-h-10 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-sm hover:bg-white/10 disabled:opacity-50"
+          >
+            <i data-lucide="message-square-plus" class="h-4 w-4"></i>
+            <span>New chat</span>
+          </button>
+          <button
+            type="button"
+            data-clear
+            aria-label="Clear conversation"
+            title="Clear conversation"
+            class="flex min-h-10 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-sm hover:bg-white/10 disabled:opacity-50"
+          >
+            <i data-lucide="eraser" class="h-4 w-4"></i>
+            <span class="max-sm:sr-only">Clear</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Shown when /api/ai/status says PerSec AI is off. -->
+      <section data-off hidden class="bg-background-overlay/60 mt-8 rounded-xl border border-white/6 p-6 text-center">
+        <i data-lucide="info" class="text-text-secondary mx-auto mb-3 h-6 w-6"></i>
+        <p data-off-text class="text-text-secondary text-sm">
+          Checking whether PerSec AI is available…
+        </p>
+      </section>
+
+      <div data-chat class="flex min-h-0 flex-1 flex-col">
+        <div class="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+          <label class="flex min-w-0 flex-col gap-1">
+            <span class="text-text-secondary text-xs font-medium">Model</span>
+            <select
+              data-model
+              class="bg-background-overlay/80 min-h-10 w-full min-w-0 truncate rounded-lg border border-white/8 px-3 text-sm focus:border-[#6366f1]/50 focus:outline-none disabled:opacity-60"
+            >
+              <option value="openrouter/free">OpenRouter Free</option>
+            </select>
+          </label>
+          <label class="text-text-secondary flex items-center gap-2 text-sm sm:mt-5">
+            <input data-free-only type="checkbox" checked class="h-4 w-4 accent-[#6366f1]" />
+            Free models only
+          </label>
+          <p data-model-info class="text-text-secondary min-h-4 text-xs sm:col-span-2"></p>
+        </div>
+
+        <p class="mt-2 flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs leading-relaxed text-amber-100/90">
+          <i data-lucide="shield" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+          <span>
+            Messages you send here go from this server to OpenRouter, which passes them to the company that runs the
+            selected model. They are not processed on your device and are not end-to-end encrypted. Avoid sharing
+            anything sensitive.
+          </span>
+        </p>
+
+        <div class="relative mt-3 min-h-0 flex-1">
+          <div data-empty class="flex h-full flex-col items-center justify-center px-6 text-center">
+            <i data-lucide="sparkles" class="mb-3 h-8 w-8 text-[#a5a3ff]/70"></i>
+            <h2 class="mb-1 font-semibold">Ask PerSec AI anything</h2>
+            <p class="text-text-secondary max-w-sm text-sm">
+              Pick a model above, or keep OpenRouter Free and it will use whichever free model is available.
+            </p>
+          </div>
+          <div
+            data-log
+            role="log"
+            aria-live="polite"
+            aria-label="Conversation"
+            hidden
+            class="absolute inset-0 space-y-3 overflow-y-auto overscroll-contain pr-1 pb-2 text-[15px]"
+          ></div>
+        </div>
+
+        <form data-composer class="mt-2">
+          <div class="bg-background-overlay/80 flex items-end gap-2 rounded-2xl border border-white/8 p-2 focus-within:border-[#6366f1]/50">
+            <label for="ai-input" class="sr-only">
+              Message
+            </label>
+            <textarea
+              id="ai-input"
+              data-input
+              rows="1"
+              enterkeyhint="send"
+              placeholder="Message PerSec AI"
+              class="max-h-[200px] min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-[15px] leading-6 placeholder:text-gray-500 focus:outline-none"
+            ></textarea>
+            <button
+              type="submit"
+              data-send
+              aria-label="Send"
+              title="Send (Enter)"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6366f1] text-white hover:bg-[#5558e6]"
+            >
+              <i data-lucide="send-horizontal" class="h-4.5 w-4.5"></i>
+            </button>
+            <button
+              type="button"
+              data-stop
+              hidden
+              aria-label="Stop generating"
+              title="Stop generating"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white hover:bg-white/15"
+            >
+              <i data-lucide="square" class="h-4 w-4 fill-current"></i>
+            </button>
+          </div>
+          <div class="text-text-secondary mt-1.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-1 text-xs">
+            <p data-status role="status" class="min-h-4"></p>
+            <details class="group">
+              <summary class="cursor-pointer select-none hover:text-white">Options</summary>
+              <div class="bg-background-overlay mt-2 w-[min(28rem,calc(100vw-2rem))] space-y-3 rounded-xl border border-white/8 p-3 max-sm:fixed max-sm:inset-x-4 max-sm:bottom-24 max-sm:w-auto sm:absolute sm:right-6 sm:bottom-24 z-10 shadow-2xl">
+                <label class="flex items-center gap-2 text-sm">
+                  <input data-keep type="checkbox" checked class="h-4 w-4 accent-[#6366f1]" />
+                  Keep this conversation in this browser
+                </label>
+                <label class="block text-sm">
+                  <span class="mb-1 block">Instructions for the model (optional)</span>
+                  <textarea
+                    data-system
+                    rows="3"
+                    class="bg-background/80 w-full rounded-lg border border-white/8 p-2 text-sm focus:border-[#6366f1]/50 focus:outline-none"
+                  ></textarea>
+                </label>
+                <p>
+                  Conversations stay in this browser and are never stored on this server. Sites you open in Persec share
+                  its storage, so clear the conversation when you're done if that matters.
+                </p>
+              </div>
+            </details>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <ImportLucide />
+    <script src="@scripts/aichat"></script>
+  </body>
+</html>

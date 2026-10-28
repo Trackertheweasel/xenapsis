@@ -8,9 +8,12 @@ import { createServer } from 'node:http';
 import { constants as zlibConstants } from 'node:zlib';
 import type { AccessConfig } from './access';
 import { adSlot, handleAd } from './ads';
+import { loadAiConfig } from './ai/index';
+import type { AiConfig, ChatProvider } from './ai/index';
 import type { DeployPaths } from './env';
 import { registerAccessGate } from './routes/access';
 import { registerAdminRoutes } from './routes/admin';
+import { registerAiRoutes } from './routes/ai';
 import { registerLoginRoutes } from './routes/logins';
 import { handleQuery } from './routes/query';
 import { staticFileOptions } from './static';
@@ -26,11 +29,14 @@ export interface AppOptions {
   // The built site (dist/). Left out, only the server's own routes run, which is what tests use.
   // paths is the build's own (dist/server/paths.json), for cache headers.
   site?: { clientRoot: string; handler: NodeHandler; paths: DeployPaths };
+  // PerSec AI (serverlib/ai/). Left out, it is off, as it is without an OpenRouter key. provider
+  // replaces the real OpenRouter client, for tests.
+  ai?: { config: AiConfig; provider?: ChatProvider };
 }
 
 // Composition only: this wires the server's parts together. Put logic in the module it belongs to
 // (routes/, access.ts, ads.ts, wisp.ts, static.ts) so it can be tested on its own.
-export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions) {
+export async function buildApp({ access, wispPath, loginsDir, site, ai }: AppOptions) {
   const app = Fastify({
     logger: false,
     serverFactory: handler => {
@@ -73,6 +79,14 @@ export async function buildApp({ access, wispPath, loginsDir, site }: AppOptions
     registerLoginRoutes(app, access, loginsDir);
     if (access.adminPassword) registerAdminRoutes(app, access, access.adminPassword);
   }
+
+  // After the gate, which covers these routes too. Registered in every mode so /api/ai/status can
+  // say why PerSec AI is off.
+  await registerAiRoutes(app, {
+    access,
+    config: ai?.config ?? loadAiConfig({}),
+    provider: ai?.provider,
+  });
 
   await app.register(fastifyMiddie);
   if (site) await app.register(fastifyStatic, staticFileOptions(site.clientRoot, site.paths));
