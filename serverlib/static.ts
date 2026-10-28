@@ -1,4 +1,5 @@
-import type { FastifyStaticOptions, SetHeadersResponse } from '@fastify/static';
+import type { FastifyStaticOptions } from '@fastify/static';
+import type { FastifyReply } from 'fastify';
 import path from 'node:path';
 import type { DeployPaths } from './env';
 
@@ -18,11 +19,13 @@ export function staticFileOptions(clientRoot: string, paths: DeployPaths): Fasti
     decorateReply: true,
     // Let setHeaders decide Cache-Control instead of the plugin's default "max-age=0".
     cacheControl: false,
-    setHeaders(res: SetHeadersResponse, filePath: string) {
-      res.setHeader('Cache-Control', cacheControlFor(clientRoot, filePath, paths));
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    setHeaders(reply: FastifyReply, filePath: string) {
+      reply.headers({
+        'Cache-Control': cacheControlFor(clientRoot, filePath, paths),
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+      });
     },
     root: clientRoot,
     // Serves prerendered pages (dist/client/st.html) at their clean URLs (/st).
