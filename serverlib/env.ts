@@ -53,7 +53,7 @@ export interface DeployPaths {
 // Fixed paths (/sw.js, /bm/worker.js, /v1/data/...) are the same on every Persec install, so a
 // filter can match them to spot the proxy. Every one is derived from a per-build seed instead, or
 // kept stable across builds/servers by setting PUBLIC_PERSEC_PROXY_KEY. This only beats matching on
-// paths: the files' contents are the public packages', and the browser can see every path.
+// paths, and the browser can see every path. The files' contents are disguised by build/disguise.ts.
 export function deployPaths(raw = process.env.PUBLIC_PERSEC_PROXY_KEY): DeployPaths {
   const seed = raw?.trim() || randomBytes(16).toString('hex');
   const h = createHash('sha256').update(seed).digest('hex');
@@ -76,5 +76,27 @@ export function deployPaths(raw = process.env.PUBLIC_PERSEC_PROXY_KEY): DeployPa
     files: Object.fromEntries(
       Object.entries(RUNTIME_FILES).map(([role, ext]) => [role, `${runtime}${name(role)}${ext}`]),
     ) as Record<RuntimeFile, string>,
+  };
+}
+
+// Build-time disguise of the client's contents (build/disguise.ts). The scrub is on unless
+// PUBLIC_PERSEC_SCRUB is "off", as a way out if it ever breaks a site; masking page text is opt-in
+// with PUBLIC_PERSEC_MASK_TEXT. The scrub's names follow PUBLIC_PERSEC_PROXY_KEY like the paths do:
+// random per build, or the same on every build and server that shares the key.
+export interface DisguiseSettings {
+  scrub: boolean;
+  mask: boolean;
+  seed: string;
+}
+
+export function disguiseSettings(env: NodeJS.ProcessEnv = process.env): DisguiseSettings {
+  const flag = (v: string | undefined) => (v ?? '').trim().toLowerCase();
+  const key = env.PUBLIC_PERSEC_PROXY_KEY?.trim();
+  return {
+    scrub: !['0', 'off', 'false', 'no'].includes(flag(env.PUBLIC_PERSEC_SCRUB)),
+    mask: ['1', 'on', 'true', 'yes'].includes(flag(env.PUBLIC_PERSEC_MASK_TEXT)),
+    seed: key
+      ? createHash('sha256').update(`scrub/${key}`).digest('hex')
+      : randomBytes(16).toString('hex'),
   };
 }
