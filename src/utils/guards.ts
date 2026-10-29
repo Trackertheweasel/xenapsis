@@ -438,6 +438,8 @@ const guarded = Symbol.for('persec leak guard');
 const opensNewTab = (target: string | null | undefined) =>
   target?.trim().toLowerCase() === '_blank';
 
+const linksGuarded = Symbol.for('persec link guard');
+
 // Links and forms that open a new window would leave Persec for a bare browser tab, outside the
 // cloak and in the browser's history. They open in a new Persec tab instead (`open` gets the
 // site's real address), as window.open already does.
@@ -450,6 +452,17 @@ export function leakGuard(win: Window, open: (url: string) => void): void {
     if (url) open(new URL(String(url), page.location.href).href);
     return null;
   }) as typeof page.open;
+
+  guardLinks(win, open);
+}
+
+// The link half of the leak guard on its own: target="_blank", middle-click and Ctrl/Cmd-click
+// open a Persec tab. Ultraviolet pages get only this, so they keep the engine's real window.open
+// pop-ups that sign-in needs.
+export function guardLinks(win: Window, open: (url: string) => void): void {
+  const page = win as PageWindow & { [linksGuarded]?: boolean };
+  if (page[linksGuarded]) return;
+  page[linksGuarded] = true;
 
   const handle = (event: Event) => {
     const click = event as MouseEvent;
