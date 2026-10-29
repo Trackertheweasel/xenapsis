@@ -96,6 +96,9 @@ function configured(): boolean {
   return false;
 }
 
+// Which ad network serves live ads, or null when the static list is used. For /admin.
+export const adNetwork = (): string | null => (configured() ? network() : null);
+
 function remember<T>(map: Map<string, T>, id: string, value: T, max: number) {
   map.set(id, value);
   while (map.size > max) {
