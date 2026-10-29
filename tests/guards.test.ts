@@ -7,6 +7,7 @@ import {
   customUserAgent,
   customUserAgentValue,
   fixSearchNavigation,
+  guardLinks,
   leakGuard,
   profileFromUserAgent,
   readGuards,
@@ -109,6 +110,29 @@ test('Links and pop-ups that would open a new window open a Persec tab instead',
     new Set(opened.filter(u => !u.endsWith('.zip'))),
     new Set(['https://site.test/next', 'https://site.test/here', 'https://popup.test/']),
   );
+  win.happyDOM.close();
+});
+
+test("Ultraviolet pages send new-tab links to Persec but keep the engine's pop-ups", () => {
+  const win = new Window({ url: 'https://site.test/page' });
+  const engineOpen = () => ({}) as any;
+  win.open = engineOpen;
+  const opened: string[] = [];
+  guardLinks(win as any, url => opened.push(url));
+  guardLinks(win as any, url => opened.push(url));
+  win.document.body.innerHTML = '<a id="a" href="/next">x</a>';
+  const link = win.document.getElementById('a')!;
+  const fire = (type: string, init = {}) => {
+    const e = new win.MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+    link.dispatchEvent(e);
+    return e.defaultPrevented;
+  };
+  assert.equal(fire('auxclick', { button: 1 }), true, 'middle-click');
+  assert.equal(fire('auxclick', { button: 2 }), false, 'right-click');
+  assert.equal(fire('click', { metaKey: true }), true, 'Cmd-click');
+  assert.equal(win.open, engineOpen, 'window.open left to the engine');
+  // Guarding twice (Scramjet's leak guard, then the load handler) still opens one tab per click.
+  assert.deepEqual(opened, ['https://site.test/next', 'https://site.test/next']);
   win.happyDOM.close();
 });
 
