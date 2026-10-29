@@ -1,6 +1,6 @@
 import * as baremux from '@mercuryworkshop/bare-mux';
 import ConfigAPI from './config';
-import { GUARDS_CHANNEL, applyGuards, readGuards, type Guards } from './guards';
+import { GUARDS_CHANNEL, applyGuards, guardLinks, readGuards, type Guards } from './guards';
 import { decodeProxyUrl, encodeProxyUrl, scramjetWrapper } from './pro';
 import { internalName } from './routes';
 import { ensureTransport } from './transport';
@@ -196,6 +196,9 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
       win.addEventListener('keydown', e => onFrameKeydown?.(e), true);
       // The leak guard (Settings) already sends every new window to a Persec tab.
       if ((win as any)[Symbol.for('persec leak guard')]) return;
+      // Ultraviolet pages never get applyGuards, so without this a middle-click, Ctrl/Cmd-click or
+      // target="_blank" link opened in a tab of the real browser, outside the proxy.
+      if (guards.leakGuard) guardLinks(win, openInNewTab);
       // The engine's own window.open proxies the address and returns a real window, which sign-in
       // pop-ups need: the site navigates it, watches it, and the pop-up messages its opener (GeForce
       // NOW gives up at once when it gets null). It also handles _self, _top and _parent, which

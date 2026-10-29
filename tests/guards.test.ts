@@ -9,6 +9,7 @@ import {
   VERIFICATION_HOSTS,
   fixSearchNavigation,
   isVerificationFrame,
+  guardLinks,
   leakGuard,
   opensPopup,
   profileFromUserAgent,
@@ -213,6 +214,29 @@ test('The service worker leaves the same check frames alone', async () => {
   const sw = await readFile(new URL('../src/sw.js', import.meta.url), 'utf8');
   const list = /const VERIFICATION_HOSTS = (\[[^\]]*\]);/.exec(sw)?.[1];
   assert.deepEqual(JSON.parse(list!.replaceAll("'", '"')), VERIFICATION_HOSTS);
+});
+
+test("Ultraviolet pages send new-tab links to Persec but keep the engine's pop-ups", () => {
+  const win = new Window({ url: 'https://site.test/page' });
+  const engineOpen = () => ({}) as any;
+  win.open = engineOpen;
+  const opened: string[] = [];
+  guardLinks(win as any, url => opened.push(url));
+  guardLinks(win as any, url => opened.push(url));
+  win.document.body.innerHTML = '<a id="a" href="/next">x</a>';
+  const link = win.document.getElementById('a')!;
+  const fire = (type: string, init = {}) => {
+    const e = new win.MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+    link.dispatchEvent(e);
+    return e.defaultPrevented;
+  };
+  assert.equal(fire('auxclick', { button: 1 }), true, 'middle-click');
+  assert.equal(fire('auxclick', { button: 2 }), false, 'right-click');
+  assert.equal(fire('click', { metaKey: true }), true, 'Cmd-click');
+  assert.equal(win.open, engineOpen, 'window.open left to the engine');
+  // Guarding twice (Scramjet's leak guard, then the load handler) still opens one tab per click.
+  assert.deepEqual(opened, ['https://site.test/next', 'https://site.test/next']);
+  win.happyDOM.close();
 });
 
 test('A broken search navigation is repaired from the search box, or dropped', () => {

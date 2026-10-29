@@ -33,3 +33,37 @@ test('Decoding keeps a query a GET form appended, and survives garbage', () => {
   assert.equal(decodeUrl('not*base64'), 'not*base64');
   assert.equal(decodeUrl(''), '');
 });
+
+// Scramjet 1.1.0's unrewriteUrl (src/shared/rewriters/url.ts), which the service worker runs on
+// every request URL and on the requesting page's URL. It decodes the fragment first and passes it
+// back to the codec behind the encoded URL. Request URLs keep their fragment in a service worker.
+const scramjetRewrite = (url: string) => {
+  const real = new URL(url);
+  const hash = encodeUrl(real.hash.slice(1));
+  real.hash = '';
+  return encodeUrl(real.href) + (hash ? '#' + hash : '');
+};
+const scramjetUnrewrite = (proxied: string) => {
+  const real = new URL(proxied, 'https://persec.test/');
+  const hash = decodeUrl(real.hash.slice(1));
+  return decodeUrl(real.pathname.slice(1) + (hash ? '#' + hash : ''));
+};
+
+test('URLs with a #fragment survive the round trip through Scramjet', () => {
+  for (const url of [
+    'https://play.geforcenow.com/mall/#/layout/games',
+    'https://example.com/a?b=c#/route?x=1&y=#z',
+    'https://example.com/#',
+    ...urls,
+  ]) {
+    const back = scramjetUnrewrite('/' + scramjetRewrite(url));
+    assert.equal(new URL(back).href, new URL(url).href.replace(/#$/, ''));
+  }
+});
+
+test('A GET form query and a fragment both survive decoding', () => {
+  assert.equal(
+    decodeUrl(encodeUrl('https://example.com/s') + '?q=1#/top?a'),
+    'https://example.com/s?q=1#/top?a',
+  );
+});

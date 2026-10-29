@@ -18,14 +18,18 @@ export const encodeUrl = (url: string): string => {
 
 export const decodeUrl = (url: string): string => {
   if (!url) return url;
+  // Scramjet encodes a "#fragment" on its own, decodes it first, and then hands it to this
+  // function after the encoded URL, already plain ("<encoded>#/route?x=1"). Keep it as it is.
+  const hashAt = url.indexOf('#');
+  const hash = hashAt < 0 ? '' : url.slice(hashAt);
   // A GET form on a proxied page appends its own "?query" to the encoded URL.
-  const [input, ...search] = url.split('?');
+  const [input, ...search] = (hashAt < 0 ? url : url.slice(0, hashAt)).split('?');
   try {
     const key = new TextEncoder().encode(URL_KEY);
     const bin = atob(input.replace(/-/g, '+').replace(/_/g, '/'));
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i) ^ key[i % key.length];
-    return new TextDecoder().decode(bytes) + (search.length ? '?' + search.join('?') : '');
+    return new TextDecoder().decode(bytes) + (search.length ? '?' + search.join('?') : '') + hash;
   } catch {
     return url;
   }
