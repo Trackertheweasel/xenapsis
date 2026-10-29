@@ -537,6 +537,25 @@ test('The WebRTC guard leaves everything but pages alone', async () => {
   assert.equal(worker.webrtcReads, 0, 'the setting is only read for a page');
 });
 
+test("Cloudflare's and other check frames get no WebRTC guard, the pages around them do", async () => {
+  const worker = await freshWorker();
+  cookieDb(worker);
+  const frame = { ...navigate, destination: 'iframe' };
+  for (const check of [
+    'https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/g/turnstile/if/ov2/x',
+    'https://newassets.hcaptcha.com/captcha/v1/x/static/hcaptcha.html',
+    'https://www.google.com/recaptcha/api2/anchor?k=x',
+  ]) {
+    for (const url of [viaScramjet(worker, check), viaUv(worker, check)]) {
+      assert.equal(await (await request(worker, url, frame)).text(), SITE_PAGE, url);
+    }
+  }
+  for (const site of ['https://claude.ai/', 'https://www.google.com/search?q=recaptcha']) {
+    const res = await request(worker, viaScramjet(worker, site), navigate);
+    assert.match(await res.text(), /webrtcGuard/, site);
+  }
+});
+
 test('With the WebRTC setting off pages are untouched, until the switch turns it on', async () => {
   const worker = await freshWorker({ webrtc: false });
   cookieDb(worker);

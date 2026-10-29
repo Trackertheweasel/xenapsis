@@ -34,18 +34,46 @@ test('Decoding keeps a query a GET form appended, and survives garbage', () => {
   assert.equal(decodeUrl(''), '');
 });
 
-// Scramjet encodes a page's #fragment on its own, and decodes "<encoded URL>#<decoded fragment>"
-// (and a fragment on its own), so a page reached through a sign-in redirect with #access_token=...,
-// or a school app with hash routes, made every request after it fail with "Invalid URL".
-test('A #fragment after the encoded URL is kept as it is, ? and all', () => {
-  const encoded = encodeUrl('https://play.example.com/app');
-  assert.equal(decodeUrl(encoded + '#/route?x=1'), 'https://play.example.com/app#/route?x=1');
-  assert.equal(decodeUrl(encoded + '#top'), 'https://play.example.com/app#top');
+// Scramjet 1.1.0's unrewriteUrl (src/shared/rewriters/url.ts), which the service worker runs on
+// every request URL and on the requesting page's URL. It decodes the fragment first and passes it
+// back to the codec behind the encoded URL. Request URLs keep their fragment in a service worker.
+const scramjetRewrite = (url: string) => {
+  const real = new URL(url);
+  const hash = encodeUrl(real.hash.slice(1));
+  real.hash = '';
+  return encodeUrl(real.href) + (hash ? '#' + hash : '');
+};
+const scramjetUnrewrite = (proxied: string) => {
+  const real = new URL(proxied, 'https://persec.test/');
+  const hash = decodeUrl(real.hash.slice(1));
+  return decodeUrl(real.pathname.slice(1) + (hash ? '#' + hash : ''));
+};
+
+test('URLs with a #fragment survive the round trip through Scramjet', () => {
+  for (const url of [
+    'https://play.geforcenow.com/mall/#/layout/games',
+    'https://example.com/a?b=c#/route?x=1&y=#z',
+    'https://example.com/#',
+    ...urls,
+  ]) {
+    const back = scramjetUnrewrite('/' + scramjetRewrite(url));
+    assert.equal(new URL(back).href, new URL(url).href.replace(/#$/, ''));
+  }
+});
+
+test('A GET form query and a fragment both survive decoding', () => {
   assert.equal(
-    decodeUrl(encoded + '?q=1#access_token=abc'),
-    'https://play.example.com/app?q=1#access_token=abc',
+    decodeUrl(encodeUrl('https://example.com/s') + '?q=1#/top?a'),
+    'https://example.com/s?q=1#/top?a',
   );
-  assert.ok(URL.canParse(decodeUrl(encoded + '#QxQ6EAM8Og4NWg')));
+});
+
+// A page that sets location.hash itself leaves a plain fragment in its address, which Scramjet
+// still runs through the codec on its own. "/route?x=1" is valid base64 up to the "?", so it used to
+// come back as garbage and hash-routed pages saw the wrong route.
+test('A fragment the page set itself survives Scramjet as it is', () => {
+  const page = '/' + encodeUrl('https://app.example.com/') + '#/route?x=1';
+  assert.equal(scramjetUnrewrite(page), 'https://app.example.com/#/route?x=1');
 });
 
 test('A fragment is never scrambled, and never decoded as an address', () => {
