@@ -430,11 +430,24 @@ function webrtcGuard() {
 
 const WEBRTC_GUARD = `<script>(${webrtcGuard})();</script>`;
 
+// Cloudflare's, hCaptcha's and reCAPTCHA's check frames, left as the browser made them, because a
+// changed browser is one reason those checks fail. Same list as src/utils/guards.ts, which leaves
+// them out of the page guards; tests keep the two in step.
+const VERIFICATION_HOSTS = ['challenges.cloudflare.com', 'hcaptcha.com', 'recaptcha.net'];
+
+function isVerificationFrame(target) {
+  const host = target.hostname.toLowerCase();
+  if (VERIFICATION_HOSTS.some(h => host === h || host.endsWith('.' + h))) return true;
+  return /^(www\.)?google\.com$/.test(host) && target.pathname.startsWith('/recaptcha/');
+}
+
 // Puts the guard first in a proxied page's <head>. Both engines always write one, with their own
 // scripts at its start, so going right after the tag puts the guard ahead of everything else.
 // Without one it goes after the doctype, as anything before that would switch on quirks mode.
 async function withWebrtcGuard(request, response) {
   if (!['document', 'iframe', 'frame'].includes(request?.destination)) return response;
+  const target = targetUrl(request.url);
+  if (target && isVerificationFrame(target)) return response;
   // Responses that can't carry a body can't be rebuilt with one.
   if (!response.body || [204, 205, 304].includes(response.status)) return response;
   if (!/^text\/html\b/i.test(response.headers.get('content-type') || '')) return response;

@@ -438,18 +438,43 @@ const guarded = Symbol.for('persec leak guard');
 const opensNewTab = (target: string | null | undefined) =>
   target?.trim().toLowerCase() === '_blank';
 
+// window.open calls the engine's own window.open should handle: ones that navigate this tab or a
+// frame in it, and pop-ups (a size or position given, and no noopener). Sign-in pop-ups ("Continue
+// with Google", Apple, Microsoft) need the window it returns: the site navigates it, watches it,
+// and the pop-up messages its opener. The engine proxies the pop-up's address, so it stays on
+// Persec's origin. Anything else is an ordinary new tab.
+const SAME_TAB = new Set(['_self', '_top', '_parent']);
+export function opensPopup(target: unknown, features: unknown): boolean {
+  if (typeof target === 'string' && SAME_TAB.has(target.trim().toLowerCase())) return true;
+  const list = typeof features === 'string' ? features.toLowerCase() : '';
+  return (
+    /\b(popup|width|height|left|top|innerwidth|innerheight|screenx|screeny)\b/.test(list) &&
+    !/\bno(opener|referrer)\b/.test(list)
+  );
+}
+
 const linksGuarded = Symbol.for('persec link guard');
 
 // Links and forms that open a new window would leave Persec for a bare browser tab, outside the
 // cloak and in the browser's history. They open in a new Persec tab instead (`open` gets the
-// site's real address), as window.open already does.
+// site's real address), and so does window.open, except for pop-ups and same-tab targets
+// (opensPopup), which get the engine's own window, or a Persec tab if the browser blocks it.
 export function leakGuard(win: Window, open: (url: string) => void): void {
   const page = win as PageWindow & { [guarded]?: boolean };
   if (page[guarded]) return;
   page[guarded] = true;
 
-  page.open = ((url?: string | URL) => {
+  const engineOpen = page.open;
+  const toTab = (url?: string | URL) => {
     if (url) open(new URL(String(url), page.location.href).href);
+  };
+  page.open = ((url?: string | URL, target?: string, features?: string) => {
+    if (typeof engineOpen === 'function' && opensPopup(target, features)) {
+      const opened = engineOpen.call(page, url, target, features);
+      if (!opened && !SAME_TAB.has(String(target).trim().toLowerCase())) toTab(url);
+      return opened;
+    }
+    toTab(url);
     return null;
   }) as typeof page.open;
 
@@ -630,6 +655,26 @@ export function applySiteFixes(win: Window, client: PageClient): void {
     attempt(() => guardSearchNavigation(page, client));
 }
 
+// Frames that check the visitor is a person: Cloudflare's (Turnstile and the "Just a moment" check
+// on ChatGPT and Claude), hCaptcha and reCAPTCHA. They look closely at the browser, and fail
+// when something has changed it, so Persec leaves them as the browser made them: no fingerprint
+// noise, leak guard or site fixes. Only a chosen user agent still applies, because it is in every
+// request's headers too, and a frame that disagreed with them would fail for that instead. This
+// doesn't get a check passed; it keeps Persec from being the reason one fails. src/sw.js keeps the
+// same list for its WebRTC guard.
+export const VERIFICATION_HOSTS = ['challenges.cloudflare.com', 'hcaptcha.com', 'recaptcha.net'];
+
+export function isVerificationFrame(href: string): boolean {
+  try {
+    const { hostname, pathname } = new URL(href);
+    const host = hostname.toLowerCase();
+    if (VERIFICATION_HOSTS.some(h => host === h || host.endsWith(`.${h}`))) return true;
+    return /^(www\.)?google\.com$/.test(host) && pathname.startsWith('/recaptcha/');
+  } catch {
+    return false;
+  }
+}
+
 // Everything above, for one page as Scramjet starts it.
 export function applyGuards(
   win: Window,
@@ -643,6 +688,7 @@ export function applyGuards(
     } catch {}
   };
   if (guards.profile) attempt(() => spoofNavigator(win, guards.profile!));
+  if (isVerificationFrame(String(client.url))) return;
   if (guards.noise) attempt(() => randomizeFingerprint(win, guards.noise!, guards.profile));
   if (guards.leakGuard) attempt(() => leakGuard(win, open));
   if (guards.siteFixes) applySiteFixes(win, client);

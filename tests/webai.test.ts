@@ -9,6 +9,7 @@ import {
   describeState,
   errorMessage,
   siteForUrl,
+  verificationWarning,
 } from '../src/utils/webai.ts';
 
 const read = (path: string) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -108,4 +109,27 @@ test('Helpers', () => {
   assert.equal(siteForUrl('nonsense'), undefined);
   assert.equal(errorMessage({ error: { message: 'Busy' } }, 'x'), 'Busy');
   assert.equal(errorMessage(null, 'fallback'), 'fallback');
+});
+
+test('Web AI warns when a privacy guard will fail Cloudflare’s check, and only then', () => {
+  assert.equal(verificationWarning({}), null);
+  assert.equal(verificationWarning({ userAgent: '', fingerprintNoise: 'off' }), null);
+  // A saved value that isn't a user agent means the browser's own.
+  assert.equal(verificationWarning({ userAgent: 'not-a-preset' }), null);
+  assert.match(
+    verificationWarning({ userAgent: 'googlebot' })!,
+    /a different user agent turned on/,
+  );
+  assert.match(verificationWarning({ fingerprintNoise: 'on' })!, /fingerprint noise turned on/);
+  assert.match(
+    verificationWarning({ userAgent: 'custom:Bot/1.0', fingerprintNoise: 'on' })!,
+    /a different user agent and fingerprint noise/,
+  );
+});
+
+test('The Web AI page shows the warning and links to Settings', async () => {
+  const page = await read('src/pages/webai.astro');
+  assert.match(page, /data-verify-warning\b[^>]*hidden/);
+  assert.match(page, /href="\/st"/);
+  assert.match(await read('src/utils/webaipage.ts'), /verificationWarning\(/);
 });
