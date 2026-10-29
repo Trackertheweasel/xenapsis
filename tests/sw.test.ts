@@ -442,3 +442,31 @@ test("The user agent chosen in Settings replaces the browser's on every request 
   await worker.scramjet.client.fetch('https://example.com/', { headers: { 'User-Agent': 'real' } });
   assert.deepEqual(lastHeaders(worker), { 'User-Agent': 'real' });
 });
+
+test('Files from the pinned GitHub game mirrors get the type their extension calls for', async () => {
+  const worker = await loadServiceWorker();
+  const mirror =
+    'https://raw.githubusercontent.com/3v1/V5-Assets/1210515aad5b5b9e99ee22515d76a8fd2bdfee9c/retro/';
+  assert.equal(worker.mirrorType(`${mirror}index.html`), 'text/html; charset=utf-8');
+  assert.equal(
+    worker.mirrorType(`${mirror}html5game/RetroBowl.js?v=1`),
+    'text/javascript; charset=utf-8',
+  );
+  assert.equal(worker.mirrorType(`${mirror}game.wasm`), 'application/wasm');
+  assert.equal(worker.mirrorType(`${mirror}data.unityweb`), 'application/octet-stream');
+  // Another repo, or the same repo at another commit, is left as GitHub serves it.
+  assert.equal(
+    worker.mirrorType('https://raw.githubusercontent.com/3v1/V5-Assets/main/retro/index.html'),
+    null,
+  );
+  assert.equal(
+    worker.mirrorType('https://raw.githubusercontent.com/evil/repo/abc/index.html'),
+    null,
+  );
+
+  const response: any = new Response('<html>', { headers: { 'content-type': 'text/plain' } });
+  response.rawHeaders = { 'content-type': 'text/plain' };
+  worker.fixMirrorType(`${mirror}index.html`, response);
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.equal(response.rawHeaders['content-type'], 'text/html; charset=utf-8');
+});

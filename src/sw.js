@@ -199,8 +199,64 @@ if (scramjet.client && typeof scramjet.client.fetch === 'function') {
       const saved = await readSetting('userAgentHeaders');
       userAgentHeaders = isHeaderMap(saved) ? saved : null;
     }
-    return bareFetch(url, { ...init, headers: withUserAgent(init.headers) });
+    const response = await bareFetch(url, { ...init, headers: withUserAgent(init.headers) });
+    return fixMirrorType(String(url), response);
   };
+}
+
+// Game files Persec lists from GitHub mirrors (the games Interstellar hosts through its /gh-games/
+// route). GitHub serves every raw file as text/plain, which a browser won't run, so files from these
+// repos, at these pinned commits only, get the type their extension calls for. Nothing is stored on
+// this server; the files stream through the tunnel like any site, which also keeps them inside the
+// proxy's sandbox instead of on Persec's own origin.
+const GAME_MIRRORS = [
+  'https://raw.githubusercontent.com/3v1/V5-Assets/1210515aad5b5b9e99ee22515d76a8fd2bdfee9c/',
+  'https://raw.githubusercontent.com/xbubbo/V6-Assets/b7cb40146d90e70db52e4680ef75443e5382c2fa/',
+];
+const MIRROR_TYPES = {
+  html: 'text/html; charset=utf-8',
+  htm: 'text/html; charset=utf-8',
+  js: 'text/javascript; charset=utf-8',
+  mjs: 'text/javascript; charset=utf-8',
+  css: 'text/css; charset=utf-8',
+  json: 'application/json',
+  wasm: 'application/wasm',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  ico: 'image/x-icon',
+  mp3: 'audio/mpeg',
+  ogg: 'audio/ogg',
+  wav: 'audio/wav',
+  m4a: 'audio/mp4',
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  woff: 'font/woff',
+  woff2: 'font/woff2',
+  ttf: 'font/ttf',
+  xml: 'text/xml',
+  txt: 'text/plain; charset=utf-8',
+  swf: 'application/x-shockwave-flash',
+};
+
+function mirrorType(url) {
+  if (!GAME_MIRRORS.some(m => url.startsWith(m))) return null;
+  const ext = new URL(url).pathname.split('.').pop().toLowerCase();
+  return MIRROR_TYPES[ext] ?? 'application/octet-stream';
+}
+
+function fixMirrorType(url, response) {
+  const type = mirrorType(url);
+  if (!type) return response;
+  // Scramjet reads the type from both: headers to choose how to rewrite, rawHeaders to pass on.
+  try {
+    response.headers.set('content-type', type);
+  } catch {}
+  if (response.rawHeaders) response.rawHeaders['content-type'] = type;
+  return response;
 }
 
 // Ad and tracker hosts, matched against the host and all its subdomains.

@@ -43,9 +43,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   const items: CardItem[] = Array.from(box.querySelectorAll<HTMLDivElement>('.card')).map(toItem);
 
-  for (const { el } of items) {
+  // Pictures load as their card nears the screen: with about 400 games, loading them all at once
+  // costs every visitor (and the server's monthly transfer) several megabytes.
+  const showPicture = (el: HTMLDivElement) => {
     const bg = el.dataset.bg;
-    if (!bg) continue;
+    if (!bg) return;
     const img = new Image();
     img.onload = () => {
       el.classList.remove('card-loading');
@@ -55,6 +57,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     img.onerror = () => el.classList.remove('card-loading');
     img.src = bg;
+  };
+  const near =
+    'IntersectionObserver' in window
+      ? new IntersectionObserver(
+          entries => {
+            for (const e of entries) {
+              if (!e.isIntersecting) continue;
+              near?.unobserve(e.target);
+              showPicture(e.target as HTMLDivElement);
+            }
+          },
+          { rootMargin: '600px' },
+        )
+      : null;
+  for (const { el } of items) {
+    if (near) near.observe(el);
+    else showPicture(el);
   }
 
   function update(): void {
@@ -163,7 +182,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Opens with whichever engine is chosen in Settings ('u' is Ultraviolet), each with its own encoding.
-      window.location.href = encodeProxyUrl(url, await ConfigAPI.get('backend'));
+      // Games from GitHub mirrors need Scramjet, whose service worker gives their files the right type (src/sw.js).
+      const backend = await ConfigAPI.get('backend');
+      window.location.href = encodeProxyUrl(url, isMirrored(url) ? 'sc' : backend);
     });
     el.addEventListener('keydown', e => {
       if (e.target !== el) return;
@@ -209,6 +230,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   update();
 });
+
+const isMirrored = (url: string) => url.startsWith('https://raw.githubusercontent.com/');
 
 // A card for one of the person's own tiles, built like the listed ones (asset.astro) with a letter
 // in place of a picture. Text goes in as text, never as HTML.
