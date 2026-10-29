@@ -247,7 +247,10 @@ async function handleFetch(event) {
     }
   }
 
-  if (scramjet.route(event)) {
+  // Scramjet reads its config from IndexedDB, where a page saves it, and route() throws without
+  // one (a first visit before a page has saved it, or a deleted database). That would fail every
+  // request, Persec's own pages included, so until then nothing is Scramjet's.
+  if (scramjet.config && scramjet.route(event)) {
     await loadJar();
     const response = await scramjet.fetch(event);
     scheduleSave(event);
