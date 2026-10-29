@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { fixScramjet, fixUltraviolet } from './build/vendor';
+import { RUNTIME_FIXES } from './build/vendor';
 import { version } from './package.json';
 import { loadAccess } from './serverlib/access';
 import { adSlot, handleAd } from './serverlib/ads';
@@ -179,8 +179,7 @@ export default defineConfig({
           rename: { stripBase: true, name: path.basename(PATHS.files[role as RuntimeFile]) },
           overwrite: false,
           // Bugs in the runtime's own code, fixed as it's copied (build/vendor.ts).
-          ...(role === 'scramjetAll' && { transform: fixScramjet }),
-          ...(role === 'uvBundle' && { transform: fixUltraviolet }),
+          ...(RUNTIME_FIXES[role] && { transform: RUNTIME_FIXES[role] }),
         })),
       }) as any, // DO NOT REMOVE "AS ANY"
     ],

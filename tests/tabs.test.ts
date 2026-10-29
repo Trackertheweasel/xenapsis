@@ -76,3 +76,9 @@ test('Each tab is labelled for screen readers, and its close button names it', (
   assert.equal(tab.getAttribute('aria-controls'), frames()[0].id);
   assert.equal(document.querySelector('.tab-close')!.getAttribute('aria-label'), 'Close New Tab');
 });
+
+test("A tab's frame lets sites start downloads, which a sandboxed frame otherwise drops", () => {
+  const sandbox = frames()[0].getAttribute('sandbox')!.split(' ');
+  assert.ok(sandbox.includes('allow-downloads'));
+  assert.ok(sandbox.includes('allow-scripts') && sandbox.includes('allow-same-origin'));
+});

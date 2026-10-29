@@ -207,8 +207,13 @@ if (scramjet.client && typeof scramjet.client.fetch === 'function') {
       userAgentHeaders = isHeaderMap(saved) ? saved : null;
     }
     const response = await bareFetch(url, { ...init, headers: withUserAgent(init.headers) });
-    return fixMirrorType(String(url), response);
+    return toUtf8(fixMirrorType(String(url), response));
   };
+}
+
+if (v.bareClient && typeof v.bareClient.fetch === 'function') {
+  const bareFetch = v.bareClient.fetch.bind(v.bareClient);
+  v.bareClient.fetch = async (...args) => toUtf8(await bareFetch(...args));
 }
 
 // Game files Persec lists from GitHub mirrors (the games Interstellar hosts through its /gh-games/
@@ -264,6 +269,72 @@ function fixMirrorType(url, response) {
   } catch {}
   if (response.rawHeaders) response.rawHeaders['content-type'] = type;
   return response;
+}
+
+// Both engines read every page, stylesheet and script as UTF-8 to rewrite it, and pass it on still
+// labelled with the site's own charset, so a page in windows-1252, Shift_JIS or GBK lost every
+// letter outside ASCII. Text in another charset is decoded here, before the engines see it, and
+// passed on as UTF-8. A page that names no charset in its headers is checked for a byte order mark
+// or a <meta> charset in its first 1024 bytes, as browsers do; anything else unlabelled stays UTF-8.
+const TEXT_TYPES =
+  /^\s*(text\/(html|css|javascript)|application\/(javascript|x-javascript|xhtml\+xml))\s*(;|$)/i;
+const NO_BODY = [101, 204, 205, 304];
+
+function textCharset(contentType, bytes) {
+  const declared = /;\s*charset\s*=\s*["']?([^"';\s]+)/i.exec(contentType)?.[1];
+  if (declared) return declared;
+  if (!/html/i.test(contentType) || !bytes) return null;
+  if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return 'utf-8';
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return 'utf-16be';
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return 'utf-16le';
+  let head = '';
+  for (let i = 0; i < Math.min(bytes.length, 1024); i++) head += String.fromCharCode(bytes[i]);
+  return /<meta[^>]+charset\s*=\s*["']?([^"'\s/>;]+)/i.exec(head)?.[1] ?? null;
+}
+
+// The decoder for a charset other than UTF-8, or null when the text is UTF-8 or the charset unknown.
+function decoderFor(charset) {
+  if (!charset) return null;
+  try {
+    const decoder = new TextDecoder(charset);
+    return decoder.encoding === 'utf-8' ? null : decoder;
+  } catch {
+    return null;
+  }
+}
+
+async function toUtf8(response) {
+  const type = response?.headers?.get('content-type') || '';
+  if (!TEXT_TYPES.test(type) || !response.body || NO_BODY.includes(response.status))
+    return response;
+  const declared = textCharset(type, null);
+  // Labelled UTF-8 (the usual case) or an unlabelled stylesheet or script: nothing to do.
+  if ((declared && !decoderFor(declared)) || (!declared && !/html/i.test(type))) return response;
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const decoder = decoderFor(declared ?? textCharset(type, bytes));
+  const utf8Type = decoder
+    ? type.replace(/;\s*charset\s*=\s*["']?[^"';\s]+["']?/i, '') + '; charset=utf-8'
+    : type;
+  const body = decoder ? decoder.decode(bytes) : bytes;
+  const headers = new Headers(response.headers);
+  headers.set('content-type', utf8Type);
+  headers.delete('content-length');
+  const out = new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+  // The transport's own fields (rawHeaders, finalURL...), which the engines read.
+  for (const key of Object.keys(response)) out[key] = response[key];
+  if (out.rawHeaders) {
+    const raw = { ...out.rawHeaders };
+    for (const key of Object.keys(raw)) {
+      if (/^content-(type|length)$/i.test(key)) delete raw[key];
+    }
+    raw['content-type'] = utf8Type;
+    out.rawHeaders = raw;
+  }
+  return out;
 }
 
 // Ad and tracker hosts, matched against the host and all its subdomains.

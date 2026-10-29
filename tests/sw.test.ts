@@ -83,7 +83,7 @@ async function loadServiceWorker() {
         client = {
           async fetch(url: string, init: any) {
             calls.bare.push({ url, headers: init.headers });
-            return new Response('bare');
+            return ctx.scramjetAnswer ?? new Response('bare');
           },
         };
         cookieStore = {
@@ -100,6 +100,15 @@ async function loadServiceWorker() {
       },
     }),
     UVServiceWorker: class {
+      constructor() {
+        ctx.uv = this;
+      }
+      // Ultraviolet's own transport client; ctx.uvAnswer stands in for what a site sends.
+      bareClient = {
+        async fetch() {
+          return ctx.uvAnswer ?? new Response('uv bare');
+        },
+      };
       route(event: any) {
         return event.request.url.startsWith(`${origin}${ctx.__uv$config.prefix}`);
       }
@@ -658,4 +667,74 @@ test('The guard follows into frames and windows the page opens', () => {
   assert.equal(new frame.RTCPeerConnection(stun).config.iceTransportPolicy, 'relay');
   assert.equal(win.open('about:blank'), popup);
   assert.equal(new popup.RTCPeerConnection(stun).config.iceTransportPolicy, 'relay');
+});
+
+// Pages in other charsets (toUtf8 in src/sw.js).
+
+// A site's answer as the transport hands it over: the bytes, and the raw fields the engines read.
+function siteAnswer(bytes: number[] | string, type: string) {
+  const response: any = new Response(typeof bytes === 'string' ? bytes : new Uint8Array(bytes), {
+    headers: { 'content-type': type, 'content-length': '99' },
+  });
+  response.rawHeaders = { 'Content-Type': type, 'content-length': '99', 'x-site': 'kept' };
+  response.finalURL = 'https://example.com/page';
+  return response;
+}
+const CAFE_1252 = [0x3c, 0x70, 0x3e, 0x63, 0x61, 0x66, 0xe9, 0x3c, 0x2f, 0x70, 0x3e]; // <p>café</p>
+
+test('A page in windows-1252 reaches the engines as UTF-8, labelled so', async () => {
+  const out = await sw.toUtf8(siteAnswer(CAFE_1252, 'text/html; charset=windows-1252'));
+  assert.equal(await out.text(), '<p>café</p>');
+  assert.equal(out.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.equal(out.headers.get('content-length'), null);
+  assert.deepEqual(JSON.parse(JSON.stringify(out.rawHeaders)), {
+    'x-site': 'kept',
+    'content-type': 'text/html; charset=utf-8',
+  });
+  assert.equal(out.finalURL, 'https://example.com/page');
+});
+
+test('A page that names its charset only in a <meta> tag is read in that charset', async () => {
+  const meta = [...new TextEncoder().encode('<meta charset="iso-8859-1">'), ...CAFE_1252];
+  const out = await sw.toUtf8(siteAnswer(meta, 'text/html'));
+  assert.equal(await out.text(), '<meta charset="iso-8859-1"><p>café</p>');
+  assert.equal(out.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.equal(sw.textCharset('text/html', new TextEncoder().encode('<p>no label</p>')), null);
+  assert.equal(sw.textCharset('text/css; charset="Shift_JIS"', null), 'Shift_JIS');
+  assert.equal(sw.textCharset('text/html', new Uint8Array([0xef, 0xbb, 0xbf, 0x3c])), 'utf-8');
+});
+
+test('UTF-8 text, unlabelled scripts and anything not text pass through untouched', async () => {
+  for (const type of [
+    'text/html; charset=utf-8',
+    'text/javascript',
+    'text/css',
+    'image/png',
+    'application/json; charset=windows-1252',
+  ]) {
+    const answer = siteAnswer('x', type);
+    assert.equal(await sw.toUtf8(answer), answer, type);
+  }
+  // An unlabelled UTF-8 page is rebuilt from its own bytes, unchanged.
+  const page = await sw.toUtf8(siteAnswer('<p>naïve</p>', 'text/html'));
+  assert.equal(await page.text(), '<p>naïve</p>');
+  assert.equal(page.headers.get('content-type'), 'text/html');
+  // An unknown charset is left for the engine, as before.
+  const odd = siteAnswer(CAFE_1252, 'text/html; charset=x-made-up');
+  assert.equal(await sw.toUtf8(odd), odd);
+});
+
+test("Both engines' transport clients hand on pages as UTF-8", async () => {
+  const worker = await loadServiceWorker();
+  worker.uvAnswer = siteAnswer(CAFE_1252, 'text/html; charset=windows-1252');
+  assert.equal(
+    await (await worker.uv.bareClient.fetch('https://example.com/')).text(),
+    '<p>café</p>',
+  );
+
+  await message(worker, 'USER_AGENT', { headers: null });
+  worker.scramjetAnswer = siteAnswer(CAFE_1252, 'text/css; charset=windows-1252');
+  const css = await worker.scramjet.client.fetch('https://example.com/a.css', {});
+  assert.equal(await css.text(), '<p>café</p>');
+  assert.equal(css.rawHeaders['content-type'], 'text/css; charset=utf-8');
 });
