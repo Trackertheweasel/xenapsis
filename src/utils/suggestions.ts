@@ -15,6 +15,7 @@ const quick: Record<string, string> = {
   'persec://privacy': 'Privacy & Safety',
   'persec://bookmarks': 'Bookmarks',
   'persec://ai': 'PerSec AI',
+  'persec://webai': 'Web AI: ChatGPT and Claude',
 };
 
 let timer: number | null = null;

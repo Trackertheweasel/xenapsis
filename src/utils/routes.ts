@@ -8,6 +8,7 @@ export const INTERNAL_ROUTES: Readonly<Record<string, string>> = {
   'persec://privacy': '/privacy',
   'persec://bookmarks': '/bm',
   'persec://ai': '/ai',
+  'persec://webai': '/webai',
 };
 
 // The path a persec:// name opens, or undefined for anything else.

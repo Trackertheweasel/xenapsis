@@ -60,5 +60,6 @@ declare namespace App {
 
 declare module '@mercuryworkshop/epoxy-transport';
 declare module '@mercuryworkshop/wisp-js/server';
+declare module '@mercuryworkshop/wisp-js/client';
 declare module '@mercuryworkshop/bare-mux/node';
 declare module '@mercuryworkshop/libcurl-transport';
