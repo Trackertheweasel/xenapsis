@@ -15,6 +15,21 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.6.0',
+    date: '2026-10-29',
+    changes: [
+      {
+        pr: 67,
+        title:
+          'Downloads, form fields, WebSocket cookies and non-UTF-8 pages fixed in both engines; tunnel memory capped, auto-rollback on failed updates, precompressed assets; sign-in cookie fixes; FMHY',
+      },
+      { pr: 65, title: 'Page-set #fragment routes survive Scramjet' },
+      { pr: 64, title: 'Persec no longer breaks ChatGPT sign-in and Cloudflare checks' },
+      { pr: 63, title: 'Middle-click and new-tab links stay inside Persec on Ultraviolet' },
+      { pr: 62, title: '"Invalid URL" fixed on pages with a #fragment (GeForce NOW black screen)' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-10-29',
     changes: [
