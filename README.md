@@ -11,6 +11,7 @@
 - Fast performance
 - `about:blank` cloaking
 - Built in ad blocking
+- Keeps WebRTC from revealing your real IP address (switch it off in Settings for game streaming such as GeForce NOW)
 - No analytics or third-party trackers
 - Self-served, tracking-free sponsor slot
 - Tab system
