@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import pkg from './package.json' with { type: 'json' };
 import { loadAccess } from 'serverlib/access';
 import { loadAiConfig } from 'serverlib/ai/index';
 import { buildApp } from 'serverlib/app';
@@ -30,15 +31,16 @@ if (!fs.existsSync(entry) || !fs.existsSync(pathsFile)) {
 const { handler } = await import(pathToFileURL(entry).href);
 
 const access = loadAccess();
+const dataDir = process.env.PERSEC_DATA_DIR || path.join(__dirname, 'data');
 // Ad and tracker hosts the tunnel refuses (PERSEC_WISP_ADBLOCK=off turns it off).
 startBlocklist();
 const app = await buildApp({
   access,
   // The client bakes the same value in at build time (serverlib/env.ts is shared with astro.config.ts).
   wispPath: wispPath(),
-  loginsDir: process.env.PERSEC_DATA_DIR
-    ? path.join(process.env.PERSEC_DATA_DIR, 'logins')
-    : path.join(__dirname, 'data', 'logins'),
+  loginsDir: path.join(dataDir, 'logins'),
+  invitesFile: path.join(dataDir, 'invites.json'),
+  version: pkg.version,
   // OPENROUTER_API_KEY and friends. Without a key, PerSec AI reports itself off and nothing else changes.
   ai: { config: loadAiConfig() },
   // CAMOUFOX_ENABLED and friends. Off unless the owner runs a browser service (docs/browser-runtime.md).

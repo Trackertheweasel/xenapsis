@@ -14,6 +14,7 @@ import { loadBrowserConfig } from './browser/index';
 import type { BrowserConfig, BrowserRuntime } from './browser/index';
 import type { DeployPaths } from './env';
 import { registerAccessGate } from './routes/access';
+import { InviteStore } from './invites';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAiRoutes } from './routes/ai';
 import { registerBrowserRoutes } from './routes/browser';
@@ -29,6 +30,11 @@ export interface AppOptions {
   wispPath: string;
   // Where saved-login backups are stored (only used in invite-only mode).
   loginsDir: string;
+  // Where minted invites and /admin's revokes are recorded (serverlib/invites.ts). Left out,
+  // /admin only lists PERSEC_INVITE_CODES.
+  invitesFile?: string;
+  // Shown on /admin.
+  version?: string;
   // The built site (dist/). Left out, only the server's own routes run, which is what tests use.
   // paths is the build's own (dist/server/paths.json), for cache headers.
   site?: { clientRoot: string; handler: NodeHandler; paths: DeployPaths };
@@ -42,7 +48,16 @@ export interface AppOptions {
 
 // Composition only: this wires the server's parts together. Put logic in the module it belongs to
 // (routes/, access.ts, ads.ts, wisp.ts, static.ts) so it can be tested on its own.
-export async function buildApp({ access, wispPath, loginsDir, site, ai, browser }: AppOptions) {
+export async function buildApp({
+  access,
+  wispPath,
+  loginsDir,
+  invitesFile,
+  version,
+  site,
+  ai,
+  browser,
+}: AppOptions) {
   const app = Fastify({
     logger: false,
     serverFactory: handler => {
@@ -83,7 +98,18 @@ export async function buildApp({ access, wispPath, loginsDir, site, ai, browser 
   if (access) {
     registerAccessGate(app, access);
     registerLoginRoutes(app, access, loginsDir);
-    if (access.adminPassword) registerAdminRoutes(app, access, access.adminPassword);
+    const invites = invitesFile ? new InviteStore(invitesFile) : undefined;
+    // Revokes made on /admin last until lifted there, even with /admin turned off again.
+    for (const name of invites?.read().revoked ?? []) access.revoked.add(name);
+    if (access.adminPassword) {
+      registerAdminRoutes(app, access, {
+        password: access.adminPassword,
+        invites,
+        ai: ai?.config ?? loadAiConfig({}),
+        browser: browser?.config ?? loadBrowserConfig({}),
+        version,
+      });
+    }
   }
 
   // After the gate, which covers these routes too. Registered in every mode so /api/ai/status can

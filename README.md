@@ -285,6 +285,11 @@ If it ends in `401` instead of `429`, the header can be faked: delete `PERSEC_CL
 
 With `PERSEC_ADMIN_PASSWORD` set (12+ characters; `persec admin` makes one), `/admin` shows each invite name's usage live: online now, data downloaded and uploaded, time connected, tabs opened and last seen. Open it signed in with your own code, then enter that password (any username). The counts are kept only in memory and reset on restart, sites visited are never recorded, and the privacy page tells people this can be on. Without the password, nothing is counted.
 
+`/admin` also has two more sections:
+
+- **Invites** lists every invite: the codes in `PERSEC_INVITE_CODES`, and every invite minted on `/admin` or with `persec invite`, each with its status (active, expired or revoked), when it was made and expires, and when it was last used since the server started. You can create an invite there (needs a fixed `PERSEC_SECRET`), show a minted invite's code again (it is recreated from `PERSEC_SECRET`, never stored), and revoke or restore a name without a restart. The list and revokes are kept in `data/invites.json` (or `PERSEC_DATA_DIR`), so on Render's free plan, which has no lasting disk, they reset on every restart; names in `PERSEC_REVOKED` can only be restored there. Invites minted before this list existed show up by name once they sign in. Listed codes are never shown.
+- **Server setup** shows which settings are in place (fixed secret, client-address header, data folder, PerSec AI key, browser mode, ad network, tunnel ad blocking) and what's missing, without showing any value.
+
 People enter their code once and stay signed in as long as they come back at least once every 30 days, and their browser's password manager can save the code for them. The new tab page greets each person by their invite's name (the part before the `:`, or the name given to `persec invite`), so pick names you're happy for them to see. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
 
 ### Handing out invites without restarting

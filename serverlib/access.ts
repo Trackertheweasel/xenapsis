@@ -17,6 +17,8 @@ export interface AccessConfig {
   codes: Map<string, string>; // code -> name
   names: Set<string>;
   revoked: Set<string>;
+  // The names in PERSEC_REVOKED, which /admin can't lift (it can revoke more, see invites.ts).
+  envRevoked: Set<string>;
   secret: string;
   // Only with a fixed PERSEC_SECRET: a random one would invalidate every minted invite on restart.
   minted: boolean;
@@ -61,6 +63,7 @@ export function loadAccess(env: NodeJS.ProcessEnv = process.env): AccessConfig |
     codes,
     names: new Set(codes.values()),
     revoked: new Set(list(env.PERSEC_REVOKED)),
+    envRevoked: new Set(list(env.PERSEC_REVOKED)),
     secret,
     minted: !!fixedSecret,
     clientIpHeader: env.PERSEC_CLIENT_IP_HEADER?.trim().toLowerCase() || undefined,
@@ -85,13 +88,25 @@ export function safeEqual(a: string, b: string): boolean {
   return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
 }
 
-// Creates an invite code for `name` that stops working after `days`.
-export function mintInvite(secret: string, name: string, days: number, now = Date.now()): string {
+export const validInviteName = (name: string) => NAME_RE.test(name);
+
+// When an invite minted now for `days` expires, in seconds (the unit the code carries).
+export const inviteExpiry = (days: number, now = Date.now()) =>
+  Math.floor(now / 1000 + days * 86400);
+
+// The code for `name` that expires at `expiry`. The same inputs always give the same code, so
+// /admin can show a minted invite's code again without it ever being stored.
+export function inviteCode(secret: string, name: string, expiry: number): string {
   if (!NAME_RE.test(name))
     throw new Error('Names may only use letters, numbers, - and _ (max 32).');
-  if (!(days > 0)) throw new Error('Days must be a positive number.');
-  const data = `${Buffer.from(name).toString('base64url')}.${Math.floor(now / 1000 + days * 86400)}`;
+  const data = `${Buffer.from(name).toString('base64url')}.${expiry}`;
   return `${data}.${signInvite(secret, data)}`;
+}
+
+// Creates an invite code for `name` that stops working after `days`.
+export function mintInvite(secret: string, name: string, days: number, now = Date.now()): string {
+  if (!(days > 0)) throw new Error('Days must be a positive number.');
+  return inviteCode(secret, name, inviteExpiry(days, now));
 }
 
 function checkMinted(config: AccessConfig, code: string, now: number): string | null {
