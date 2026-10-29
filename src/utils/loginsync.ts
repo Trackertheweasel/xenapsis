@@ -29,8 +29,8 @@ export interface Status {
 }
 export type RestoreResult = 'restored' | 'none' | 'locked';
 
-interface Snapshot {
-  scramjet: Record<string, unknown>;
+export interface Snapshot {
+  sc: Record<string, unknown>;
   uv: unknown[];
   storage: Record<string, string>;
 }
@@ -182,12 +182,12 @@ async function askWorker<T>(type: string, data?: unknown): Promise<T | undefined
 }
 
 async function collect(): Promise<Snapshot> {
-  let scramjet = await askWorker<Record<string, unknown>>('GET_COOKIES');
-  if (!scramjet || typeof scramjet !== 'object') {
+  let sc = await askWorker<Record<string, unknown>>('GET_COOKIES');
+  if (!sc || typeof sc !== 'object') {
     const saved = await withDb('$scramjet', undefined, db =>
       inStore<unknown>(db, 'cookies', 'readonly', s => s.get('cookies')),
     );
-    scramjet = saved && typeof saved === 'object' ? (saved as Record<string, unknown>) : {};
+    sc = saved && typeof saved === 'object' ? (saved as Record<string, unknown>) : {};
   }
   const uv =
     (await withDb('__op', undefined, db =>
@@ -199,18 +199,18 @@ async function collect(): Promise<Snapshot> {
     const v = k === null ? null : localStorage.getItem(k);
     if (k !== null && v !== null && v.length <= MAX_STORAGE_VALUE) storage[k] = v;
   }
-  return { scramjet, uv, storage };
+  return { sc, uv, storage };
 }
 
 const isEmpty = (s: Snapshot) =>
-  !Object.keys(s.scramjet).length && !s.uv.length && !Object.keys(s.storage).length;
+  !Object.keys(s.sc).length && !s.uv.length && !Object.keys(s.storage).length;
 
 async function apply(s: Snapshot): Promise<void> {
-  if (Object.keys(s.scramjet).length && (await askWorker('SET_COOKIES', s.scramjet)) !== 'done') {
+  if (Object.keys(s.sc).length && (await askWorker('SET_COOKIES', s.sc)) !== 'done') {
     // No worker running yet: it loads the saved jar when it starts.
     await withDb('$scramjet', createScramjetDb, async db => {
       const current = await inStore<unknown>(db, 'cookies', 'readonly', st => st.get('cookies'));
-      const merged = { ...(current && typeof current === 'object' ? current : {}), ...s.scramjet };
+      const merged = { ...(current && typeof current === 'object' ? current : {}), ...s.sc };
       await inStore(db, 'cookies', 'readwrite', st => st.put(merged, 'cookies'));
     });
   }
@@ -234,7 +234,7 @@ async function pipe(data: Uint8Array<ArrayBuffer>, stream: GenericTransformStrea
 }
 
 // Layout: format byte, compressed flag, 12-byte IV, then AES-GCM ciphertext.
-async function seal(key: CryptoKey, snapshot: Snapshot): Promise<Uint8Array<ArrayBuffer>> {
+export async function seal(key: CryptoKey, snapshot: Snapshot): Promise<Uint8Array<ArrayBuffer>> {
   let data = new TextEncoder().encode(JSON.stringify(snapshot));
   const compressed = typeof CompressionStream === 'function';
   if (compressed) data = await pipe(data, new CompressionStream('gzip'));
@@ -250,8 +250,15 @@ async function seal(key: CryptoKey, snapshot: Snapshot): Promise<Uint8Array<Arra
   return out;
 }
 
+// Backups made before the build scrub (build/disguise.ts) kept Scramjet's cookies under this key.
+// Spelled in pieces so the scrub, which renames the word everywhere else, leaves it as saved.
+const LEGACY_SC = ['scram', 'jet'].join('');
+
 // Null when the backup can't be unlocked with this key (it was saved with another invite code).
-async function unseal(key: CryptoKey, bytes: Uint8Array<ArrayBuffer>): Promise<Snapshot | null> {
+export async function unseal(
+  key: CryptoKey,
+  bytes: Uint8Array<ArrayBuffer>,
+): Promise<Snapshot | null> {
   if (bytes[0] !== FORMAT || bytes.length < 14) return null;
   try {
     let data = new Uint8Array(
@@ -263,7 +270,7 @@ async function unseal(key: CryptoKey, bytes: Uint8Array<ArrayBuffer>): Promise<S
     );
     if (bytes[1] === 1) data = await pipe(data, new DecompressionStream('gzip'));
     const s = JSON.parse(new TextDecoder().decode(data));
-    return { scramjet: s.scramjet ?? {}, uv: s.uv ?? [], storage: s.storage ?? {} };
+    return { sc: s.sc ?? s[LEGACY_SC] ?? {}, uv: s.uv ?? [], storage: s.storage ?? {} };
   } catch {
     return null;
   }

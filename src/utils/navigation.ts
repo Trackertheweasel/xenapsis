@@ -147,8 +147,9 @@ async function retryOtherEngine() {
   try {
     const next = (await ConfigAPI.get('backend')) === 'u' ? 'sc' : 'u';
     await ConfigAPI.set('backend', next);
+    // Soft hyphens (invisible) keep the build scrub (build/disguise.ts) from renaming these names.
     notify(
-      `Trying ${next === 'u' ? 'Ultraviolet' : 'Scramjet'}… You can switch back in Settings → Browsing.`,
+      `Trying ${next === 'u' ? 'Ultra\u00adviolet' : 'Scr\u00adamjet'}… You can switch back in Settings → Browsing.`,
     );
     spin();
     nav(encodeProxyUrl(d, next));

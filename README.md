@@ -142,10 +142,14 @@ Proxied pages don't show the site's address in Persec's own URLs either: instead
 
 The paths themselves are randomised too. Fixed paths like `/v1/data/`, `/sw.js` or `/bm/worker.js` are the same on every Persec install, so a filter that sees the addresses a page requests could match them to recognise the proxy. Each build instead picks random names for the two proxied-URL prefixes, the service worker, the folder the proxy runtime is served from, and every file in it. They change on every rebuild along with the URL key, so the same caveat applies (open proxied tabs need reopening after an update). To keep them stable across builds or backup servers, set `PUBLIC_PERSEC_URL_KEY` and `PUBLIC_PERSEC_PROXY_KEY` in `deploy/.env`.
 
-Treat this as a second line of defence. It only beats matching on paths. Still visible to a determined filter:
+The files' contents are disguised too. The proxy runtime is the public Scramjet, Ultraviolet, bare-mux and libcurl code, full of their names (`scramjet`, `__uv$config`, `bare-mux`), which a filter can look for in what a page downloads. Each build replaces those names, everywhere in the site's code, with random stand-ins of the same length. Like the paths, they change on every rebuild unless `PUBLIC_PERSEC_PROXY_KEY` is set. Two things keep their names on purpose: links to the projects' websites, and Scramjet's `$scramjet` database, so an update doesn't sign everyone out of the sites they use. If a site ever breaks because of it, set `PUBLIC_PERSEC_SCRUB=off` in `deploy/.env` and run `persec update` to build without it.
 
-- **File contents.** The runtime files are the public Scramjet, Ultraviolet, bare-mux and libcurl packages, byte for byte, so a filter that hashes downloads can recognise them.
-- **The shape of the names.** Every random name is 8 hex characters, and the runtime is one folder of such files.
+Words in the pages themselves, such as "proxy", "unblocked" or "games", can be hidden from keyword scans with `PUBLIC_PERSEC_MASK_TEXT=1`. Each one gets invisible soft hyphens, so it looks the same but no longer matches the plain word. Find-in-page won't find those words any more, which is why this is off by default. It covers the text in Persec's pages, not text that scripts add later (pop-up messages, for example).
+
+Treat all of this as a second line of defence. Still visible to a determined filter:
+
+- **File contents, beyond names.** The runtime is still recognisably the same code; a filter that compares the structure of downloads, rather than hashes or names, could still match it.
+- **The shape of the names.** Every random path is 8 hex characters, and the runtime is one folder of such files.
 - **What the page does.** It registers a service worker for the whole site and opens a WebSocket, which a scanner that runs the page's scripts can see. The scripts also carry the URL key, so the scrambled URLs are obfuscation, not encryption.
 - **Active probing.** Anyone can load the site and read its scripts to find the paths.
 
@@ -446,4 +450,4 @@ Found a bug? Open a [GitHub Issue](https://github.com/Trackertheweasel/xenapsis/
 
 ## Credits and license
 
-Persec is based on [Lunar v2](https://github.com/lunar-proxy/lunar-v2) by Bearcattt and the Lunar contributors, and is licensed under the [GNU AGPL-3.0](LICENSE). Because Persec runs as a network service, the AGPL requires that its users can get the source code; the app links to this repository from Settings → About and from the privacy page.
+Persec is based on [Lunar v2](https://github.com/lunar-proxy/lunar-v2) by Bearcattt and the Lunar contributors, and is licensed under the [GNU AGPL-3.0](LICENSE). The build's name scrub is adapted from [Nebula](https://github.com/NebulaServices/Nebula) and its text masking from [InvisiProxy](https://github.com/QuiteAFancyEmerald/Holy-Unblocker), both AGPL-3.0. Because Persec runs as a network service, the AGPL requires that its users can get the source code; the app links to this repository from Settings → About and from the privacy page.

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npx astro dev --host 0.0.0.0",
     "start": "node --trace-warnings --enable-source-maps --import tsx index.ts",
-    "build": "astro telemetry disable && npx astro check && npx astro build && pnpm build:server",
+    "build": "astro telemetry disable && npx astro check && npx astro build && tsx scripts/disguise.ts && pnpm build:server",
     "build:server": "esbuild index.ts scripts/invite.ts --bundle --platform=node --format=esm --packages=external --target=node22 --sourcemap --outdir=dist --entry-names=[name] --out-extension:.js=.mjs --log-level=warning",
     "test": "node --import tsx --test tests/*.test.ts",
     "invite": "tsx scripts/invite.ts",
