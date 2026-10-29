@@ -181,6 +181,27 @@ test('Ultraviolet deletes a cookie on Max-Age=0', async () => {
   assert.equal(expired({ set, expires: new Date(now.getTime() - 60_000) }, now), true);
 });
 
+test("Ultraviolet's import() loads the module asked for, resolved against the importing script", async () => {
+  const fixed = fixUvBundle(await readFile(path.join(uvPath, 'uv.bundle.js'), 'utf8'));
+  // The rewriter puts the importing script's URL first and the page's specifier second.
+  assert.ok(fixed.includes('node:`__uv.rewriteImport(${JSON.stringify(e.meta.url)},`'));
+  const start = 'rewriteImport(t,r,n=this.meta){';
+  const body = between(fixed, start, '})}').slice(start.length, -1);
+  const uv = {
+    meta: { origin: 'https://persec.test' },
+    rewriteUrl: (url: string, meta: { base: string }) => `/proxied/${new URL(url, meta.base).href}`,
+    rewriteImport: new Function('t', 'r', 'n', `n=n===undefined?this.meta:n;${body}`),
+  };
+  assert.equal(
+    uv.rewriteImport('https://fmhy.net/assets/app.js', '/assets/index.md.lean.js'),
+    '/proxied/https://fmhy.net/assets/index.md.lean.js',
+  );
+  assert.equal(
+    uv.rewriteImport('https://fmhy.net/assets/app.js', './chunks/theme.js'),
+    '/proxied/https://fmhy.net/assets/chunks/theme.js',
+  );
+});
+
 // Ultraviolet's WebSocket fix, run on its own with a stubbed cookie database and transport. Node 22
 // has no CloseEvent, which the fix makes as browsers do.
 (globalThis as any).CloseEvent ??= class extends Event {

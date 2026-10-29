@@ -84,6 +84,15 @@ const UV_BUNDLE_FIXES: VendorFix[] = [
     find: 'r.set&&(r.maxAge?n=r.set.getTime()+r.maxAge*1e3<t',
     replace: 'r.set&&(Number.isFinite(r.maxAge)?n=r.set.getTime()+r.maxAge*1e3<=t',
   },
+  {
+    // A page's import(x) is rewritten to import(__uv.rewriteImport(<script's URL>, x)), but the
+    // function took its arguments the other way round, so every import() loaded the importing
+    // script again. Sites that load their pages this way (VitePress ones such as fmhy.net) got a
+    // module with no page in it and showed their own "404 page not found".
+    why: 'import() loaded the importing script instead',
+    find: 'rewriteImport(t,r,n=this.meta){return this.rewriteUrl(t,{...n,base:r})}',
+    replace: 'rewriteImport(t,r,n=this.meta){return this.rewriteUrl(r,{...n,base:t})}',
+  },
 ];
 
 // Runs inside Ultraviolet's handler: `uv` is its Ultraviolet instance and `bare` the transport

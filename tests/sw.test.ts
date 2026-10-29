@@ -287,6 +287,66 @@ test('Proxied requests reach the engine that encoded them', async () => {
   assert.deepEqual(worker.calls.network, []);
 });
 
+// A server with none of the files a proxied page escapes to: Persec's 404 for anything but its own.
+function missingOnServer(worker: any, own: string[] = []) {
+  worker.fetch = async (request: { url: string }) => (
+    worker.calls.network.push(request.url),
+    own.includes(request.url) ? new Response('net') : new Response('not found', { status: 404 })
+  );
+}
+
+test("A proxied page's request that escapes the engine goes back to the page's site", async () => {
+  const worker = await freshWorker();
+  cookieDb(worker);
+  missingOnServer(worker);
+  const page = 'https://fmhy.net/video';
+  for (const via of [viaUv, viaScramjet]) {
+    const res = await request(worker, `${origin}/assets/index.md.lean.js?v=1`, {
+      destination: 'script',
+      referrer: via(worker, page),
+    });
+    assert.equal(res.status, 307);
+    // Through the engine the page was opened with.
+    assert.equal(
+      res.headers.get('location'),
+      via(worker, 'https://fmhy.net/assets/index.md.lean.js?v=1'),
+    );
+  }
+});
+
+test('Without a referrer, the escaped request is matched to the frame that made it', async () => {
+  const worker = await freshWorker();
+  cookieDb(worker);
+  missingOnServer(worker);
+  const frame = viaUv(worker, 'https://fmhy.net/');
+  worker.clients = { get: async (id: string) => (id === 'tab' ? { url: frame } : undefined) };
+  let response: Promise<Response> | undefined;
+  worker.listeners.fetch({
+    request: { url: `${origin}/vp-icons.css`, destination: 'style', referrer: '' },
+    clientId: 'tab',
+    respondWith: (p: Promise<Response>) => (response = p),
+    waitUntil: () => {},
+  });
+  const res = await response!;
+  assert.equal(res.headers.get('location'), viaUv(worker, 'https://fmhy.net/vp-icons.css'));
+});
+
+test("Persec's own files, its own pages' requests and form posts are never redirected", async () => {
+  const worker = await freshWorker();
+  cookieDb(worker);
+  const own = `${origin}/a/json/lists.json`;
+  missingOnServer(worker, [own]);
+  const proxied = viaUv(worker, 'https://fmhy.net/');
+  // A file Persec has, asked for by a proxied page.
+  assert.equal(await (await request(worker, own, { referrer: proxied })).text(), 'net');
+  // A missing file asked for by Persec's own page.
+  const fromHome = await request(worker, `${origin}/missing.js`, { referrer: `${origin}/` });
+  assert.equal(fromHome.status, 404);
+  // A POST, whose body the server has already been sent.
+  const post = await request(worker, `${origin}/submit`, { method: 'POST', referrer: proxied });
+  assert.equal(post.status, 404);
+});
+
 test('A blocked ad never reaches an engine, so no cookies go with it', async () => {
   const worker = await freshWorker();
   cookieDb(worker);

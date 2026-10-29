@@ -558,7 +558,38 @@ async function handleFetch(event) {
   }
   if (v.route(event)) return withWebrtcGuard(event.request, await v.fetch(event));
 
-  return fetch(event.request);
+  const response = await fetch(event.request);
+  if (response.status !== 404) return response;
+  const escaped = await escapedUrl(event);
+  return escaped ? Response.redirect(escaped, 307) : response;
+}
+
+// Ultraviolet doesn't rewrite import() calls, so a site that loads its code with them asks Persec
+// for its own files: a VitePress site such as fmhy.net imports /assets/<page>.js and, when that
+// fails, shows its own "404 page not found". A request Persec's server has no file for (a 404) that
+// came from a proxied page is sent back through the page's engine, as a request to the page's site.
+// Only GET and HEAD, as a body is already spent by then; Persec's own files are never touched, as
+// the server answered for them.
+async function escapedUrl(event) {
+  const { request } = event;
+  if (request.method && !['GET', 'HEAD'].includes(request.method)) return null;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return null;
+  // Usually the page or module that asked; the frame's own address when the site sends no referrer.
+  let from = request.referrer;
+  if (!targetUrl(from) && event.clientId) {
+    try {
+      from = (await self.clients.get(event.clientId))?.url;
+    } catch {}
+  }
+  const site = targetUrl(from);
+  if (!site) return null;
+  const uv = self.__uv$config;
+  const scPrefix = scramjet.config?.prefix || PERSEC_PATHS.scPrefix;
+  const prefix = new URL(from).pathname.startsWith(scPrefix) ? scPrefix : uv.prefix;
+  return (
+    self.location.origin + prefix + uv.encodeUrl(new URL(url.pathname + url.search, site).href)
+  );
 }
 
 self.addEventListener('fetch', event => {
