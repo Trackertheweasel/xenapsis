@@ -24,6 +24,7 @@ const BIG = 4 * 1024 * 1024;
 
 // The stand-in site: a server-sent-events stream with a long pause, a big download, and a
 // WebSocket echo, written by hand so the test needs nothing beyond Node.
+let endlessSent = 0;
 const site = http.createServer(async (req, res) => {
   if (req.url === '/stream') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store' });
@@ -33,6 +34,17 @@ const site = http.createServer(async (req, res) => {
     }
     await sleep(QUIET_MS);
     res.end(`data: done ${Date.now()}\n\n`);
+  } else if (req.url === '/endless') {
+    // A download that never ends, counting what it managed to hand to the tunnel.
+    res.writeHead(200, { 'Content-Type': 'application/octet-stream' });
+    const chunk = Buffer.alloc(64 * 1024, 7);
+    const pump = () => {
+      while (!res.destroyed) {
+        endlessSent += chunk.length;
+        if (!res.write(chunk)) return void res.once('drain', pump);
+      }
+    };
+    pump();
   } else if (req.url === '/big') {
     res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': BIG });
     res.end(Buffer.alloc(BIG, 7));
@@ -149,6 +161,25 @@ test('A large reply arrives whole', { timeout: 30_000 }, async () => {
       body.subarray(start).every(b => b === 7),
       'no byte changed on the way',
     );
+  } finally {
+    s.conn.close();
+  }
+});
+
+test('A visitor who stops reading holds back the site, not server memory', async () => {
+  const s = await openStream();
+  try {
+    s.send('GET /endless HTTP/1.1\r\nHost: example.test\r\n\r\n');
+    assert.ok(await until(() => s.received.length > 0, 3000), 'the download started');
+    // A phone on weak Wi-Fi, or a laptop that went to sleep: its end stops taking data.
+    (s.conn as any).ws._socket.pause();
+    await sleep(500);
+    const before = endlessSent;
+    await sleep(1500);
+    // Only socket buffers and the tunnel's 1 MB send buffer fill up, then the site is made to wait.
+    // Before, the server kept reading from the site and held everything in memory: hundreds of MB here.
+    assert.ok(endlessSent < 64 * 1024 * 1024, `site handed over ${endlessSent >> 20} MB`);
+    assert.ok(endlessSent - before < 8 * 1024 * 1024, 'the site was held back once buffers filled');
   } finally {
     s.conn.close();
   }

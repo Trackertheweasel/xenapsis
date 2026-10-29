@@ -65,7 +65,9 @@ The site runs over HTTPS (needed for the proxy to work) and is invite-only. Mana
 | `persec rollback`             | Goes back to the version from before the last update                     |
 | `persec logs`                 | Shows what the server is doing                                           |
 
-`persec update` installs whatever is newest on the `master` branch. To stay on a known version instead, name a release tag (or another branch): `PERSEC_BRANCH=<tag> persec update`. If an update misbehaves, `persec rollback` switches back to the build that ran before it in seconds, without rebuilding.
+`persec update` installs whatever is newest on the `master` branch. To stay on a known version instead, name a release tag (or another branch): `PERSEC_BRANCH=<tag> persec update`. An update that doesn't pass its health check within 3 minutes is undone on its own, back to the build that ran before. If one starts but misbehaves, `persec rollback` switches back in seconds, without rebuilding.
+
+On a 1 GB server, Persec's container is capped at 640 MB of memory so a problem can't take down Caddy, Docker or SSH with it; Docker restarts it if it hits the cap. On a bigger server, raise it with `PERSEC_MEMORY_LIMIT=1500m` in `/opt/persec/deploy/.env`, then `persec update`. Container logs are capped at 30 MB each, and updates clear build leftovers beyond 3 GB.
 
 If the site shows a certificate error with the `sslip.io` address, or a single name gets blocked, add another name with `persec domain add` (your settings and invites are kept) and share it. It is worth keeping a spare name or two added so a block never cuts everyone off.
 
@@ -431,7 +433,7 @@ Persec deliberately sends the network no visitor IP or user agent, so it cannot 
 
 ## Tunnel ad blocking
 
-The server refuses to open connections to ad and tracker hosts on a public DNS blocklist, so ads stop loading for every visitor whichever engine they use (an idea from [Interstellar](https://github.com/UseInterstellar/Interstellar)). The list is [AdGuard DNS filter](https://github.com/AdguardTeam/AdGuardSDNSFilter), downloaded at start and once a day after; it takes about 25 MB of memory. If the download fails nothing is blocked, so browsing never breaks.
+The server refuses to open connections to ad and tracker hosts on a public DNS blocklist, so ads stop loading for every visitor whichever engine they use (an idea from [Interstellar](https://github.com/UseInterstellar/Interstellar)). The list is [AdGuard DNS filter](https://github.com/AdguardTeam/AdGuardSDNSFilter), downloaded at start and once a day after; it takes about 70 MB of memory. If the download fails nothing is blocked, so browsing never breaks.
 
 | Variable                    | What it does                                                            |
 | --------------------------- | ----------------------------------------------------------------------- |

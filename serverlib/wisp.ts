@@ -68,6 +68,15 @@ Object.assign(wisp.options, {
   // network and cloud metadata. Browsing never needs an IPv6 literal, so refuse every one.
   // Plus the tunnel's ad and tracker blocklist (serverlib/blocklist.ts), off with PERSEC_WISP_ADBLOCK=off.
   hostname_blacklist: [/:/, blocklistMatcher],
+  // Memory bounds for a small server. These two are Persec's own (patches/ adds them to wisp-js):
+  // how much may wait to go out to a slow visitor per tunnel before reading from sites slows down
+  // (32 MB otherwise), and the largest message a visitor may send (100 MB otherwise). Browsers send
+  // TLS-record-sized messages, far below it.
+  send_buffer_size: 1024 * 1024,
+  max_payload: 4 * 1024 * 1024,
+  // Open connections per tunnel (one tunnel per tab). A busy page needs a few dozen at once.
+  // Not stream_limit_per_host: wisp-js 0.4.1 throws when it counts them.
+  stream_limit_total: 128,
   wisp_version: 2,
   // The MOTD is returned to anyone who completes the WebSocket handshake. The usual
   // "wisp server" string is a fixed value that lets automated fingerprinting identify the

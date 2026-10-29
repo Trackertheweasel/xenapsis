@@ -1,0 +1,48 @@
+diff --git a/src/server/connection.mjs b/src/server/connection.mjs
+index 5e3f8396a40619f23b53b8b1b5a4a291ce296f88..b38d19667bf992fc539c9c31c43de04d26c39174 100644
+--- a/src/server/connection.mjs
++++ b/src/server/connection.mjs
+@@ -111,6 +111,9 @@ export class ServerStream {
+ export class ServerConnection {
+   constructor(ws, path, {TCPSocket, UDPSocket, ping_interval, wisp_version, wisp_extensions} = {}) {
+     this.ws = new AsyncWebSocket(ws);
++    // Persec: how much may wait to go out to the visitor before reading from sites slows down
++    // (32 MB per tunnel otherwise).
++    if (options.send_buffer_size) this.ws.send_buffer_size = options.send_buffer_size;
+     this.path = path;
+     this.TCPSocket = TCPSocket || NodeTCPSocket;
+     this.UDPSocket = UDPSocket || NodeUDPSocket;
+diff --git a/src/server/http.mjs b/src/server/http.mjs
+index ba3cbc047dfa7e09be99d67aa93ddddb94421957..b1f67784913a3fd22400780cc8f161e86617f5e9 100644
+--- a/src/server/http.mjs
++++ b/src/server/http.mjs
+@@ -26,6 +26,8 @@ export function parse_real_ip(headers, client_ip) {
+ 
+ export function routeRequest(request, socket, head, conn_options={}) {
+   assert_on_node();
++  // Persec: the largest message a visitor may send (the ws default is 100 MB).
++  if (options.max_payload) ws_server.options.maxPayload = options.max_payload;
+   if (request.headers["sec-websocket-protocol"] && options.wisp_version === 2)
+     conn_options.wisp_version = 2;
+   else 
+diff --git a/src/server/net.mjs b/src/server/net.mjs
+index 426329ab0d75b6b424f4e8afdc746e606ab14e61..c4bfc9313ca50f07e76ac760332d0fb137fef6cf 100644
+--- a/src/server/net.mjs
++++ b/src/server/net.mjs
+@@ -177,10 +177,12 @@ export class NodeTCPSocket {
+   }
+ 
+   pause() {
+-    if (this.data_queue.size >= this.data_queue.max_size) {
+-      this.socket.pause();
+-      this.paused = true;
+-    }
++    // Persec: always stop reading from the site while a chunk is forwarded. Pausing only when the
++    // queue was already full let a slow visitor make the server hold a whole download in memory.
++    // The socket is gone if the site already hung up.
++    if (!this.socket) return;
++    this.socket.pause();
++    this.paused = true;
+   }
+   resume() {
+     if (!this.socket) return;
