@@ -497,6 +497,24 @@ import ImportLucide from '../layouts/lucide.astro';
                   data-toggle="adBlock"
                 ></button>
               </div>
+              <div class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5">
+                <div>
+                  <h3 class="font-medium">Hide my IP from WebRTC</h3>
+                  <p class="text-text-secondary text-sm">
+                    Video calls and game streaming (such as GeForce NOW) use WebRTC, which connects straight from your
+                    device, outside the proxy, and can show sites your real IP address. This blocks it. Turn it off to
+                    use those sites; they then connect to you directly and need your network to allow it.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked="false"
+                  aria-label="Hide my IP from WebRTC"
+                  class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                  data-toggle="blockWebRTC"
+                ></button>
+              </div>
             </div>
           </section>
 

@@ -4,6 +4,7 @@ import { checkAndShow } from './diagnostics';
 import { decodeProxyUrl, encodeProxyUrl, scramjetWrapper } from './pro';
 import { internalName, internalPath } from './routes';
 import { notify } from './status';
+import { TabHistory } from './tabhistory';
 import { TabManager } from './tb';
 import { ensureTransport } from './transport';
 import { validateUrl } from './url';
@@ -13,7 +14,7 @@ let reloadBtn: HTMLButtonElement | null = null;
 let urlbar: HTMLInputElement | null = null;
 let favBtn: HTMLButtonElement | null = null;
 
-const hist = new Map<string, { stack: string[]; idx: number }>();
+const hist = new Map<number, TabHistory>();
 
 // Registers the service worker, starts the engine and sets the transport, showing what failed.
 const setup = (onRecovered?: () => void) =>
@@ -25,12 +26,20 @@ function frame(): HTMLIFrameElement | null {
   return document.getElementById(`frame-${id}`) as HTMLIFrameElement | null;
 }
 
-function history() {
-  const id = String(TabManager.activeTabId);
-  if (!hist.has(id)) {
-    hist.set(id, { stack: [], idx: -1 });
-  }
-  return hist.get(id)!;
+function history(): TabHistory {
+  const id = TabManager.activeTabId ?? 0;
+  let h = hist.get(id);
+  if (!h) hist.set(id, (h = new TabHistory()));
+  return h;
+}
+
+// Where the tab's page is now, as an absolute address ('' before it has one).
+function hrefOf(f: HTMLIFrameElement): string {
+  try {
+    const href = f.contentWindow?.location.href;
+    if (href && href !== 'about:blank') return href;
+  } catch {}
+  return f.getAttribute('src') ? new URL(f.getAttribute('src')!, location.href).href : '';
 }
 
 function spin() {
@@ -40,37 +49,33 @@ function spin() {
   reloadBtn.style.animation = 'spin 0.4s linear';
 }
 
-function record(url: string) {
-  const h = history();
-  if (h.stack[h.idx] === url) return;
-
-  h.stack = h.stack.slice(0, h.idx + 1);
-  h.stack.push(url);
-  h.idx++;
-}
-
-function nav(url: string, save = true) {
+function nav(url: string) {
   const f = frame();
   if (!f) return;
-
-  if (save) record(url);
+  history().open(new URL(url, location.href).href, hrefOf(f));
   f.src = url;
 }
 
-function back() {
-  const h = history();
-  if (h.idx <= 0) return;
-
-  h.idx--;
-  nav(h.stack[h.idx], false);
+function go(to: (h: TabHistory, from: string) => string | undefined) {
+  const f = frame();
+  if (!f) return;
+  const url = to(history(), hrefOf(f));
+  if (url) f.src = url;
 }
 
-function fwd() {
-  const h = history();
-  if (h.idx >= h.stack.length - 1) return;
+const back = () => go((h, from) => h.back(from));
+const fwd = () => go((h, from) => h.forward(from));
 
-  h.idx++;
-  nav(h.stack[h.idx], false);
+// The page the tab is on now, which may be one reached by clicking inside a site.
+function reload() {
+  const f = frame();
+  if (!f) return;
+  try {
+    f.contentWindow!.location.reload();
+  } catch {
+    const url = history().current;
+    if (url) f.src = url;
+  }
 }
 
 // The real URL of the page in the active tab, decoded by whichever engine loaded it
@@ -88,7 +93,7 @@ async function sync() {
   const f = frame();
   if (!f) return;
 
-  record(f.src);
+  history().landed(hrefOf(f));
 
   const d = currentUrl(f);
   const active = !!d && has((await ConfigAPI.get('bm')) || [], d);
@@ -217,10 +222,7 @@ export function initNavigation() {
     reloadBtn.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
-      const h = history();
-      if (h.idx >= 0) {
-        nav(h.stack[h.idx], false);
-      }
+      reload();
     });
   }
 

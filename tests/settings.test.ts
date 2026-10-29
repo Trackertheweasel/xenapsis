@@ -74,3 +74,24 @@ test('The page settings are a fixed list of known keys', () => {
   assert.equal(new Set(PAGE_SETTINGS).size, PAGE_SETTINGS.length);
   assert.ok(PAGE_SETTINGS.includes('panicKey'));
 });
+
+test('Tab Switch Cloak is back on after a reload', async () => {
+  const { SettingsManager } = await import('../src/utils/st.ts');
+  const cfg = Object.fromEntries(PAGE_SETTINGS.map(k => [k, null])) as any;
+  const watching = async (tabSwitchCloak: string | null) => {
+    const added: string[] = [];
+    const real = document.addEventListener.bind(document);
+    document.addEventListener = ((type: string, ...rest: any[]) => {
+      added.push(type);
+      return (real as any)(type, ...rest);
+    }) as any;
+    try {
+      await SettingsManager.apply({ ...cfg, tabSwitchCloak });
+    } finally {
+      document.addEventListener = real;
+    }
+    return added.includes('visibilitychange');
+  };
+  assert.ok(await watching('on'), 'it watches for the tab being hidden again');
+  assert.ok(!(await watching('off')));
+});

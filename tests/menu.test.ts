@@ -23,8 +23,12 @@ const dom = installDom(`
   </div>
   <button id="outside">Elsewhere</button>
 `);
-const { setupMenu } = await import('../src/utils/menu.ts');
+const { isTyping, keybindFor, setupMenu } = await import('../src/utils/menu.ts');
 const { TabManager } = await import('../src/utils/tb.ts');
+
+// What the menu hands the tab strip, which calls it with keys pressed inside a tab's page.
+let frameKeydown: ((e: KeyboardEvent) => void) | undefined;
+TabManager.onFrameKeydown = cb => void (frameKeydown = cb);
 
 const menu = () => document.querySelector('#menu')!;
 const button = () => document.querySelector<HTMLButtonElement>('#menubtn')!;
@@ -71,4 +75,36 @@ test('Keyboard shortcuts run their item', () => {
   assert.deepEqual(opened.splice(0), [undefined], 'Ctrl+Alt+N opens a new tab');
   document.dispatchEvent(key('keydown', { key: 'n', ctrlKey: true, altKey: true, repeat: true }));
   assert.deepEqual(opened, [], 'a held key does not open a tab per repeat');
+});
+
+test('Shortcuts also work from the page inside a tab', () => {
+  assert.ok(frameKeydown, 'the menu listens to tab pages');
+  const e = key('keydown', { key: 'n', ctrlKey: true, altKey: true });
+  frameKeydown!(e);
+  assert.deepEqual(opened.splice(0), [undefined]);
+  assert.ok(e.defaultPrevented, 'the page in the tab does not also act on it');
+});
+
+test('Key combinations read the way the panic key is saved, Meta included', () => {
+  assert.equal(
+    keybindFor(key('keydown', { key: 'X', ctrlKey: true, shiftKey: true })),
+    'ctrl+shift+x',
+  );
+  assert.equal(keybindFor(key('keydown', { key: 'p', metaKey: true, altKey: true })), 'alt+meta+p');
+  assert.equal(keybindFor(key('keydown', { key: ' ' })), 'space');
+});
+
+test('A plain key typed into a text field is not a shortcut', () => {
+  const input = document.createElement('input');
+  document.body.append(input);
+  const typed = key('keydown', { key: '`' });
+  input.dispatchEvent(typed);
+  assert.ok(isTyping(typed), 'a backtick typed in the address bar');
+  const withCtrl = key('keydown', { key: 'n', ctrlKey: true, altKey: true });
+  input.dispatchEvent(withCtrl);
+  assert.ok(!isTyping(withCtrl), 'Ctrl+Alt shortcuts still work in a field');
+  const onPage = key('keydown', { key: '`' });
+  document.body.dispatchEvent(onPage);
+  assert.ok(!isTyping(onPage), 'outside a field the panic key still fires');
+  input.remove();
 });

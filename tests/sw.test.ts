@@ -13,6 +13,12 @@ const origin = 'https://persec.test';
 const PATHS = deployPaths('test-key');
 (globalThis as any).PERSEC_PATHS = PATHS;
 
+// What a stubbed engine answers: the page in a request's `html`, as a site's page, or its name.
+const page = (request: { html?: string }, engine: string) =>
+  request.html === undefined
+    ? new Response(engine)
+    : new Response(request.html, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+
 // Runs src/sw.js with the proxy engines stubbed out, exposing its functions, its event
 // listeners, and what reached each engine or the network (ctx.calls).
 async function loadServiceWorker() {
@@ -28,6 +34,7 @@ async function loadServiceWorker() {
     listeners: {} as Record<string, (event: any) => void>,
     URL,
     Response,
+    Headers,
     URL_KEY: 'test-key',
     TextEncoder,
     TextDecoder,
@@ -46,16 +53,18 @@ async function loadServiceWorker() {
     importScripts: (...urls: string[]) => calls.imported.push(...urls),
     $scramjetLoadWorker: () => ({
       ScramjetServiceWorker: class {
-        config = { prefix: PATHS.scPrefix };
+        config: { prefix: string } | undefined = { prefix: PATHS.scPrefix };
         // Like Scramjet's: reads the stored config (and builds its codec) only when it has none.
         async loadConfig() {
           if (!this.config) {
             calls.configLoads++;
-            this.config = { prefix: PATHS.scPrefix };
+            // Nothing saved yet leaves it undefined, as Scramjet's does.
+            this.config = ctx.noSavedConfig ? undefined : { prefix: PATHS.scPrefix };
           }
         }
+        // Like Scramjet's, which throws without a config.
         route(event: any) {
-          return event.request.url.startsWith(`${origin}${PATHS.scPrefix}`);
+          return event.request.url.startsWith(`${origin}${this.config!.prefix}`);
         }
         // A request with setCookie stands in for a site's server setting that cookie.
         async fetch(event: any) {
@@ -64,7 +73,7 @@ async function loadServiceWorker() {
             jar: Object.keys(this.cookieStore.cookies),
           });
           if (event.request.setCookie) this.cookieStore.cookies[event.request.setCookie] = {};
-          return new Response('scramjet');
+          return page(event.request, 'scramjet');
         }
         cookieStore = {
           cookies: {} as Record<string, unknown>,
@@ -85,7 +94,7 @@ async function loadServiceWorker() {
       }
       async fetch(event: any) {
         calls.uv.push(event.request.url);
-        return new Response('uv');
+        return page(event.request, 'uv');
       }
     },
   };
@@ -223,10 +232,12 @@ async function message(worker: any, type: string, data?: unknown, source: unknow
   return reply;
 }
 
-async function freshWorker({ adblock = true } = {}) {
+async function freshWorker({ adblock = true, webrtc = true } = {}) {
   const worker = await loadServiceWorker();
   worker.reads = 0;
+  worker.webrtcReads = 0;
   worker.readAdblockSetting = async () => (worker.reads++, adblock);
+  worker.readWebrtcSetting = async () => (worker.webrtcReads++, webrtc);
   return worker;
 }
 const viaScramjet = (worker: any, url: string) =>
@@ -394,6 +405,22 @@ test("A page's new Scramjet config makes the worker reload it, codec included", 
   assert.equal(worker.calls.configLoads, before + 1, 'read back from storage');
 });
 
+test('Before Scramjet has a saved config, Persec still loads', async () => {
+  const worker = await loadServiceWorker();
+  worker.noSavedConfig = true;
+  worker.readAdblockSetting = async () => false;
+  worker.withScramjetCookies = async () => undefined;
+  // The loadConfig message drops the config the stub started with, as a fresh worker has none.
+  worker.listeners.message({
+    data: { scramjet$type: 'loadConfig' },
+    source: { type: 'window', url: `${origin}/welcome` },
+    ports: [],
+    waitUntil: () => {},
+  });
+  assert.equal(await (await request(worker, `${origin}/welcome`)).text(), 'net');
+  assert.equal(await (await request(worker, uv('https://example.com/'))).text(), 'uv');
+});
+
 test('A new build takes over from the old worker straight away', async () => {
   let skipped = false;
   let claimed: Promise<unknown> | undefined;
@@ -403,4 +430,147 @@ test('A new build takes over from the old worker straight away', async () => {
   sw.listeners.activate({ waitUntil: (p: Promise<unknown>) => (claimed = p) });
   assert.ok(skipped);
   assert.equal(await claimed, 'claimed');
+});
+
+// The WebRTC guard (see webrtcGuard in src/sw.js).
+
+const SITE_PAGE =
+  '<!DOCTYPE html><html><head><script src="/engine.js"></script></head><body></body></html>';
+const navigate = { destination: 'document', mode: 'navigate', html: SITE_PAGE };
+
+test("The WebRTC guard goes first in proxied pages' <head>, from either engine", async () => {
+  const worker = await freshWorker();
+  cookieDb(worker);
+  const site = 'https://example.com/';
+  for (const url of [viaScramjet(worker, site), viaUv(worker, site)]) {
+    const res = await request(worker, url, navigate);
+    const html = await res.text();
+    assert.ok(html.startsWith('<!DOCTYPE html><html><head><script>(function webrtcGuard'), url);
+    assert.ok(html.endsWith('<script src="/engine.js"></script></head><body></body></html>'), url);
+    assert.match(res.headers.get('content-type')!, /^text\/html/);
+  }
+  const frame = await request(worker, viaScramjet(worker, site), {
+    ...navigate,
+    destination: 'iframe',
+  });
+  assert.match(await frame.text(), /webrtcGuard/);
+  assert.equal(worker.webrtcReads, 1);
+});
+
+test('The WebRTC guard leaves everything but pages alone', async () => {
+  const worker = await freshWorker();
+  cookieDb(worker);
+  const url = viaScramjet(worker, 'https://example.com/app.js');
+  // An HTML answer to a script or fetch() request is data, not a page that runs.
+  for (const destination of ['script', '']) {
+    const res = await request(worker, url, { destination, html: SITE_PAGE });
+    assert.equal(await res.text(), SITE_PAGE, destination);
+  }
+  assert.equal(await (await request(worker, url, { destination: 'document' })).text(), 'scramjet');
+  assert.equal(await (await request(worker, `${origin}/st`, navigate)).text(), 'net');
+  assert.equal(worker.webrtcReads, 0, 'the setting is only read for a page');
+});
+
+test('With the WebRTC setting off pages are untouched, until the switch turns it on', async () => {
+  const worker = await freshWorker({ webrtc: false });
+  cookieDb(worker);
+  const url = viaScramjet(worker, 'https://example.com/');
+  assert.equal(await (await request(worker, url, navigate)).text(), SITE_PAGE);
+  assert.equal(await (await request(worker, url, navigate)).text(), SITE_PAGE);
+  assert.equal(worker.webrtcReads, 1);
+  await message(worker, 'WEBRTC', { enabled: true });
+  assert.match(await (await request(worker, url, navigate)).text(), /webrtcGuard/);
+  // Only Persec's own pages can switch it.
+  await message(worker, 'WEBRTC', { enabled: false }, { type: 'window', url: url });
+  assert.match(await (await request(worker, url, navigate)).text(), /webrtcGuard/);
+  await message(worker, 'WEBRTC', { enabled: false });
+  assert.equal(await (await request(worker, url, navigate)).text(), SITE_PAGE);
+});
+
+// A window with a stand-in RTCPeerConnection that records the configuration it was given.
+function fakeWindow() {
+  class RTCPeerConnection {
+    static generateCertificate = () => 'cert';
+    config: any;
+    constructor(config?: any) {
+      if (!new.target) throw new TypeError("Please use the 'new' operator");
+      this.config = config;
+    }
+    setConfiguration(config: any) {
+      this.config = config;
+    }
+  }
+  const frameWindows: any[] = [];
+  class HTMLIFrameElement {
+    get contentWindow() {
+      return frameWindows[0];
+    }
+    get contentDocument() {
+      return { defaultView: frameWindows[0] };
+    }
+  }
+  const win: any = { HTMLIFrameElement, frameWindows, opened: [] as any[] };
+  Object.defineProperty(win, 'RTCPeerConnection', {
+    value: RTCPeerConnection,
+    writable: true,
+    configurable: true,
+  });
+  win.webkitRTCPeerConnection = RTCPeerConnection;
+  win.open = () => win.opened[0];
+  return { win, Native: RTCPeerConnection };
+}
+
+// Configs are made in the guard's realm, so they're compared as plain data.
+const plain = (value: unknown) => JSON.parse(JSON.stringify(value));
+
+function runGuard(win: any) {
+  vm.runInNewContext(`(${sw.webrtcGuard})()`, { window: win, Object, Reflect, WeakSet, Map });
+}
+
+test('Under the guard, peer connections get no servers and may only use relays', () => {
+  const { win, Native } = fakeWindow();
+  runGuard(win);
+  const stun = { iceServers: [{ urls: 'stun:stun.gamestream.nvidia.com:19302' }] };
+  const pc = new win.RTCPeerConnection({ ...stun, bundlePolicy: 'max-bundle' });
+  assert.deepEqual(plain(pc.config), {
+    iceServers: [],
+    iceTransportPolicy: 'relay',
+    bundlePolicy: 'max-bundle',
+  });
+  pc.setConfiguration({ ...stun, iceTransportPolicy: 'all' });
+  assert.deepEqual(plain(pc.config), { iceServers: [], iceTransportPolicy: 'relay' });
+  assert.deepEqual(plain(new win.RTCPeerConnection().config), {
+    iceServers: [],
+    iceTransportPolicy: 'relay',
+  });
+
+  // Still the real thing to the site, with no way back to the unguarded constructor.
+  assert.ok(pc instanceof win.RTCPeerConnection);
+  assert.equal(win.webkitRTCPeerConnection, win.RTCPeerConnection);
+  assert.equal(win.RTCPeerConnection.name, 'RTCPeerConnection');
+  assert.equal(win.RTCPeerConnection.generateCertificate(), 'cert');
+  assert.notEqual(pc.constructor, Native);
+  assert.notEqual(Object.getPrototypeOf(win.RTCPeerConnection), Native);
+  assert.throws(() => win.RTCPeerConnection(stun), TypeError);
+
+  // A subclass (adapter.js wraps it this way) is guarded too.
+  class Wrapped extends (win.RTCPeerConnection as new (config?: unknown) => { config: unknown }) {}
+  const sub = new Wrapped(stun);
+  assert.ok(sub instanceof Wrapped);
+  assert.deepEqual(plain(sub.config), { iceServers: [], iceTransportPolicy: 'relay' });
+});
+
+test('The guard follows into frames and windows the page opens', () => {
+  const { win } = fakeWindow();
+  const stun = { iceServers: [{ urls: 'stun:example.com' }] };
+  const frame = fakeWindow().win;
+  const popup = fakeWindow().win;
+  win.frameWindows.push(frame);
+  win.opened.push(popup);
+  runGuard(win);
+  const element = new win.HTMLIFrameElement();
+  assert.equal(element.contentDocument.defaultView, frame);
+  assert.equal(new frame.RTCPeerConnection(stun).config.iceTransportPolicy, 'relay');
+  assert.equal(win.open('about:blank'), popup);
+  assert.equal(new popup.RTCPeerConnection(stun).config.iceTransportPolicy, 'relay');
 });

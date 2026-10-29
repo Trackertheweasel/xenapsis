@@ -10,10 +10,13 @@ import type { AccessConfig } from './access';
 import { adSlot, handleAd } from './ads';
 import { loadAiConfig } from './ai/index';
 import type { AiConfig, ChatProvider } from './ai/index';
+import { loadBrowserConfig } from './browser/index';
+import type { BrowserConfig, BrowserRuntime } from './browser/index';
 import type { DeployPaths } from './env';
 import { registerAccessGate } from './routes/access';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAiRoutes } from './routes/ai';
+import { registerBrowserRoutes } from './routes/browser';
 import { registerLoginRoutes } from './routes/logins';
 import { handleQuery } from './routes/query';
 import { staticFileOptions } from './static';
@@ -32,11 +35,14 @@ export interface AppOptions {
   // PerSec AI (serverlib/ai/). Left out, it is off, as it is without an OpenRouter key. provider
   // replaces the real OpenRouter client, for tests.
   ai?: { config: AiConfig; provider?: ChatProvider };
+  // Browser mode (serverlib/browser/). Left out, it is off, as it is without CAMOUFOX_ENABLED.
+  // runtime replaces the real Camoufox connection, for tests.
+  browser?: { config: BrowserConfig; runtime?: BrowserRuntime };
 }
 
 // Composition only: this wires the server's parts together. Put logic in the module it belongs to
 // (routes/, access.ts, ads.ts, wisp.ts, static.ts) so it can be tested on its own.
-export async function buildApp({ access, wispPath, loginsDir, site, ai }: AppOptions) {
+export async function buildApp({ access, wispPath, loginsDir, site, ai, browser }: AppOptions) {
   const app = Fastify({
     logger: false,
     serverFactory: handler => {
@@ -86,6 +92,14 @@ export async function buildApp({ access, wispPath, loginsDir, site, ai }: AppOpt
     access,
     config: ai?.config ?? loadAiConfig({}),
     provider: ai?.provider,
+  });
+
+  // Separate from PerSec AI and from the proxy: its own routes, behind the same gate. Registered
+  // in every mode so /api/browser/status can say why it's off.
+  await registerBrowserRoutes(app, {
+    access,
+    config: browser?.config ?? loadBrowserConfig({}),
+    runtime: browser?.runtime,
   });
 
   await app.register(fastifyMiddie);

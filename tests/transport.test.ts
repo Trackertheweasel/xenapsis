@@ -7,6 +7,8 @@ import test from 'node:test';
 import { createToken, loadAccess } from '../serverlib/access.ts';
 import { buildApp } from '../serverlib/app.ts';
 import {
+  applyTransport,
+  ensureTransport,
   pickTransport,
   probeWisp,
   TransportError,
@@ -144,5 +146,46 @@ test('The probe passes against the real tunnel and fails cleanly without an invi
     );
   } finally {
     await app.close();
+  }
+});
+
+// BareMux's worker is shared by every tab and only reports the transport's module, not its address.
+test('A changed tunnel address is given to BareMux, and an unchanged one is left alone', async () => {
+  const store = new Map<string, string>();
+  (globalThis as any).localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+  };
+  let address = 'wss://persec.test/w/';
+  const transport: Transport = {
+    name: 'wisp',
+    module: '/rt/libcurl.mjs',
+    options: async () => [{ wisp: address }],
+    probe: async () => {},
+  };
+  let current: string | null = null;
+  const sets: unknown[] = [];
+  const connect = () => ({
+    getTransport: async () => current,
+    setTransport: async (module: string, options: unknown[]) => {
+      current = module;
+      sets.push(options);
+    },
+  });
+  try {
+    await ensureTransport(transport, connect as any);
+    assert.equal(sets.length, 1, 'set on first use');
+    await ensureTransport(transport, connect as any);
+    assert.equal(sets.length, 1, 'an unchanged address does not restart the transport');
+    address = 'wss://backup.example/w/';
+    await applyTransport(transport, connect as any);
+    assert.deepEqual(sets.at(-1), [{ wisp: 'wss://backup.example/w/' }]);
+    // The browser stopped the worker: a new one has no transport, whatever was last saved.
+    current = null;
+    await applyTransport(transport, connect as any);
+    assert.equal(current, '/rt/libcurl.mjs');
+  } finally {
+    delete (globalThis as any).localStorage;
   }
 });

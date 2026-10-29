@@ -82,6 +82,10 @@ const liveAds = new Map<string, LiveAd>();
 const firedImpressions = new Set<string>();
 
 let current: { ad: LiveAd; expires: number } | null = null;
+// After the network had no ad (or failed), the static list is served until then instead of asking
+// again on every page: the start page waits for the answer, up to a few timeouts long.
+let emptyUntil = 0;
+const EMPTY_RETRY_MS = 60_000;
 let inflight: Promise<LiveAd | null> | null = null;
 
 function configured(): boolean {
@@ -215,6 +219,7 @@ export async function getCurrentAd(): Promise<ServedAd | null> {
     if (current && current.expires > now) {
       return { kind: 'network', id: current.ad.id, name: current.ad.name, text: current.ad.text };
     }
+    if (emptyUntil > now) return staticAd();
     try {
       inflight ??= refresh().finally(() => {
         inflight = null;
@@ -227,6 +232,7 @@ export async function getCurrentAd(): Promise<ServedAd | null> {
     } catch {
       // fall through to the static list
     }
+    emptyUntil = Date.now() + EMPTY_RETRY_MS;
   }
   return staticAd();
 }
@@ -239,6 +245,12 @@ function staticAd(): ServedAd | null {
 }
 
 export const adSlot: AdSlot = { getCurrentAd };
+
+// For tests: forget the cached ad and any "no ad" pause, as a restart would.
+export function resetAdCache() {
+  current = null;
+  emptyUntil = 0;
+}
 
 // --- The /a/ad/* routes. ---
 

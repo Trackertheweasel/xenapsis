@@ -1,0 +1,165 @@
+---
+// Static page: built once at deploy time instead of rendered on every request.
+export const prerender = true;
+import '@/main.css';
+import ImportLucide from '../layouts/lucide.astro';
+import { WEB_AI_SITES } from '@/utils/webai';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Web AI</title>
+  </head>
+
+  <body class="bg-background font-linux text-text-header min-h-screen p-4 sm:p-6 md:p-8">
+    <main class="mx-auto max-w-3xl space-y-6">
+      <header class="space-y-3">
+        <nav
+          aria-label="AI"
+          class="bg-background-overlay/60 inline-flex gap-1 rounded-xl border border-white/6 p-1 text-sm"
+        >
+          <a
+            href="/ai"
+            class="text-text-secondary flex min-h-9 items-center gap-1.5 rounded-lg px-3 hover:bg-white/5 hover:text-white"
+          >
+            <i data-lucide="sparkles" class="h-4 w-4"></i>
+            PerSec AI
+          </a>
+          <span
+            aria-current="page"
+            class="flex min-h-9 items-center gap-1.5 rounded-lg bg-[#6366f1]/20 px-3 text-white"
+          >
+            <i data-lucide="globe" class="h-4 w-4"></i>
+            Web AI
+          </span>
+        </nav>
+        <div>
+          <h1 class="mb-1 text-2xl font-bold">Web AI</h1>
+          <p class="text-text-secondary text-sm">
+            The real ChatGPT and Claude websites, opened through Persec like any other site. You use the site itself,
+            with your own account if you have one. This is separate from{' '}
+            <a href="/ai" class="underline">
+              PerSec AI
+            </a>
+            , which uses AI models through OpenRouter.
+          </p>
+        </div>
+      </header>
+
+      <!-- Shown only when the server has browser mode turned on (GET /api/browser/status). -->
+      <fieldset data-modes hidden class="bg-background-overlay/60 rounded-xl border border-white/6 p-4">
+        <legend class="px-1 text-sm font-medium">Browser mode</legend>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <label class="flex cursor-pointer gap-3 rounded-lg border border-white/8 p-3 has-checked:border-[#6366f1]/50 has-checked:bg-[#6366f1]/10">
+            <input type="radio" name="mode" value="proxy" checked class="mt-1 accent-[#6366f1]" />
+            <span>
+              <span class="block font-medium">Standard proxy</span>
+              <span class="text-text-secondary block text-xs">
+                The site runs in a Persec tab, in your own browser. Its sign-in stays in your browser.
+              </span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer gap-3 rounded-lg border border-white/8 p-3 has-checked:border-[#6366f1]/50 has-checked:bg-[#6366f1]/10">
+            <input type="radio" name="mode" value="camoufox" class="mt-1 accent-[#6366f1]" />
+            <span>
+              <span class="block font-medium">Camoufox browser</span>
+              <span class="text-text-secondary block text-xs">
+                The site runs in a separate browser on this server, in a session only you can reach, which is deleted
+                when it ends. For now you see it as pictures and can move between pages; typing into it isn't set up
+                yet.
+              </span>
+            </span>
+          </label>
+        </div>
+        <p class="text-text-secondary mt-3 text-xs">
+          Neither mode makes you anonymous or undetectable. Sites can still tell they're being opened through a proxy or
+          an automated browser, and may refuse or ask you to verify. Persec doesn't try to get past those checks.
+        </p>
+      </fieldset>
+
+      <ul class="grid gap-3 sm:grid-cols-2">
+        {WEB_AI_SITES.map(site => (
+          <li class="bg-background-overlay/60 flex flex-col gap-3 rounded-xl border border-white/6 p-5">
+            <div class="flex items-center gap-3">
+              <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/8 text-lg font-bold">
+                {site.name[0]}
+              </span>
+              <div>
+                <h2 class="leading-tight font-semibold">{site.name}</h2>
+                <p class="text-text-secondary text-xs">
+                  by {site.maker} · {new URL(site.url).host}
+                </p>
+              </div>
+            </div>
+            <p class="text-text-secondary flex-1 text-sm">{site.description}</p>
+            <button
+              type="button"
+              data-open={site.id}
+              class="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#6366f1]/30 bg-[#6366f1]/15 px-4 text-sm hover:bg-[#6366f1]/25 disabled:opacity-50"
+            >
+              <i data-lucide="external-link" class="h-4 w-4" />
+              Open {site.name}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <p data-status role="status" class="text-text-secondary min-h-5 text-sm"></p>
+
+      <!-- A browser-mode session: the page as a picture, where it is, and the controls for it. -->
+      <section
+        data-session
+        hidden
+        aria-labelledby="session-title"
+        class="bg-background-overlay/60 space-y-3 rounded-xl border border-white/6 p-4"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="session-title" class="font-medium">
+            Camoufox session
+          </h2>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              data-refresh
+              class="flex min-h-10 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-sm hover:bg-white/10"
+            >
+              <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+              Refresh
+            </button>
+            <button
+              type="button"
+              data-end
+              class="flex min-h-10 items-center gap-1.5 rounded-lg border border-red-400/30 bg-red-400/10 px-3 text-sm hover:bg-red-400/20"
+            >
+              <i data-lucide="x" class="h-4 w-4"></i>
+              End session
+            </button>
+          </div>
+        </div>
+        <p
+          data-blocked
+          hidden
+          class="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-100/90"
+        >
+          <i data-lucide="alert-triangle" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
+          <span data-blocked-text></span>
+        </p>
+        <p data-where class="text-text-secondary truncate text-xs"></p>
+        <img
+          data-shot
+          alt="What the Camoufox session is showing"
+          class="w-full rounded-lg border border-white/8 bg-black/40"
+        />
+        <p class="text-text-secondary text-xs">
+          The session ends by itself when you leave it alone for a while. Its cookies and data stay on the server, in
+          this session only, and are deleted with it. Persec never reads them.
+        </p>
+      </section>
+    </main>
+
+    <ImportLucide />
+    <script src="@scripts/webaipage"></script>
+  </body>
+</html>

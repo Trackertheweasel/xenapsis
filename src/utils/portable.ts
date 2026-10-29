@@ -10,6 +10,7 @@ const FORMAT = 'persec-settings';
 const TOGGLES = [
   'cloak',
   'adBlock',
+  'blockWebRTC',
   'autoCloak',
   'beforeUnload',
   'tabSwitchCloak',

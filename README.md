@@ -11,6 +11,7 @@
 - Fast performance
 - `about:blank` cloaking
 - Built in ad blocking
+- Keeps WebRTC from revealing your real IP address (switch it off in Settings for game streaming such as GeForce NOW)
 - No analytics or third-party trackers
 - Self-served, tracking-free sponsor slot
 - Tab system
@@ -271,6 +272,17 @@ Most hosting providers forbid public proxies but allow private ones. In invite-o
 
 If Persec runs behind a reverse proxy other than the bundled Caddy, set `PERSEC_CLIENT_IP_HEADER` to the header that proxy puts the visitor's address in (for example `x-real-ip`), and only if the proxy always overwrites it. Persec uses it to count wrong codes per visitor. Without it, Persec counts by the connection's address and ignores such headers, because anyone could otherwise send a different fake address with every guess. `deploy/compose.yml` sets it for Caddy.
 
+`render.yaml` sets it to `true-client-ip`, the header Cloudflare (in front of Render) fills in, but Render doesn't document that a visitor can't supply their own. Check it once after deploying: send 11 wrong codes, each with a different made-up address, and the last one must still be refused with "Too many attempts":
+
+```bash
+for i in $(seq 1 11); do
+  curl -s -o /dev/null -w '%{http_code}\n' -H "True-Client-IP: 203.0.113.$i" \
+    -d code=wrong https://<your-app>.onrender.com/enter
+done
+```
+
+If it ends in `401` instead of `429`, the header can be faked: delete `PERSEC_CLIENT_IP_HEADER` in the Render dashboard. Wrong codes are then counted for all visitors together, which is strict but can't be dodged. The check itself locks your own address out for 15 minutes.
+
 With `PERSEC_ADMIN_PASSWORD` set (12+ characters; `persec admin` makes one), `/admin` shows each invite name's usage live: online now, data downloaded and uploaded, time connected, tabs opened and last seen. Open it signed in with your own code, then enter that password (any username). The counts are kept only in memory and reset on restart, sites visited are never recorded, and the privacy page tells people this can be on. Without the password, nothing is counted.
 
 People enter their code once and stay signed in as long as they come back at least once every 30 days, and their browser's password manager can save the code for them. The new tab page greets each person by their invite's name (the part before the `:`, or the name given to `persec invite`), so pick names you're happy for them to see. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
@@ -345,6 +357,26 @@ The model picker lists what OpenRouter offers right now (fetched by the server a
 - Each message, with the rest of its conversation, goes to OpenRouter and on to the company running the chosen model. OpenRouter sees the server's address, not the visitor's. The page and the privacy page say so; it is not local or end-to-end private.
 
 The Astro dev server (`pnpm dev`) has no `/api/ai` routes; run `pnpm build && pnpm start` to try PerSec AI locally.
+
+## Web AI (ChatGPT and Claude)
+
+`/webai` (`persec://webai`, or **Web AI** at the top of the PerSec AI page) opens the real [ChatGPT](https://chatgpt.com/) and [Claude](https://claude.ai/) websites through the normal proxy. It is not PerSec AI and doesn't use OpenRouter. People use the sites themselves, with their own accounts. Persec doesn't touch either company's API, sign-in or credentials.
+
+Both sites are behind Cloudflare and may show a "Just a moment…" or "couldn't verify your browser" check when opened through a proxy. Persec doesn't try to get past these; if one won't clear, the site can't be used through this server. [docs/web-ai.md](docs/web-ai.md) has the proxy audit (WebSockets, streaming, cookies, storage, security headers), the known limits, and a compatibility checklist to run on your deployment.
+
+### Browser mode (optional, off by default)
+
+An owner with a spare machine can also run [Camoufox](https://github.com/daijro/camoufox) as a separate browser service. Each signed-in person then gets an isolated server-side browser session for ChatGPT or Claude. It needs invite-only mode, at least 2 GB of RAM for the browser service, `playwright-core` installed next to Persec, and these settings:
+
+| Variable                      | What it does                                                    |
+| ----------------------------- | --------------------------------------------------------------- |
+| `CAMOUFOX_ENABLED`            | `true` to turn browser mode on                                  |
+| `CAMOUFOX_WS_ENDPOINT`        | The browser service's Playwright endpoint, on a private network |
+| `CAMOUFOX_MAX_SESSIONS`       | Browsers open at once (default 2)                               |
+| `CAMOUFOX_SESSION_TIMEOUT_MS` | Longest a session lives (default 30 minutes)                    |
+| `CAMOUFOX_IDLE_TIMEOUT_MS`    | How long an unused session stays open (default 5 minutes)       |
+
+Sessions can be viewed and moved between pages, but typing into them isn't implemented yet. See [docs/browser-runtime.md](docs/browser-runtime.md) for the evaluation, security model, deployment steps and remaining work.
 
 ---
 
