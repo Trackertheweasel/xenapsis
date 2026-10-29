@@ -2647,25 +2647,29 @@
       "name": "Netflix",
       "desc": "Stream movies and TV shows.",
       "icon": "",
-      "url": "https://www.netflix.com"
+      "url": "https://www.netflix.com",
+      "section": "Movies & TV"
     },
     {
       "name": "Hulu",
       "desc": "Watch TV shows and movies online.",
       "icon": "",
-      "url": "https://www.hulu.com"
+      "url": "https://www.hulu.com",
+      "section": "Movies & TV"
     },
     {
       "name": "Disney+",
       "desc": "Stream Disney, Pixar, Marvel, and more.",
       "icon": "",
-      "url": "https://www.disneyplus.com"
+      "url": "https://www.disneyplus.com",
+      "section": "Movies & TV"
     },
     {
       "name": "Prime Video",
       "desc": "Amazon's streaming service.",
       "icon": "",
-      "url": "https://www.primevideo.com"
+      "url": "https://www.primevideo.com",
+      "section": "Movies & TV"
     },
     {
       "name": "Apple Music",
@@ -3092,7 +3096,8 @@
       "name": "HBO MAX",
       "desc": "Opens hbomax.com.",
       "url": "https://www.hbomax.com/",
-      "icon": "/a/images/ap/in-hbo.webp"
+      "icon": "/a/images/ap/in-hbo.webp",
+      "section": "Movies & TV"
     },
     {
       "name": "Messenger",
@@ -3122,7 +3127,8 @@
       "name": "Paramount Plus",
       "desc": "Opens paramountplus.com.",
       "url": "https://paramountplus.com",
-      "icon": "/a/images/ap/in-paramount.webp"
+      "icon": "/a/images/ap/in-paramount.webp",
+      "section": "Movies & TV"
     },
     {
       "name": "Pixlr",
@@ -3150,9 +3156,10 @@
     },
     {
       "name": "Free Media Heck Yeah",
-      "desc": "Opens fmhy.pages.dev.",
-      "url": "https://fmhy.pages.dev",
-      "icon": "/a/images/ap/in-fmhy.webp"
+      "desc": "FMHY's index of free movies, TV, music and more.",
+      "url": "https://fmhy.net",
+      "icon": "/a/images/ap/in-fmhy.webp",
+      "section": "Movies & TV"
     },
     {
       "name": "GOAL",
@@ -3345,6 +3352,132 @@
       "desc": "Opens talkai.info.",
       "url": "https://talkai.info/chat/",
       "icon": "/a/images/ap/in-ta.webp"
+    },
+    {
+      "name": "Tubi",
+      "desc": "Free movies and TV with ads.",
+      "url": "https://tubitv.com",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Pluto TV",
+      "desc": "Free live channels, movies and TV with ads.",
+      "url": "https://pluto.tv/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Plex",
+      "desc": "Free movies and TV with ads.",
+      "url": "https://watch.plex.tv/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "The Roku Channel",
+      "desc": "Free movies and TV with ads. US only.",
+      "url": "https://therokuchannel.roku.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Popcornflix",
+      "desc": "Free movies and TV with ads.",
+      "url": "https://popcornflix.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Fawesome",
+      "desc": "Free movies and TV with ads.",
+      "url": "https://fawesome.tv/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Sling Freestream",
+      "desc": "Free movies, TV and live news. US only.",
+      "url": "https://watch.sling.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Xumo Play",
+      "desc": "Free live TV channels. US only.",
+      "url": "https://play.xumo.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Fandango at Home Free",
+      "desc": "Free movies and TV with ads. US only.",
+      "url": "https://athome.fandango.com/content/browse/free",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Shout! TV",
+      "desc": "Free movies and TV. US and Canada only.",
+      "url": "https://www.shout-tv.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Kanopy",
+      "desc": "Films and documentaries with a library card.",
+      "url": "https://www.kanopy.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "hoopla",
+      "desc": "Movies, TV and more with a library card.",
+      "url": "https://www.hoopladigital.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "BYUtv",
+      "desc": "Free family-friendly TV.",
+      "url": "https://www.byutv.org/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Filmzie",
+      "desc": "Free movies and TV with ads.",
+      "url": "https://filmzie.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "ARTE",
+      "desc": "Free European films, series and documentaries.",
+      "url": "https://www.arte.tv/en",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "FlixHouse",
+      "desc": "Free independent movies.",
+      "url": "https://flixhouse.com/",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Internet Archive Films",
+      "desc": "Classic, silent and public domain films.",
+      "url": "https://archive.org/details/moviesandfilms",
+      "icon": "",
+      "section": "Movies & TV"
+    },
+    {
+      "name": "Public Domain Movies",
+      "desc": "Films that are free to watch and share.",
+      "url": "https://publicdomainmovie.net/",
+      "icon": "",
+      "section": "Movies & TV"
     }
   ]
 }

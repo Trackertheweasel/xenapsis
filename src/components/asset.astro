@@ -10,6 +10,8 @@ interface Game {
   icon: string;
   // Small square logo bundled with Persec, shown on the tile.
   logo?: string;
+  // The section it is also listed under, such as "Movies & TV". Everything shows under All.
+  section?: string;
 }
 
 // A steady colour per name, so letter tiles are easy to tell apart.
@@ -18,6 +20,7 @@ const hue = (name: string) => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(
 const { list = [] }: { list?: Game[] } = Astro.props;
 const { type = '' }: { type?: string } = Astro.props;
 const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
+const sections = [...new Set(list.map(g => g.section).filter(Boolean))].sort() as string[];
 ---
 
 <html lang="en">
@@ -82,6 +85,21 @@ const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
           </button>
         </div>
 
+        {sections.length > 0 && (
+          <div data-sections role="group" aria-label="Sections" class="mb-3 flex flex-wrap gap-2">
+            {['', ...sections].map(section => (
+              <button
+                type="button"
+                data-section={section}
+                aria-pressed={section === '' ? 'true' : 'false'}
+                class="bg-background-overlay text-text-secondary hover:text-text-header aria-pressed:bg-text-header aria-pressed:text-background h-9 rounded-full px-4 text-sm transition-colors"
+              >
+                {section || 'All'}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div class="text-text-secondary text-sm">
           Showing{' '}
           <span data-visible class="text-text-header">
@@ -105,6 +123,7 @@ const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
           <div
             data-href={g.url}
             data-name={g.name}
+            data-section={g.section}
             data-bg={g.icon || undefined}
             role="link"
             tabindex="0"

@@ -81,18 +81,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (count) count.textContent = String(vis);
     const total = document.querySelector<HTMLSpanElement>('[data-total]');
     if (total) total.textContent = String(items.length);
-    const show = vis === 0 && input && input.value.trim() !== '';
+    const show = vis === 0 && input && (input.value.trim() !== '' || section !== '');
     empty?.classList.toggle('hidden', !show);
     empty?.classList.toggle('flex', !!show);
   }
 
-  input.addEventListener('input', () => {
+  // The search and the chosen section (asset.astro's section buttons; '' is All) together.
+  let section = '';
+  const filter = () => {
     const q = input.value.toLowerCase().trim();
     for (const { el, n, d } of items) {
-      el.style.display = n.includes(q) || d.includes(q) ? '' : 'none';
+      const inSection = !section || el.dataset.section === section;
+      el.style.display = inSection && (n.includes(q) || d.includes(q)) ? '' : 'none';
     }
     update();
-  });
+  };
+  input.addEventListener('input', filter);
+
+  const sectionButtons = document.querySelectorAll<HTMLButtonElement>('[data-sections] button');
+  for (const button of sectionButtons) {
+    button.addEventListener('click', () => {
+      section = button.dataset.section || '';
+      for (const b of sectionButtons) b.setAttribute('aria-pressed', String(b === button));
+      filter();
+    });
+  }
 
   document.querySelector<HTMLButtonElement>('[data-random]')?.addEventListener('click', () => {
     const vis = items.filter(({ el }) => el.style.display !== 'none');
@@ -109,8 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelector<HTMLButtonElement>('[data-clear]')?.addEventListener('click', () => {
     input.value = '';
-    for (const { el } of items) el.style.display = '';
-    update();
+    filter();
   });
 
   const views = ['grid', 'list', 'compact'] as const;
