@@ -67,3 +67,28 @@ test('A GET form query and a fragment both survive decoding', () => {
     'https://example.com/s?q=1#/top?a',
   );
 });
+
+// A page that sets location.hash itself leaves a plain fragment in its address, which Scramjet
+// still runs through the codec on its own. "/route?x=1" is valid base64 up to the "?", so it used to
+// come back as garbage and hash-routed pages saw the wrong route.
+test('A fragment the page set itself survives Scramjet as it is', () => {
+  const page = '/' + encodeUrl('https://app.example.com/') + '#/route?x=1';
+  assert.equal(scramjetUnrewrite(page), 'https://app.example.com/#/route?x=1');
+});
+
+test('A fragment is never scrambled, and never decoded as an address', () => {
+  for (const fragment of [
+    'top',
+    '/route?x=1',
+    'access_token=abc&state=xyz',
+    'QxQ6EAM8Og4NWg',
+    'abcd',
+  ]) {
+    assert.equal(encodeUrl(fragment), fragment);
+    assert.equal(decodeUrl(fragment), fragment);
+  }
+  // Every short base64 string decodes to bytes; none of them is taken for an address.
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  for (const a of chars)
+    for (const b of chars) for (const c of 'Aa0-') assert.equal(decodeUrl(a + b + c), a + b + c);
+});
