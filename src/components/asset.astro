@@ -87,11 +87,20 @@ const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
           <span data-visible class="text-text-header">
             {sorted.length}
           </span>{' '}
-          of {sorted.length}
+          of <span data-total>{sorted.length}</span>
         </div>
       </div>
 
-      <div data-container class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+      <div data-type={type} data-container class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <button
+          type="button"
+          data-add-custom
+          class="bg-background-overlay text-text-secondary hover:text-text-header hover:border-text-secondary/60 flex h-44 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-white/15 transition-colors"
+        >
+          <i data-lucide="plus" class="h-8 w-8"></i>
+          <span class="font-semibold">Add your own</span>
+          <span class="px-4 text-center text-xs">Any site, saved in this browser only</span>
+        </button>
         {sorted.map(g => (
           <div
             data-href={g.url}
@@ -132,6 +141,49 @@ const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
         </div>
       </div>
     </div>
+
+    <dialog
+      data-custom-dialog
+      aria-labelledby="custom-title"
+      class="bg-background-overlay text-text-header m-auto w-[min(26rem,calc(100%-2rem))] rounded-xl border border-white/10 p-5 backdrop:bg-black/60"
+    >
+      <form data-custom-form method="dialog" class="space-y-3">
+        <h2 id="custom-title" class="text-lg font-semibold">
+          Add your own {type === 'games' ? 'game' : 'app'}
+        </h2>
+        <label class="block text-sm">
+          <span class="mb-1 block">Name</span>
+          <input
+            name="name"
+            maxlength="60"
+            class="bg-background text-text-header h-10 w-full rounded-lg px-3 text-sm focus:outline-none"
+          />
+        </label>
+        <label class="block text-sm">
+          <span class="mb-1 block">Address</span>
+          <input
+            name="url"
+            required
+            inputmode="url"
+            placeholder="example.com"
+            class="bg-background text-text-header h-10 w-full rounded-lg px-3 text-sm focus:outline-none"
+          />
+        </label>
+        <p data-custom-error role="alert" class="min-h-4 text-xs text-red-300"></p>
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            data-custom-cancel
+            class="text-text-secondary hover:text-text-header h-10 rounded-lg px-4 text-sm"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="bg-accent h-10 rounded-lg px-4 text-sm font-semibold text-black">
+            Add
+          </button>
+        </div>
+      </form>
+    </dialog>
 
     <ImportLucide />
     <script src="../utils/assets"></script>

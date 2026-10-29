@@ -23,9 +23,18 @@ interface DefaultedSettings extends Prefs {
   wispUrl: string;
   bm: Bookmark[];
   shortcutsSeeded: boolean;
+  // Page guards (src/utils/guards.ts): '' is the browser's own user agent.
+  userAgent: string;
+  fingerprintNoise: OnOff;
+  leakGuard: OnOff;
+  siteFixes: OnOff;
 }
 
 interface UnsetSettings {
+  // The headers the service worker sends for `userAgent`, saved with it (src/utils/settings/guards.ts).
+  userAgentHeaders: Record<string, string> | null;
+  customGames: { name: string; url: string }[];
+  customApps: { name: string; url: string }[];
   tabSwitchCloak: OnOff;
   loginConsent: Consent;
   guideDone: boolean;
@@ -80,6 +89,10 @@ const defaults: DefaultedSettings = {
   bm: [],
   // Whether the start page's first tiles have been added to `bm` (see loadBookmarks).
   shortcutsSeeded: false,
+  userAgent: '',
+  fingerprintNoise: 'off',
+  leakGuard: 'on',
+  siteFixes: 'on',
   ...PREF_DEFAULTS,
 };
 

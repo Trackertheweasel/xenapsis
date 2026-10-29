@@ -3,6 +3,7 @@
 export const prerender = true;
 import '@/main.css';
 import ImportLucide from '../layouts/lucide.astro';
+import { PRESET_CATEGORIES, USER_AGENT_PRESETS } from '../utils/guards';
 ---
 
 <html lang="en">
@@ -496,6 +497,93 @@ import ImportLucide from '../layouts/lucide.astro';
                   class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
                   data-toggle="adBlock"
                 ></button>
+              </div>
+              <div class="bg-background-overlay/60 space-y-4 rounded-xl border border-white/6 p-5">
+                <div>
+                  <h3 class="mb-1 font-medium">Privacy guards</h3>
+                  <p class="text-text-secondary text-sm">
+                    What sites you open can learn about your device. These work with the Scramjet engine only.
+                  </p>
+                </div>
+                <label class="block">
+                  <span class="mb-1 block text-sm font-medium">Browser sites see</span>
+                  <span class="text-text-secondary mb-2 block text-sm">
+                    Pretend to be another browser or device. Also useful to get a site's phone or desktop version.
+                  </span>
+                  <select
+                    data-user-agent
+                    class="bg-background/80 w-full rounded-lg border border-white/6 px-3 py-2.5 text-sm focus:border-[#6366f1]/40 focus:outline-none"
+                  >
+                    <option value="">Your own browser</option>
+                    {PRESET_CATEGORIES.map(({ id, label }) => (
+                      <optgroup label={label}>
+                        {USER_AGENT_PRESETS.filter(p => p.category === id).map(p => (
+                          <option value={p.id}>{p.label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    <option value="custom">Custom…</option>
+                  </select>
+                </label>
+                <input
+                  type="text"
+                  hidden
+                  data-user-agent-custom
+                  maxlength="512"
+                  aria-label="Custom user agent"
+                  placeholder="Paste a user agent, then press Enter"
+                  class="bg-background/80 w-full rounded-lg border border-white/6 px-4 py-2.5 text-sm focus:border-[#6366f1]/40 focus:outline-none"
+                />
+                <div class="flex items-center justify-between gap-4 border-t border-white/6 pt-4">
+                  <div>
+                    <h4 class="text-sm font-medium">Fingerprint noise</h4>
+                    <p class="text-text-secondary text-sm">
+                      Gives sites slightly different canvas, graphics card and hardware details each session, so they
+                      are harder to recognise you by. A few sites with captchas may complain.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked="false"
+                    aria-label="Fingerprint noise"
+                    class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                    data-toggle="fingerprintNoise"
+                  ></button>
+                </div>
+                <div class="flex items-center justify-between gap-4 border-t border-white/6 pt-4">
+                  <div>
+                    <h4 class="text-sm font-medium">Keep new windows in Persec</h4>
+                    <p class="text-text-secondary text-sm">
+                      Links and pop-ups that open a new window open in a new Persec tab instead of a bare browser tab,
+                      which would show in your history.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked="false"
+                    aria-label="Keep new windows in Persec"
+                    class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                    data-toggle="leakGuard"
+                  ></button>
+                </div>
+                <div class="flex items-center justify-between gap-4 border-t border-white/6 pt-4">
+                  <div>
+                    <h4 class="text-sm font-medium">Site fixes</h4>
+                    <p class="text-text-secondary text-sm">
+                      Small fixes for sites that break under the proxy, such as DuckDuckGo, TikTok and Twitch searches.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked="false"
+                    aria-label="Site fixes"
+                    class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                    data-toggle="siteFixes"
+                  ></button>
+                </div>
               </div>
               <div class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5">
                 <div>

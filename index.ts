@@ -7,6 +7,7 @@ import { loadAccess } from 'serverlib/access';
 import { loadAiConfig } from 'serverlib/ai/index';
 import { buildApp } from 'serverlib/app';
 import { printBanner } from 'serverlib/banner';
+import { startBlocklist } from 'serverlib/blocklist';
 import { loadBrowserConfig } from 'serverlib/browser/index';
 import { wispPath } from 'serverlib/env';
 
@@ -29,6 +30,8 @@ if (!fs.existsSync(entry) || !fs.existsSync(pathsFile)) {
 const { handler } = await import(pathToFileURL(entry).href);
 
 const access = loadAccess();
+// Ad and tracker hosts the tunnel refuses (PERSEC_WISP_ADBLOCK=off turns it off).
+startBlocklist();
 const app = await buildApp({
   access,
   // The client bakes the same value in at build time (serverlib/env.ts is shared with astro.config.ts).

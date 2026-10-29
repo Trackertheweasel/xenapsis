@@ -45,12 +45,19 @@ export function installDom(html = '') {
   g.PERSEC_PATHS = paths;
   g.URL_KEY = 'test-key';
   g.tmpConfig = { prefix: paths.uvPrefix, encodeUrl, decodeUrl };
-  // Scramjet's controller, which registers each tab's frame; here it only counts them.
+  // Scramjet's controller, which registers each tab's frame; here it only counts them, and keeps
+  // what listens on each frame's ScramjetFrame (contextInit) so a test can fire it.
   const frames: unknown[] = [];
+  const frameListeners: Record<string, (event: any) => void>[] = [];
   g.$scramjetLoadController = () => ({
     ScramjetController: class {
       createFrame(frame: unknown) {
         frames.push(frame);
+        const listeners: Record<string, (event: any) => void> = {};
+        frameListeners.push(listeners);
+        return {
+          addEventListener: (type: string, fn: (event: any) => void) => (listeners[type] = fn),
+        };
       }
       async init() {}
     },
@@ -60,6 +67,7 @@ export function installDom(html = '') {
     window,
     paths,
     frames,
+    frameListeners,
     // A frame for requestAnimationFrame callbacks to run.
     tick: () => new Promise(resolve => setTimeout(resolve, 50)),
     close: () => window.happyDOM.close(),

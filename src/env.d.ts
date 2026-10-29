@@ -35,10 +35,19 @@ interface ScramjetOptions {
   files: ScramjetFiles;
 }
 
+// What Persec uses of a ScramjetFrame: contextInit fires as Scramjet starts each page in the frame
+// (subframes too), before the page's own scripts, with the page's window and Scramjet's client.
+interface ScramjetFrame {
+  addEventListener(
+    type: 'contextInit',
+    listener: (event: { window: Window; client: { url: URL | string } }) => void,
+  ): void;
+}
+
 declare class ScramjetController {
   constructor(options: ScramjetOptions);
   init(): any;
-  createFrame(frame: HTMLIFrameElement): unknown;
+  createFrame(frame: HTMLIFrameElement): ScramjetFrame;
   decodeUrl(url: string): string;
   encodeUrl(url: string): string;
 }

@@ -5,6 +5,7 @@ import net from 'node:net';
 import type { Duplex } from 'node:stream';
 import { ACCESS_COOKIE, displayName, readCookie, tokenSubject } from './access';
 import type { AccessConfig } from './access';
+import { blocklistMatcher } from './blocklist';
 import { trackTunnel } from './stats';
 
 logging.set_level(logging.ERROR);
@@ -65,7 +66,8 @@ Object.assign(wisp.options, {
   // wisp-js refuses loopback and private addresses, but classifies IPv6 forms of IPv4 addresses
   // (::ffff:127.0.0.1, ::ffff:169.254.169.254) as neither, so they reached the host, the Docker
   // network and cloud metadata. Browsing never needs an IPv6 literal, so refuse every one.
-  hostname_blacklist: [/:/],
+  // Plus the tunnel's ad and tracker blocklist (serverlib/blocklist.ts), off with PERSEC_WISP_ADBLOCK=off.
+  hostname_blacklist: [/:/, blocklistMatcher],
   wisp_version: 2,
   // The MOTD is returned to anyone who completes the WebSocket handshake. The usual
   // "wisp server" string is a fixed value that lets automated fingerprinting identify the

@@ -3,6 +3,7 @@ import '@/main.css';
 import Shortcuts from '../layouts/shortcuts.astro';
 import Sponsor from '../components/Sponsor.astro';
 import quotes from '../../public/a/json/quotes.json';
+import { THEME_SWATCHES } from '../utils/personalize';
 
 const randomIndex = Math.floor(Math.random() * quotes.length);
 const randomQuote = quotes[randomIndex]?.quote || '';
@@ -225,12 +226,7 @@ const randomQuote = quotes[randomIndex]?.quote || '';
         <fieldset class="space-y-2">
           <legend class="mb-2 text-sm font-medium text-white/90">Theme</legend>
           <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {[
-              ['midnight', 'Midnight', '#232136', '#8b87ff'],
-              ['aurora', 'Aurora', '#0e1726', '#67d4f5'],
-              ['ember', 'Ember', '#1c1a19', '#f5b04a'],
-              ['minimal', 'Minimal', '#18181b', '#d4d4d8'],
-            ].map(([value, label, bg, accent]) => (
+            {THEME_SWATCHES.map(({ value, label, bg, accent }) => (
               <label class="has-checked:border-accent has-focus-visible:outline-accent flex cursor-pointer flex-col gap-2 rounded-xl border border-white/10 p-2 text-sm has-focus-visible:outline-2 has-focus-visible:outline-offset-2 hover:border-white/25">
                 <input type="radio" name="theme" value={value} class="sr-only" />
                 <span

@@ -424,6 +424,17 @@ Persec deliberately sends the network no visitor IP or user agent, so it cannot 
 
 ---
 
+## Tunnel ad blocking
+
+The server refuses to open connections to ad and tracker hosts on a public DNS blocklist, so ads stop loading for every visitor whichever engine they use (an idea from [Interstellar](https://github.com/UseInterstellar/Interstellar)). The list is [AdGuard DNS filter](https://github.com/AdguardTeam/AdGuardSDNSFilter), downloaded at start and once a day after; it takes about 25 MB of memory. If the download fails nothing is blocked, so browsing never breaks.
+
+| Variable                    | What it does                                                            |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `PERSEC_WISP_ADBLOCK`       | `off` turns tunnel ad blocking off                                      |
+| `PERSEC_WISP_BLOCKLIST_URL` | Another list in Adblock (`\|\|host^`) or hosts-file format, up to 10 MB |
+
+---
+
 ## When Persec can't connect
 
 When something Persec needs isn't available, the browser window shows what failed instead of loading forever. It covers service workers, shared workers, site storage, WebAssembly, the proxy engine, and the connection to the server. It also says whether to fix it in the browser, try another network or the backup address, or sign in again. **Settings → Advanced → Check connection** runs the same checks on demand. If they all pass and a site still won't load, that site is the problem; try the other proxy engine in Settings. Where a browser setting or a school or work policy turns off something Persec needs, the message says so and suggests another browser or device. Persec never tries to get around the policy. [docs/resilience.md](docs/resilience.md) lists which browsers are expected to work.
@@ -450,4 +461,4 @@ Found a bug? Open a [GitHub Issue](https://github.com/Trackertheweasel/xenapsis/
 
 ## Credits and license
 
-Persec is based on [Lunar v2](https://github.com/lunar-proxy/lunar-v2) by Bearcattt and the Lunar contributors, and is licensed under the [GNU AGPL-3.0](LICENSE). The build's name scrub is adapted from [Nebula](https://github.com/NebulaServices/Nebula) and its text masking from [InvisiProxy](https://github.com/QuiteAFancyEmerald/Holy-Unblocker), both AGPL-3.0. Because Persec runs as a network service, the AGPL requires that its users can get the source code; the app links to this repository from Settings → About and from the privacy page.
+Persec is based on [Lunar v2](https://github.com/lunar-proxy/lunar-v2) by Bearcattt and the Lunar contributors, and is licensed under the [GNU AGPL-3.0](LICENSE). Some features are ported from [Interstellar](https://github.com/UseInterstellar/Interstellar) (games and apps list, extra themes, the custom tile and the idea of tunnel ad blocking), [InvisiProxy LTS](https://github.com/InvisiProxy/InvisiProxyLTS) (privacy guards and site fixes), [Nebula](https://github.com/NebulaServices/Nebula) (themes and the build's name scrub) and [InvisiProxy](https://github.com/QuiteAFancyEmerald/Holy-Unblocker) (text masking), all AGPL-3.0. Games marked as served from a GitHub mirror are third-party files from the [3v1/V5-Assets](https://github.com/3v1/V5-Assets) and [xbubbo/V6-Assets](https://github.com/xbubbo/V6-Assets) repositories, pinned to one commit each; their copyright stays with their owners and Persec does not store them. Because Persec runs as a network service, the AGPL requires that its users can get the source code; the app links to this repository from Settings → About and from the privacy page.

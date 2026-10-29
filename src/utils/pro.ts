@@ -49,7 +49,7 @@ class ScramjetWrapper {
   // page script crashes while walking up to Persec's own (unproxied) pages, which also
   // leaves the cookie dump it injects (window.COOKIE) readable by the site.
   tagFrame(frame: HTMLIFrameElement) {
-    this.controller().createFrame(frame);
+    return this.controller().createFrame(frame);
   }
 
   async init() {

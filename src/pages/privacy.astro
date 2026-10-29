@@ -51,15 +51,24 @@ import '@/main.css';
             removes them.
           </li>
           <li>
-            The start page's look (theme, clock and quote choices), its shortcuts and any name you enter in Customize
-            are kept in your browser too. Your name is never sent to the server, and Persec doesn't use your browsing to
-            choose shortcuts or anything else.
+            The start page's look (theme, clock and quote choices), its shortcuts, any name you enter in Customize and
+            the games and apps you add yourself are kept in your browser too. Your name is never sent to the server, and
+            Persec doesn't use your browsing to choose shortcuts or anything else.
           </li>
           <li>
             For search suggestions, words you type in the address bar are sent to DuckDuckGo by the Persec server, not
             by your browser. Web addresses you type or visit are never sent.
           </li>
           <li>The Persec server finds websites using Cloudflare's DNS, which blocks known malware sites.</li>
+          <li>
+            The server also refuses to connect to ad and tracker hosts on a public blocklist (AdGuard DNS filter, unless
+            whoever runs it chose another or turned it off). The server downloads the list once a day; nothing about you
+            is sent with that download.
+          </li>
+          <li>
+            Settings &rarr; Browsing &rarr; Privacy guards can make sites see another browser or device, add noise to
+            your device's fingerprint and keep new windows inside Persec. These are saved in your browser only.
+          </li>
           <li>
             The company that hosts the server may keep its own connection logs, such as your IP address and the time you
             connected.

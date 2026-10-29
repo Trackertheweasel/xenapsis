@@ -1,5 +1,6 @@
 import * as baremux from '@mercuryworkshop/bare-mux';
 import ConfigAPI from './config';
+import { GUARDS_CHANNEL, applyGuards, readGuards, type Guards } from './guards';
 import { decodeProxyUrl, encodeProxyUrl, scramjetWrapper } from './pro';
 import { internalName } from './routes';
 import { ensureTransport } from './transport';
@@ -179,7 +180,13 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
     'sandbox',
     'allow-scripts allow-popups allow-modals allow-top-navigation allow-pointer-lock allow-same-origin allow-forms',
   );
-  scramjetWrapper.tagFrame(frame);
+  // Every page Scramjet starts in this frame, subframes too, gets the guards before its own
+  // scripts run. Ultraviolet pages only get the window.open fix below, once loaded.
+  scramjetWrapper
+    .tagFrame(frame)
+    .addEventListener('contextInit', ({ window: win, client }) =>
+      applyGuards(win, client, guards, openInNewTab),
+    );
   frame.addEventListener('load', () => {
     try {
       const win = frame.contentWindow;
@@ -187,6 +194,8 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
       if (!win || !doc) return;
       // Every page is a new window: proxied sites run on Persec's origin, so this reaches them too.
       win.addEventListener('keydown', e => onFrameKeydown?.(e), true);
+      // The leak guard (Settings) already sends every new window to a Persec tab.
+      if ((win as any)[Symbol.for('persec leak guard')]) return;
       // The engine's own window.open proxies the address and returns a real window, which sign-in
       // pop-ups need: the site navigates it, watches it, and the pop-up messages its opener (GeForce
       // NOW gives up at once when it gets null). It also handles _self, _top and _parent, which
@@ -198,15 +207,36 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
         const opened = open.apply(win, args);
         const [openUrl, , features] = args;
         if (!opened && openUrl && !/\bno(opener|referrer)\b/i.test(String(features ?? ''))) {
-          encodeForTab(openUrl.toString()).then(proxyUrl => {
-            openTab(proxyUrl);
-          });
+          openInNewTab(openUrl.toString());
         }
         return opened;
       };
     } catch {}
   });
   return frame;
+}
+
+// A site's address (or, should a page hand over its proxied one, that) in a new Persec tab.
+function openInNewTab(url: string) {
+  const real = decodeProxyUrl(new URL(url, location.href).href) || url;
+  encodeForTab(real).then(proxyUrl => openTab(proxyUrl));
+}
+
+// The saved guards, kept current: Settings announces changes on GUARDS_CHANNEL.
+let guards: Guards = readGuards({});
+async function loadGuards() {
+  const keys = ['userAgent', 'fingerprintNoise', 'leakGuard', 'siteFixes'] as const;
+  const values = await Promise.all(keys.map(k => ConfigAPI.get(k)));
+  guards = readGuards(Object.fromEntries(keys.map((k, i) => [k, values[i]])), sessionStorage);
+}
+if (typeof window !== 'undefined') {
+  loadGuards().catch(() => {});
+  try {
+    const channel = new BroadcastChannel(GUARDS_CHANNEL);
+    channel.onmessage = () => loadGuards().catch(() => {});
+    // Node (the tests) would otherwise stay running for the channel.
+    (channel as { unref?: () => void }).unref?.();
+  } catch {}
 }
 
 function getTabClass(active: boolean): string {

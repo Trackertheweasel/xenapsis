@@ -21,6 +21,7 @@ import {
   initPortableSettings,
   reset,
 } from './settings/data';
+import { initGuards } from './settings/guards';
 import { initSavedLogins } from './settings/logins';
 import { initNav, initScrollSpy, initSearch } from './settings/nav';
 import { formatPanicKey, initPanicKey, setPanicKey } from './settings/panic';
@@ -138,6 +139,7 @@ export class SettingsManager {
     initScrollSpy();
     initSearch();
     initToggles();
+    initGuards();
     initInputs();
     initDropdowns();
     initEngines();

@@ -63,5 +63,8 @@ test('Apps open with the engine chosen in Settings', async () => {
   const src = await read('src/utils/assets.ts');
   // Each engine encodes addresses its own way; encodeProxyUrl (src/utils/pro.ts, tested in
   // routes.test.ts) picks the encoding from the saved setting.
-  assert.match(src, /encodeProxyUrl\(url, await ConfigAPI\.get\('backend'\)\)/);
+  assert.match(
+    src,
+    /const backend = await ConfigAPI\.get\('backend'\);\s*window\.location\.href = encodeProxyUrl\(url, isMirrored\(url\) \? 'sc' : backend\)/,
+  );
 });
