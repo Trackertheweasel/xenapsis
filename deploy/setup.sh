@@ -9,6 +9,24 @@
 # Running it again updates Persec to the latest version and keeps your settings and invites.
 set -euo pipefail
 
+# Waits for the new container's health check (Dockerfile HEALTHCHECK: /healthz every 30 s).
+# Fails if the container stops or restarts, or isn't healthy within 3 minutes.
+wait_healthy() {
+  local id state
+  id=$(docker compose --project-directory "$1/deploy" -f "$1/deploy/compose.yml" ps -q persec)
+  [ -n "$id" ] || return 1
+  for _ in $(seq 90); do
+    state=$(docker inspect -f '{{.State.Status}} {{.RestartCount}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' "$id" 2>/dev/null) || return 1
+    case "$state" in
+      "running 0 healthy") return 0 ;;
+      "running 0 starting") ;;
+      *) return 1 ;;
+    esac
+    sleep 2
+  done
+  return 1
+}
+
 # Everything is inside main so an update can't change this file while bash is still reading it.
 main() {
   local repo=${PERSEC_REPO:-https://github.com/Trackertheweasel/xenapsis}
@@ -116,12 +134,33 @@ EOF
   echo "==> Building and starting Persec (this takes 5-10 minutes the first time)"
   docker compose --project-directory "$dir/deploy" -f "$dir/deploy/compose.yml" \
     up -d --build --remove-orphans
+
+  # An update that doesn't start would otherwise leave the site down until someone notices and
+  # runs `persec rollback`. Wait for the image's health check; if it fails, go back on our own.
+  echo "==> Checking that it started"
+  if ! wait_healthy "$dir"; then
+    if docker image inspect persec:previous >/dev/null 2>&1; then
+      echo "This version didn't start, so Persec went back to the one that was running before." >&2
+      echo "Your settings are unchanged. See what went wrong with: persec logs" >&2
+      docker image tag persec:previous persec:latest
+      docker compose --project-directory "$dir/deploy" -f "$dir/deploy/compose.yml" \
+        up -d --no-build persec
+    else
+      echo "Persec didn't start. See what went wrong with: persec logs" >&2
+    fi
+    exit 1
+  fi
+
   # Installs from before Persec ran as the unprivileged node user left root-owned backups.
   docker compose --project-directory "$dir/deploy" -f "$dir/deploy/compose.yml" \
     exec -T --user root persec chown -R node:node /app/data
   # Before compose named the image (see compose.yml), it was called persec-persec.
   docker image rm persec-persec >/dev/null 2>&1 || true
   docker image prune -f >/dev/null
+  # Every build leaves gigabytes of cache, which would fill a small disk over a few updates. Keep
+  # enough to make the next update quicker. Older Docker only knows --keep-storage.
+  docker builder prune -f --max-used-space 3gb >/dev/null 2>&1 ||
+    docker builder prune -f --keep-storage 3gb >/dev/null 2>&1 || true
 
   echo
   echo "Persec is running at:"

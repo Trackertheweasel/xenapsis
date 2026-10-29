@@ -100,6 +100,10 @@ test('Static files get their own cache headers', () => {
   for (const file of Object.values(paths.files)) assert.equal(at(file), 'no-cache', file);
   assert.equal(at('/sw.js'), 'public, max-age=3600', 'the old fixed name means nothing now');
   assert.equal(at('a/images/logo.webp'), 'public, max-age=3600');
+  // The build's compressed copies are cached like the file they stand for.
+  assert.equal(at('st.html.br'), 'no-cache, no-store, must-revalidate');
+  assert.equal(at(paths.sw + '.gz'), 'no-cache');
+  assert.equal(at('_astro/app.AbC123.js.br'), 'public, max-age=31536000, immutable');
 });
 
 test('Served files carry those headers and stay behind the invite gate', async () => {
