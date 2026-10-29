@@ -33,3 +33,34 @@ test('Decoding keeps a query a GET form appended, and survives garbage', () => {
   assert.equal(decodeUrl('not*base64'), 'not*base64');
   assert.equal(decodeUrl(''), '');
 });
+
+// Scramjet encodes a page's #fragment on its own, and decodes "<encoded URL>#<decoded fragment>"
+// (and a fragment on its own), so a page reached through a sign-in redirect with #access_token=...,
+// or a school app with hash routes, made every request after it fail with "Invalid URL".
+test('A #fragment after the encoded URL is kept as it is, ? and all', () => {
+  const encoded = encodeUrl('https://play.example.com/app');
+  assert.equal(decodeUrl(encoded + '#/route?x=1'), 'https://play.example.com/app#/route?x=1');
+  assert.equal(decodeUrl(encoded + '#top'), 'https://play.example.com/app#top');
+  assert.equal(
+    decodeUrl(encoded + '?q=1#access_token=abc'),
+    'https://play.example.com/app?q=1#access_token=abc',
+  );
+  assert.ok(URL.canParse(decodeUrl(encoded + '#QxQ6EAM8Og4NWg')));
+});
+
+test('A fragment is never scrambled, and never decoded as an address', () => {
+  for (const fragment of [
+    'top',
+    '/route?x=1',
+    'access_token=abc&state=xyz',
+    'QxQ6EAM8Og4NWg',
+    'abcd',
+  ]) {
+    assert.equal(encodeUrl(fragment), fragment);
+    assert.equal(decodeUrl(fragment), fragment);
+  }
+  // Every short base64 string decodes to bytes; none of them is taken for an address.
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  for (const a of chars)
+    for (const b of chars) for (const c of 'Aa0-') assert.equal(decodeUrl(a + b + c), a + b + c);
+});
