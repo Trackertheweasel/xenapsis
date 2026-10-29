@@ -8,6 +8,8 @@
 //
 // The server's list (serverlib/browser/sites.ts) has the same two sites; tests keep them in step.
 
+import { storedUserAgent } from './guards';
+
 export interface WebAiSite {
   id: 'chatgpt' | 'claude';
   name: string;
@@ -45,6 +47,26 @@ export function siteForUrl(url: string): WebAiSite | undefined {
   } catch {
     return undefined;
   }
+}
+
+// Cloudflare checks the browser on both sites, and fails when the browser claims to be something it
+// isn't, or its answers change. Two of Persec's settings do exactly that (src/utils/guards.ts), so
+// the page says so before the person opens a site, rather than leaving them stuck on the check.
+// Null when neither is on.
+export function verificationWarning(saved: {
+  userAgent?: unknown;
+  fingerprintNoise?: unknown;
+}): string | null {
+  const changed = [
+    storedUserAgent(saved.userAgent) && 'a different user agent',
+    saved.fingerprintNoise === 'on' && 'fingerprint noise',
+  ].filter(Boolean);
+  if (!changed.length) return null;
+  return (
+    `Settings has ${changed.join(' and ')} turned on. Cloudflare's check on ChatGPT and Claude ` +
+    'fails when a browser reports something it isn’t, so turn these off in Settings → Privacy ' +
+    'guards (user agent: your browser’s own) and reload the site.'
+  );
 }
 
 export type BrowserMode = 'proxy' | 'camoufox';

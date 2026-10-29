@@ -2,12 +2,14 @@
 // proxy), or, when the server has browser mode, in a Camoufox session on the server. Talks to
 // /api/browser/* only for browser mode, and never to PerSec AI's routes.
 import { openInPersec } from './bookmarks';
+import ConfigAPI from './config';
 import {
   WEB_AI_SITES,
   browserModeOn,
   describeState,
   errorMessage,
   siteForUrl,
+  verificationWarning,
   type BrowserMode,
   type PageState,
 } from './webai';
@@ -23,6 +25,8 @@ const ui = {
   blockedText: $('[data-blocked-text]'),
   refresh: $<HTMLButtonElement>('[data-refresh]'),
   end: $<HTMLButtonElement>('[data-end]'),
+  warning: $('[data-verify-warning]'),
+  warningText: $('[data-verify-warning-text]'),
 };
 
 const say = (text: string) => (ui.status.textContent = text);
@@ -131,6 +135,18 @@ ui.end.addEventListener('click', async () => {
     ui.end.disabled = false;
   }
 });
+
+(async () => {
+  try {
+    const [userAgent, fingerprintNoise] = await Promise.all([
+      ConfigAPI.get('userAgent'),
+      ConfigAPI.get('fingerprintNoise'),
+    ]);
+    const warning = verificationWarning({ userAgent, fingerprintNoise });
+    ui.warning.hidden = !warning;
+    ui.warningText.textContent = warning ?? '';
+  } catch {}
+})();
 
 // Browser mode exists only where the server says so; otherwise the page is just the two sites.
 (async () => {

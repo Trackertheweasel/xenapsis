@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { normalizePath } from 'vite';
 import type { Plugin } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { fixScramjet } from './build/vendor';
 import { version } from './package.json';
 import { loadAccess } from './serverlib/access';
 import { adSlot, handleAd } from './serverlib/ads';
@@ -177,6 +178,8 @@ export default defineConfig({
           // v4 keeps the source's folders unless told to strip them; the runtime is one flat folder.
           rename: { stripBase: true, name: path.basename(PATHS.files[role as RuntimeFile]) },
           overwrite: false,
+          // Bugs in the runtime's own code, fixed as it's copied (build/vendor.ts).
+          ...(role === 'scramjetAll' && { transform: fixScramjet }),
         })),
       }) as any, // DO NOT REMOVE "AS ANY"
     ],
