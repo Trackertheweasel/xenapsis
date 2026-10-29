@@ -178,7 +178,9 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
   frame.className = 'w-full z-0 h-full hidden';
   frame.setAttribute(
     'sandbox',
-    'allow-scripts allow-popups allow-modals allow-top-navigation allow-pointer-lock allow-same-origin allow-forms',
+    // allow-downloads: without it the browser drops every download a site starts (attachments,
+    // worksheets, exported files) without a word.
+    'allow-scripts allow-popups allow-modals allow-top-navigation allow-pointer-lock allow-same-origin allow-forms allow-downloads',
   );
   // Every page Scramjet starts in this frame, subframes too, gets the guards before its own
   // scripts run. Ultraviolet pages only get the window.open fix below, once loaded.
