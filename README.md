@@ -11,6 +11,7 @@
 - Fast performance
 - `about:blank` cloaking
 - Built in ad blocking
+- Keeps WebRTC from revealing your real IP address (switch it off in Settings for game streaming such as GeForce NOW)
 - No analytics or third-party trackers
 - Self-served, tracking-free sponsor slot
 - Tab system
@@ -141,10 +142,14 @@ Proxied pages don't show the site's address in Persec's own URLs either: instead
 
 The paths themselves are randomised too. Fixed paths like `/v1/data/`, `/sw.js` or `/bm/worker.js` are the same on every Persec install, so a filter that sees the addresses a page requests could match them to recognise the proxy. Each build instead picks random names for the two proxied-URL prefixes, the service worker, the folder the proxy runtime is served from, and every file in it. They change on every rebuild along with the URL key, so the same caveat applies (open proxied tabs need reopening after an update). To keep them stable across builds or backup servers, set `PUBLIC_PERSEC_URL_KEY` and `PUBLIC_PERSEC_PROXY_KEY` in `deploy/.env`.
 
-Treat this as a second line of defence. It only beats matching on paths. Still visible to a determined filter:
+The files' contents are disguised too. The proxy runtime is the public Scramjet, Ultraviolet, bare-mux and libcurl code, full of their names (`scramjet`, `__uv$config`, `bare-mux`), which a filter can look for in what a page downloads. Each build replaces those names, everywhere in the site's code, with random stand-ins of the same length. Like the paths, they change on every rebuild unless `PUBLIC_PERSEC_PROXY_KEY` is set. Two things keep their names on purpose: links to the projects' websites, and Scramjet's `$scramjet` database, so an update doesn't sign everyone out of the sites they use. If a site ever breaks because of it, set `PUBLIC_PERSEC_SCRUB=off` in `deploy/.env` and run `persec update` to build without it.
 
-- **File contents.** The runtime files are the public Scramjet, Ultraviolet, bare-mux and libcurl packages, byte for byte, so a filter that hashes downloads can recognise them.
-- **The shape of the names.** Every random name is 8 hex characters, and the runtime is one folder of such files.
+Words in the pages themselves, such as "proxy", "unblocked" or "games", can be hidden from keyword scans with `PUBLIC_PERSEC_MASK_TEXT=1`. Each one gets invisible soft hyphens, so it looks the same but no longer matches the plain word. Find-in-page won't find those words any more, which is why this is off by default. It covers the text in Persec's pages, not text that scripts add later (pop-up messages, for example).
+
+Treat all of this as a second line of defence. Still visible to a determined filter:
+
+- **File contents, beyond names.** The runtime is still recognisably the same code; a filter that compares the structure of downloads, rather than hashes or names, could still match it.
+- **The shape of the names.** Every random path is 8 hex characters, and the runtime is one folder of such files.
 - **What the page does.** It registers a service worker for the whole site and opens a WebSocket, which a scanner that runs the page's scripts can see. The scripts also carry the URL key, so the scrambled URLs are obfuscation, not encryption.
 - **Active probing.** Anyone can load the site and read its scripts to find the paths.
 
@@ -267,6 +272,17 @@ Most hosting providers forbid public proxies but allow private ones. In invite-o
 
 If Persec runs behind a reverse proxy other than the bundled Caddy, set `PERSEC_CLIENT_IP_HEADER` to the header that proxy puts the visitor's address in (for example `x-real-ip`), and only if the proxy always overwrites it. Persec uses it to count wrong codes per visitor. Without it, Persec counts by the connection's address and ignores such headers, because anyone could otherwise send a different fake address with every guess. `deploy/compose.yml` sets it for Caddy.
 
+`render.yaml` sets it to `true-client-ip`, the header Cloudflare (in front of Render) fills in, but Render doesn't document that a visitor can't supply their own. Check it once after deploying: send 11 wrong codes, each with a different made-up address, and the last one must still be refused with "Too many attempts":
+
+```bash
+for i in $(seq 1 11); do
+  curl -s -o /dev/null -w '%{http_code}\n' -H "True-Client-IP: 203.0.113.$i" \
+    -d code=wrong https://<your-app>.onrender.com/enter
+done
+```
+
+If it ends in `401` instead of `429`, the header can be faked: delete `PERSEC_CLIENT_IP_HEADER` in the Render dashboard. Wrong codes are then counted for all visitors together, which is strict but can't be dodged. The check itself locks your own address out for 15 minutes.
+
 With `PERSEC_ADMIN_PASSWORD` set (12+ characters; `persec admin` makes one), `/admin` shows each invite name's usage live: online now, data downloaded and uploaded, time connected, tabs opened and last seen. Open it signed in with your own code, then enter that password (any username). The counts are kept only in memory and reset on restart, sites visited are never recorded, and the privacy page tells people this can be on. Without the password, nothing is counted.
 
 People enter their code once and stay signed in as long as they come back at least once every 30 days, and their browser's password manager can save the code for them. The new tab page greets each person by their invite's name (the part before the `:`, or the name given to `persec invite`), so pick names you're happy for them to see. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
@@ -341,6 +357,26 @@ The model picker lists what OpenRouter offers right now (fetched by the server a
 - Each message, with the rest of its conversation, goes to OpenRouter and on to the company running the chosen model. OpenRouter sees the server's address, not the visitor's. The page and the privacy page say so; it is not local or end-to-end private.
 
 The Astro dev server (`pnpm dev`) has no `/api/ai` routes; run `pnpm build && pnpm start` to try PerSec AI locally.
+
+## Web AI (ChatGPT and Claude)
+
+`/webai` (`persec://webai`, or **Web AI** at the top of the PerSec AI page) opens the real [ChatGPT](https://chatgpt.com/) and [Claude](https://claude.ai/) websites through the normal proxy. It is not PerSec AI and doesn't use OpenRouter. People use the sites themselves, with their own accounts. Persec doesn't touch either company's API, sign-in or credentials.
+
+Both sites are behind Cloudflare and may show a "Just a moment…" or "couldn't verify your browser" check when opened through a proxy. Persec doesn't try to get past these; if one won't clear, the site can't be used through this server. [docs/web-ai.md](docs/web-ai.md) has the proxy audit (WebSockets, streaming, cookies, storage, security headers), the known limits, and a compatibility checklist to run on your deployment.
+
+### Browser mode (optional, off by default)
+
+An owner with a spare machine can also run [Camoufox](https://github.com/daijro/camoufox) as a separate browser service. Each signed-in person then gets an isolated server-side browser session for ChatGPT or Claude. It needs invite-only mode, at least 2 GB of RAM for the browser service, `playwright-core` installed next to Persec, and these settings:
+
+| Variable                      | What it does                                                    |
+| ----------------------------- | --------------------------------------------------------------- |
+| `CAMOUFOX_ENABLED`            | `true` to turn browser mode on                                  |
+| `CAMOUFOX_WS_ENDPOINT`        | The browser service's Playwright endpoint, on a private network |
+| `CAMOUFOX_MAX_SESSIONS`       | Browsers open at once (default 2)                               |
+| `CAMOUFOX_SESSION_TIMEOUT_MS` | Longest a session lives (default 30 minutes)                    |
+| `CAMOUFOX_IDLE_TIMEOUT_MS`    | How long an unused session stays open (default 5 minutes)       |
+
+Sessions can be viewed and moved between pages, but typing into them isn't implemented yet. See [docs/browser-runtime.md](docs/browser-runtime.md) for the evaluation, security model, deployment steps and remaining work.
 
 ---
 
@@ -425,4 +461,4 @@ Found a bug? Open a [GitHub Issue](https://github.com/Trackertheweasel/xenapsis/
 
 ## Credits and license
 
-Persec is based on [Lunar v2](https://github.com/lunar-proxy/lunar-v2) by Bearcattt and the Lunar contributors, and is licensed under the [GNU AGPL-3.0](LICENSE). Some features are ported from [Interstellar](https://github.com/UseInterstellar/Interstellar) (games and apps list, extra themes, the custom tile and the idea of tunnel ad blocking), [InvisiProxy LTS](https://github.com/InvisiProxy/InvisiProxyLTS) (privacy guards and site fixes) and [Nebula](https://github.com/NebulaServices/Nebula) (themes), all AGPL-3.0. Games marked as served from a GitHub mirror are third-party files from the [3v1/V5-Assets](https://github.com/3v1/V5-Assets) and [xbubbo/V6-Assets](https://github.com/xbubbo/V6-Assets) repositories, pinned to one commit each; their copyright stays with their owners and Persec does not store them. Because Persec runs as a network service, the AGPL requires that its users can get the source code; the app links to this repository from Settings → About and from the privacy page.
+Persec is based on [Lunar v2](https://github.com/lunar-proxy/lunar-v2) by Bearcattt and the Lunar contributors, and is licensed under the [GNU AGPL-3.0](LICENSE). Some features are ported from [Interstellar](https://github.com/UseInterstellar/Interstellar) (games and apps list, extra themes, the custom tile and the idea of tunnel ad blocking), [InvisiProxy LTS](https://github.com/InvisiProxy/InvisiProxyLTS) (privacy guards and site fixes), [Nebula](https://github.com/NebulaServices/Nebula) (themes and the build's name scrub) and [InvisiProxy](https://github.com/QuiteAFancyEmerald/Holy-Unblocker) (text masking), all AGPL-3.0. Games marked as served from a GitHub mirror are third-party files from the [3v1/V5-Assets](https://github.com/3v1/V5-Assets) and [xbubbo/V6-Assets](https://github.com/xbubbo/V6-Assets) repositories, pinned to one commit each; their copyright stays with their owners and Persec does not store them. Because Persec runs as a network service, the AGPL requires that its users can get the source code; the app links to this repository from Settings → About and from the privacy page.

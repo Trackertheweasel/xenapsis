@@ -401,12 +401,13 @@ import { PRESET_CATEGORIES, USER_AGENT_PRESETS } from '../utils/guards';
                   The engine that loads websites for you inside Persec. If a site won't load or looks broken, switch to
                   the other one and try again.
                 </p>
+                {/* Soft hyphens (&shy;) keep the build scrub (build/disguise.ts) from renaming these names. */}
                 <div class="grid grid-cols-2 gap-3">
                   <button
                     data-proxy="scramjet"
                     class="proxy-button bg-background/60 relative rounded-lg border border-white/6 p-4 text-left hover:border-[#6366f1]/30 hover:bg-[#6366f1]/10"
                   >
-                    <div class="text-sm font-medium">Scramjet</div>
+                    <div class="text-sm font-medium">Scr&shy;amjet</div>
                     <div class="text-text-secondary text-xs">Newer and faster; a few sites may break</div>
                     <div class="proxy-check absolute top-2 right-2 hidden">
                       <i data-lucide="check" class="h-4 w-4 text-[#6366f1]"></i>
@@ -416,7 +417,7 @@ import { PRESET_CATEGORIES, USER_AGENT_PRESETS } from '../utils/guards';
                     data-proxy="ultraviolet"
                     class="proxy-button bg-background/60 relative rounded-lg border border-white/6 p-4 text-left hover:border-pink-400/30 hover:bg-pink-400/10"
                   >
-                    <div class="text-sm font-medium">Ultraviolet</div>
+                    <div class="text-sm font-medium">Ultra&shy;violet</div>
                     <div class="text-text-secondary text-xs">Older and slower, but works with more sites</div>
                     <div class="proxy-check absolute top-2 right-2 hidden">
                       <i data-lucide="check" class="h-4 w-4 text-pink-400"></i>
@@ -583,6 +584,24 @@ import { PRESET_CATEGORIES, USER_AGENT_PRESETS } from '../utils/guards';
                     data-toggle="siteFixes"
                   ></button>
                 </div>
+              </div>
+              <div class="bg-background-overlay/60 flex items-center justify-between rounded-xl border border-white/6 p-5">
+                <div>
+                  <h3 class="font-medium">Hide my IP from WebRTC</h3>
+                  <p class="text-text-secondary text-sm">
+                    Video calls and game streaming (such as GeForce NOW) use WebRTC, which connects straight from your
+                    device, outside the proxy, and can show sites your real IP address. This blocks it. Turn it off to
+                    use those sites; they then connect to you directly and need your network to allow it.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked="false"
+                  aria-label="Hide my IP from WebRTC"
+                  class="toggle shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b87ff]"
+                  data-toggle="blockWebRTC"
+                ></button>
               </div>
             </div>
           </section>

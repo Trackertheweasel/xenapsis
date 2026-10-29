@@ -8,6 +8,7 @@ import { loadAiConfig } from 'serverlib/ai/index';
 import { buildApp } from 'serverlib/app';
 import { printBanner } from 'serverlib/banner';
 import { startBlocklist } from 'serverlib/blocklist';
+import { loadBrowserConfig } from 'serverlib/browser/index';
 import { wispPath } from 'serverlib/env';
 
 EventEmitter.defaultMaxListeners = 0;
@@ -40,6 +41,8 @@ const app = await buildApp({
     : path.join(__dirname, 'data', 'logins'),
   // OPENROUTER_API_KEY and friends. Without a key, PerSec AI reports itself off and nothing else changes.
   ai: { config: loadAiConfig() },
+  // CAMOUFOX_ENABLED and friends. Off unless the owner runs a browser service (docs/browser-runtime.md).
+  browser: { config: loadBrowserConfig() },
   site: {
     clientRoot: path.join(__dirname, 'dist', 'client'),
     handler,

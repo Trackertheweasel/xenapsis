@@ -1,5 +1,7 @@
 import { logging, server as wisp } from '@mercuryworkshop/wisp-js/server';
+import { Resolver } from 'node:dns/promises';
 import type { IncomingMessage } from 'node:http';
+import net from 'node:net';
 import type { Duplex } from 'node:stream';
 import { ACCESS_COOKIE, displayName, readCookie, tokenSubject } from './access';
 import type { AccessConfig } from './access';
@@ -7,11 +9,56 @@ import { blocklistMatcher } from './blocklist';
 import { trackTunnel } from './stats';
 
 logging.set_level(logging.ERROR);
+
+// IPv4 ranges that are not the public internet: this host, private networks, carrier NAT,
+// link-local (cloud metadata lives at 169.254.169.254), documentation, benchmarking, multicast and
+// reserved. The tunnel must never reach any of them.
+const PRIVATE_V4: [string, number][] = [
+  ['0.0.0.0', 8],
+  ['10.0.0.0', 8],
+  ['100.64.0.0', 10],
+  ['127.0.0.0', 8],
+  ['169.254.0.0', 16],
+  ['172.16.0.0', 12],
+  ['192.0.0.0', 24],
+  ['192.0.2.0', 24],
+  ['192.168.0.0', 16],
+  ['198.18.0.0', 15],
+  ['198.51.100.0', 24],
+  ['203.0.113.0', 24],
+  ['224.0.0.0', 3],
+];
+const v4 = (ip: string) => ip.split('.').reduce((n, part) => n * 256 + Number(part), 0);
+
+export function isPublicIPv4(ip: string): boolean {
+  if (!net.isIPv4(ip)) return false;
+  const n = v4(ip);
+  return !PRIVATE_V4.some(([base, bits]) => n >= v4(base) && n < v4(base) + 2 ** (32 - bits));
+}
+
+// Cloudflare DNS with malware blocking only (1.1.1.3 would also block adult content).
+export const DNS_SERVERS = ['1.1.1.2', '1.0.0.2'];
+const resolver = new Resolver();
+resolver.setServers(DNS_SERVERS);
+
+// How the tunnel turns a site's name into the address it connects to. wisp-js checks the address
+// its resolver returns, but classifies IPv4-mapped IPv6 answers (an AAAA record of ::ffff:7f00:1)
+// as neither loopback nor private, and it resolves again to connect without checking that second
+// answer, so a name could point the tunnel at the host, the Docker network or cloud metadata. Only
+// A records are used, and a name with no public one is refused here, on every lookup.
+export async function resolveTunnelHost(
+  hostname: string,
+  resolve4: (hostname: string) => Promise<string[]> = h => resolver.resolve4(h),
+): Promise<string> {
+  const address = (await resolve4(hostname)).find(isPublicIPv4);
+  if (!address) throw new Error('No public address for this host');
+  return address;
+}
+
 Object.assign(wisp.options, {
-  dns_method: 'resolve',
-  // Cloudflare DNS with malware blocking only (1.1.1.3 would also block adult content).
-  dns_servers: ['1.1.1.2', '1.0.0.2'],
-  dns_result_order: 'ipv4first',
+  dns_method: (hostname: string) => resolveTunnelHost(hostname),
+  // wisp-js compares this with a cache entry's age in milliseconds.
+  dns_ttl: 120_000,
   // Browsing only needs TCP to web ports. Blocking UDP and low ports (SMTP, SSH, ...)
   // stops the server being used for spam or attacks; 2525 is a common alternate SMTP port.
   allow_udp_streams: false,

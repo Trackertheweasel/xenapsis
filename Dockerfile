@@ -18,6 +18,10 @@ ARG PUBLIC_PERSEC_URL_KEY=""
 ENV PUBLIC_PERSEC_URL_KEY=${PUBLIC_PERSEC_URL_KEY}
 ARG PUBLIC_PERSEC_PROXY_KEY=""
 ENV PUBLIC_PERSEC_PROXY_KEY=${PUBLIC_PERSEC_PROXY_KEY}
+ARG PUBLIC_PERSEC_SCRUB=""
+ENV PUBLIC_PERSEC_SCRUB=${PUBLIC_PERSEC_SCRUB}
+ARG PUBLIC_PERSEC_MASK_TEXT=""
+ENV PUBLIC_PERSEC_MASK_TEXT=${PUBLIC_PERSEC_MASK_TEXT}
 RUN pnpm build
 # Swap in only what the server needs at runtime, from the packages already in pnpm's store.
 RUN rm -rf node_modules && pnpm install --frozen-lockfile --prod --offline

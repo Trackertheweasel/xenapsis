@@ -31,6 +31,9 @@ let loadWatcher: ReturnType<typeof setInterval> | null = null;
 let isLoading = false;
 let prevHref = '';
 let onUrlChange: ((href: string) => void) | null = null;
+// Keys pressed inside a tab's page never reach this page's own listeners, so the menu's shortcuts
+// (the panic key above all) are handed each one too.
+let onFrameKeydown: ((e: KeyboardEvent) => void) | null = null;
 let tabBar: HTMLDivElement | null = null;
 let frameContainer: HTMLDivElement | null = null;
 // Keyed by site origin, so each site's icon is fetched once rather than on every page.
@@ -188,10 +191,25 @@ function createFrame(id: number, src?: string): HTMLIFrameElement {
     try {
       const win = frame.contentWindow;
       const doc = frame.contentDocument;
-      if (!win || !doc || (win as any)[Symbol.for('persec leak guard')]) return;
-      win.open = (openUrl?: string | URL) => {
-        if (openUrl) openInNewTab(openUrl.toString());
-        return null;
+      if (!win || !doc) return;
+      // Every page is a new window: proxied sites run on Persec's origin, so this reaches them too.
+      win.addEventListener('keydown', e => onFrameKeydown?.(e), true);
+      // The leak guard (Settings) already sends every new window to a Persec tab.
+      if ((win as any)[Symbol.for('persec leak guard')]) return;
+      // The engine's own window.open proxies the address and returns a real window, which sign-in
+      // pop-ups need: the site navigates it, watches it, and the pop-up messages its opener (GeForce
+      // NOW gives up at once when it gets null). It also handles _self, _top and _parent, which
+      // navigate this tab. Only when the browser blocks the pop-up does the address open in a new
+      // Persec tab instead, as every window.open did before. A noopener pop-up opens but returns
+      // null by design, so it never gets a second, Persec tab.
+      const open = win.open;
+      win.open = (...args: Parameters<typeof open>) => {
+        const opened = open.apply(win, args);
+        const [openUrl, , features] = args;
+        if (!opened && openUrl && !/\bno(opener|referrer)\b/i.test(String(features ?? ''))) {
+          openInNewTab(openUrl.toString());
+        }
+        return opened;
       };
     } catch {}
   });
@@ -618,6 +636,9 @@ export const TabManager = {
   },
   onUrlChange: (cb: (href: string) => void) => {
     onUrlChange = cb;
+  },
+  onFrameKeydown: (cb: (e: KeyboardEvent) => void) => {
+    onFrameKeydown = cb;
   },
 };
 

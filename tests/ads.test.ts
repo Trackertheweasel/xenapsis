@@ -4,7 +4,14 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test, { after, before } from 'node:test';
-import { creativeFor, getCurrentAd, recordClick, recordImpression } from '../serverlib/ads.ts';
+import { readFile } from 'node:fs/promises';
+import {
+  creativeFor,
+  getCurrentAd,
+  recordClick,
+  recordImpression,
+  resetAdCache,
+} from '../serverlib/ads.ts';
 import { buildApp } from '../serverlib/app.ts';
 import { deployPaths } from '../serverlib/env.ts';
 
@@ -18,6 +25,7 @@ const CLICK_TARGET = 'https://advertiser.example/landing';
 let server: http.Server;
 let base = '';
 let impressionHits = 0;
+let emptyHits = 0;
 
 before(async () => {
   server = http.createServer((req, res) => {
@@ -32,6 +40,10 @@ before(async () => {
           impression: `${base}/imp`,
         }),
       );
+    } else if (req.url === '/empty') {
+      emptyHits++;
+      res.statusCode = 204;
+      res.end();
     } else if (req.url === '/img.png') {
       res.setHeader('content-type', 'image/png');
       res.end(PNG);
@@ -128,4 +140,28 @@ test('falls back to the self-served sponsor list when no network is configured',
   delete process.env.PERSEC_AD_API_URL;
   // sponsors.json ships a single disabled example, so with nothing enabled there is no card.
   assert.equal(await getCurrentAd(), null);
+});
+
+test('a network with no ad to show is not asked again on every page', async () => {
+  resetAdCache();
+  process.env.PERSEC_AD_NETWORK = 'generic';
+  process.env.PERSEC_AD_API_URL = `${base}/empty`;
+  await getCurrentAd();
+  await getCurrentAd();
+  await getCurrentAd();
+  assert.equal(emptyHits, 1, 'the next pages get the static list without waiting on the network');
+  resetAdCache();
+  await getCurrentAd();
+  assert.equal(emptyHits, 2, 'it asks again once the pause is over');
+  delete process.env.PERSEC_AD_NETWORK;
+  delete process.env.PERSEC_AD_API_URL;
+});
+
+// astro.config.ts prefetches every link on a page; a prefetched click route counts a click.
+test('the ad link is never prefetched', async () => {
+  const source = await readFile(
+    new URL('../src/components/Sponsor.astro', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /<a\s[^>]*data-astro-prefetch="false"/);
 });

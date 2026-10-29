@@ -12,6 +12,7 @@ interface DefaultedSettings extends Prefs {
   engine: string;
   cloak: OnOff;
   adBlock: OnOff;
+  blockWebRTC: OnOff;
   cloakTitle: string;
   cloakFavicon: string;
   autoCloak: OnOff;
@@ -52,6 +53,7 @@ export const PAGE_SETTINGS = [
   'beforeUnload',
   'backend',
   'adBlock',
+  'blockWebRTC',
   'engine',
   'wispUrl',
   'panicLoc',
@@ -74,6 +76,8 @@ const defaults: DefaultedSettings = {
   engine: 'https://duckduckgo.com/?q=',
   cloak: 'off',
   adBlock: 'on',
+  // Read by the service worker too (src/sw.js), which treats unset as on.
+  blockWebRTC: 'on',
   cloakTitle: 'Google',
   cloakFavicon: 'https://www.google.com/favicon.ico',
   autoCloak: 'off',

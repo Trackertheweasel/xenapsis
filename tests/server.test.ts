@@ -10,7 +10,7 @@ import { createToken, loadAccess, mintInvite } from '../serverlib/access.ts';
 import { buildApp } from '../serverlib/app.ts';
 import { deployPaths } from '../serverlib/env.ts';
 import { cacheControlFor, staticFileOptions } from '../serverlib/static.ts';
-import { wisp } from '../serverlib/wisp.ts';
+import { DNS_SERVERS, isPublicIPv4, resolveTunnelHost, wisp } from '../serverlib/wisp.ts';
 
 // The real server without the built site, so it runs without `pnpm build`.
 async function server(env: Record<string, string> = {}) {
@@ -26,8 +26,33 @@ const inviteOnly = { PERSEC_INVITE_CODES: 'tester:abc123', PERSEC_SECRET: 'test-
 test('Wisp only allows TCP to web ports and uses malware-blocking DNS', () => {
   assert.equal(wisp.options.allow_udp_streams, false);
   assert.deepEqual(wisp.options.port_whitelist, [80, 443, [1024, 2524], [2526, 65535]]);
-  assert.deepEqual(wisp.options.dns_servers, ['1.1.1.2', '1.0.0.2']);
+  assert.deepEqual(DNS_SERVERS, ['1.1.1.2', '1.0.0.2']);
+  assert.equal(typeof wisp.options.dns_method, 'function');
   assert.equal(wisp.options.wisp_motd, '', 'no fixed MOTD to fingerprint');
+});
+
+// A name whose only record is ::ffff:7f00:1 passed wisp-js's own check (it calls that range
+// "ipv4Mapped"), and wisp-js resolves again to connect without checking that answer.
+test('The tunnel only connects to public IPv4 addresses a name resolves to', async () => {
+  const records: Record<string, string[]> = {
+    'public.test': ['93.184.215.14'],
+    'mixed.test': ['10.0.0.5', '93.184.215.14'],
+    'metadata.test': ['169.254.169.254'],
+    'loopback.test': ['127.0.0.1'],
+    'docker.test': ['172.17.0.2'],
+    'v6only.test': [],
+  };
+  const resolve4 = async (h: string) => records[h] ?? [];
+  assert.equal(await resolveTunnelHost('public.test', resolve4), '93.184.215.14');
+  assert.equal(await resolveTunnelHost('mixed.test', resolve4), '93.184.215.14');
+  for (const host of ['metadata.test', 'loopback.test', 'docker.test', 'v6only.test']) {
+    await assert.rejects(resolveTunnelHost(host, resolve4), host);
+  }
+  for (const ip of ['0.0.0.0', '100.64.1.1', '192.168.1.1', '224.0.0.1', '255.255.255.255']) {
+    assert.ok(!isPublicIPv4(ip), ip);
+  }
+  for (const ip of ['::ffff:7f00:1', '8.8.8.8.', 'example.com']) assert.ok(!isPublicIPv4(ip), ip);
+  assert.ok(isPublicIPv4('8.8.8.8'));
 });
 
 // wisp-js treats ::ffff:a.b.c.d as neither loopback nor private, so these reached internal hosts.
