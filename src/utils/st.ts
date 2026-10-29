@@ -120,7 +120,9 @@ export class SettingsManager {
       setCloak(false);
     }
 
-    initAutoCloak(cfg.autoCloak === 'on');
+    // Tab Switch Cloak is applied only by toggling it, so without this it was off after a reload
+    // while its switch still showed on.
+    initAutoCloak(cfg.tabSwitchCloak === 'on' || cfg.autoCloak === 'on');
     initExitPrompt(cfg.beforeUnload === 'on');
     syncSwitches();
   }

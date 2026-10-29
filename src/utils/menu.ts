@@ -19,6 +19,28 @@ interface MenuElements {
   help: HTMLButtonElement;
 }
 
+// A key combination as the keybinds are saved: "ctrl+alt+shift+meta+key", the order the panic key
+// is recorded in (src/utils/settings/panic.ts).
+export function keybindFor(e: KeyboardEvent): string {
+  const parts: string[] = [];
+  if (e.ctrlKey) parts.push('ctrl');
+  if (e.altKey) parts.push('alt');
+  if (e.shiftKey) parts.push('shift');
+  if (e.metaKey) parts.push('meta');
+  let key = e.key.toLowerCase();
+  if (key === ' ') key = 'space';
+  parts.push(key);
+  return parts.join('+');
+}
+
+// Typing in a text field: a shortcut without Ctrl, Alt or Meta (the panic key is ` by default)
+// would fire on an ordinary character.
+export function isTyping(e: KeyboardEvent): boolean {
+  if (e.ctrlKey || e.altKey || e.metaKey) return false;
+  const t = e.target as HTMLElement | null;
+  return !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName ?? ''));
+}
+
 interface KeybindConfig {
   element: HTMLButtonElement;
   combo: string;
@@ -98,6 +120,8 @@ export class MenuHandler {
     this.setupMenuActions();
     window.addEventListener('keydown', this.handleKeydown.bind(this), true);
     document.addEventListener('keydown', this.handleKeydown.bind(this), true);
+    // And from the page in each tab, so the panic key works while someone is on a site.
+    TabManager.onFrameKeydown(this.handleKeydown.bind(this));
   }
 
   private setupMenuActions(): void {
@@ -299,28 +323,14 @@ export class MenuHandler {
       return;
     }
 
-    const keybind = this.buildKeybind(e);
-    const target = this.keyMap.get(keybind);
+    if (isTyping(e)) return;
+    const target = this.keyMap.get(keybindFor(e));
 
     if (target) {
       e.preventDefault();
       e.stopPropagation();
       target.click();
     }
-  }
-
-  private buildKeybind(e: KeyboardEvent): string {
-    const parts: string[] = [];
-
-    if (e.ctrlKey) parts.push('ctrl');
-    if (e.altKey) parts.push('alt');
-    if (e.shiftKey) parts.push('shift');
-
-    let key = e.key.toLowerCase();
-    if (key === ' ') key = 'space';
-    parts.push(key);
-
-    return parts.join('+');
   }
 }
 

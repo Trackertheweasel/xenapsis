@@ -53,16 +53,18 @@ async function loadServiceWorker() {
     importScripts: (...urls: string[]) => calls.imported.push(...urls),
     $scramjetLoadWorker: () => ({
       ScramjetServiceWorker: class {
-        config = { prefix: PATHS.scPrefix };
+        config: { prefix: string } | undefined = { prefix: PATHS.scPrefix };
         // Like Scramjet's: reads the stored config (and builds its codec) only when it has none.
         async loadConfig() {
           if (!this.config) {
             calls.configLoads++;
-            this.config = { prefix: PATHS.scPrefix };
+            // Nothing saved yet leaves it undefined, as Scramjet's does.
+            this.config = ctx.noSavedConfig ? undefined : { prefix: PATHS.scPrefix };
           }
         }
+        // Like Scramjet's, which throws without a config.
         route(event: any) {
-          return event.request.url.startsWith(`${origin}${PATHS.scPrefix}`);
+          return event.request.url.startsWith(`${origin}${this.config!.prefix}`);
         }
         // A request with setCookie stands in for a site's server setting that cookie.
         async fetch(event: any) {
@@ -401,6 +403,22 @@ test("A page's new Scramjet config makes the worker reload it, codec included", 
   });
   assert.equal(await (await request(worker, scramjet('https://example.com/'))).text(), 'scramjet');
   assert.equal(worker.calls.configLoads, before + 1, 'read back from storage');
+});
+
+test('Before Scramjet has a saved config, Persec still loads', async () => {
+  const worker = await loadServiceWorker();
+  worker.noSavedConfig = true;
+  worker.readAdblockSetting = async () => false;
+  worker.withScramjetCookies = async () => undefined;
+  // The loadConfig message drops the config the stub started with, as a fresh worker has none.
+  worker.listeners.message({
+    data: { scramjet$type: 'loadConfig' },
+    source: { type: 'window', url: `${origin}/welcome` },
+    ports: [],
+    waitUntil: () => {},
+  });
+  assert.equal(await (await request(worker, `${origin}/welcome`)).text(), 'net');
+  assert.equal(await (await request(worker, uv('https://example.com/'))).text(), 'uv');
 });
 
 test('A new build takes over from the old worker straight away', async () => {
