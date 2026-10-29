@@ -3,6 +3,7 @@
 export const prerender = true;
 import '@/main.css';
 import ImportLucide from '../layouts/lucide.astro';
+import { CHANGELOG } from '../utils/changelog';
 import { PRESET_CATEGORIES, USER_AGENT_PRESETS } from '../utils/guards';
 ---
 
@@ -713,6 +714,34 @@ import { PRESET_CATEGORIES, USER_AGENT_PRESETS } from '../utils/guards';
                   <span>Astro, TypeScript, Tailwind</span>
                 </div>
               </div>
+
+              <details class="mb-4 text-sm" data-version-history>
+                <summary class="text-text-secondary cursor-pointer select-none">Version history</summary>
+                <div class="mt-3 space-y-4">
+                  {CHANGELOG.map(release => (
+                    <div>
+                      <p class="font-medium">
+                        v{release.version} <span class="text-text-secondary font-normal">· {release.date}</span>
+                      </p>
+                      <ul class="text-text-secondary mt-1 list-disc space-y-1 pl-5">
+                        {release.changes.map(change => (
+                          <li>
+                            {change.title}{' '}
+                            <a
+                              href={`https://github.com/Trackertheweasel/xenapsis/pull/${change.pr}`}
+                              target="_blank"
+                              rel="noopener"
+                              class="hover:text-[#6366f1]"
+                            >
+                              #{change.pr}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </details>
 
               <div class="flex gap-2">
                 <a

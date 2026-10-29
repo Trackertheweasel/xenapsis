@@ -65,7 +65,9 @@ The site runs over HTTPS (needed for the proxy to work) and is invite-only. Mana
 | `persec rollback`             | Goes back to the version from before the last update                     |
 | `persec logs`                 | Shows what the server is doing                                           |
 
-`persec update` installs whatever is newest on the `master` branch. To stay on a known version instead, name a release tag (or another branch): `PERSEC_BRANCH=<tag> persec update`. If an update misbehaves, `persec rollback` switches back to the build that ran before it in seconds, without rebuilding.
+`persec update` installs whatever is newest on the `master` branch. To stay on a known version instead, name a release tag (or another branch): `PERSEC_BRANCH=<tag> persec update`. An update that doesn't pass its health check within 3 minutes is undone on its own, back to the build that ran before. If one starts but misbehaves, `persec rollback` switches back in seconds, without rebuilding.
+
+On a 1 GB server, Persec's container is capped at 640 MB of memory so a problem can't take down Caddy, Docker or SSH with it; Docker restarts it if it hits the cap. On a bigger server, raise it with `PERSEC_MEMORY_LIMIT=1500m` in `/opt/persec/deploy/.env`, then `persec update`. Container logs are capped at 30 MB each, and updates clear build leftovers beyond 3 GB.
 
 If the site shows a certificate error with the `sslip.io` address, or a single name gets blocked, add another name with `persec domain add` (your settings and invites are kept) and share it. It is worth keeping a spare name or two added so a block never cuts everyone off.
 
@@ -285,6 +287,11 @@ If it ends in `401` instead of `429`, the header can be faked: delete `PERSEC_CL
 
 With `PERSEC_ADMIN_PASSWORD` set (12+ characters; `persec admin` makes one), `/admin` shows each invite name's usage live: online now, data downloaded and uploaded, time connected, tabs opened and last seen. Open it signed in with your own code, then enter that password (any username). The counts are kept only in memory and reset on restart, sites visited are never recorded, and the privacy page tells people this can be on. Without the password, nothing is counted.
 
+`/admin` also has two more sections:
+
+- **Invites** lists every invite: the codes in `PERSEC_INVITE_CODES`, and every invite minted on `/admin` or with `persec invite`, each with its status (active, expired or revoked), when it was made and expires, and when it was last used since the server started. You can create an invite there (needs a fixed `PERSEC_SECRET`), show a minted invite's code again (it is recreated from `PERSEC_SECRET`, never stored), and revoke or restore a name without a restart. The list and revokes are kept in `data/invites.json` (or `PERSEC_DATA_DIR`), so on Render's free plan, which has no lasting disk, they reset on every restart; names in `PERSEC_REVOKED` can only be restored there. Invites minted before this list existed show up by name once they sign in. Listed codes are never shown.
+- **Server setup** shows which settings are in place (fixed secret, client-address header, data folder, PerSec AI key, browser mode, ad network, tunnel ad blocking) and what's missing, without showing any value.
+
 People enter their code once and stay signed in as long as they come back at least once every 30 days, and their browser's password manager can save the code for them. The new tab page greets each person by their invite's name (the part before the `:`, or the name given to `persec invite`), so pick names you're happy for them to see. To revoke someone, remove their entry and restart Persec. Without `PERSEC_INVITE_CODES`, Persec is open to everyone.
 
 ### Handing out invites without restarting
@@ -426,7 +433,7 @@ Persec deliberately sends the network no visitor IP or user agent, so it cannot 
 
 ## Tunnel ad blocking
 
-The server refuses to open connections to ad and tracker hosts on a public DNS blocklist, so ads stop loading for every visitor whichever engine they use (an idea from [Interstellar](https://github.com/UseInterstellar/Interstellar)). The list is [AdGuard DNS filter](https://github.com/AdguardTeam/AdGuardSDNSFilter), downloaded at start and once a day after; it takes about 25 MB of memory. If the download fails nothing is blocked, so browsing never breaks.
+The server refuses to open connections to ad and tracker hosts on a public DNS blocklist, so ads stop loading for every visitor whichever engine they use (an idea from [Interstellar](https://github.com/UseInterstellar/Interstellar)). The list is [AdGuard DNS filter](https://github.com/AdguardTeam/AdGuardSDNSFilter), downloaded at start and once a day after; it takes about 70 MB of memory. If the download fails nothing is blocked, so browsing never breaks.
 
 | Variable                    | What it does                                                            |
 | --------------------------- | ----------------------------------------------------------------------- |

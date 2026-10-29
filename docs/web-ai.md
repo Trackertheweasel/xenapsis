@@ -77,6 +77,19 @@ What's still out of Persec's hands, and stays that way, because getting around i
 
 If Claude still loops on the check, Browser mode (where the owner runs it) or opening the site directly are the options. If ChatGPT is still buggy after this change, the browser console of the tab (errors, and any request that fails in the Network panel) says which part breaks.
 
+## Google and Apple sign-in ("This browser or app may not be secure")
+
+Reported on a real deployment, after `persec update`, with no privacy guards or fingerprint noise on: signing in to Gemini with a Google account stops on Google's "Couldn't sign you in. This browser or app may not be secure" page, on both Scramjet and Ultraviolet, and "Sign in with Google" or Apple doesn't work either.
+
+That page is Google's own decision, not a Persec error. Google's sign-in page checks the browser it runs in and refuses ones it can't trust: embedded browsers, automated ones, and pages running inside another site's code, which is what a proxy is. Under Persec, Google's script runs on Persec's origin, inside the engine's rewritten page, and its requests arrive from the server's data-centre address with libcurl's TLS handshake. Google is built to spot exactly that, because it's what an account-stealing phishing proxy looks like too. Persec doesn't try to get around it: there's no setting or fix that would, and defeating it would mean defeating a check that protects accounts. "Sign in with Google" on other sites goes through the same Google page, so it fails the same way. Apple's sign-in page checks the browser in a similar way.
+
+What does work: sign in on the site directly, outside Persec. Browser mode ([browser-runtime.md](browser-runtime.md)) can't help yet, since it has no typing or clicking and doesn't fit on a 1 GB server.
+
+Two cookie bugs in the engines that could break sign-ins that do get past that page were fixed alongside (`build/vendor.ts`):
+
+- **Scramjet changed cookie values.** Its jar decoded every value, so `ab%2Bc%2F%3D%3D` went back to the site as `ab+c/==`, and tokens stopped matching. It now keeps the value as sent.
+- **Deleted cookies came back.** Scramjet ignored `Max-Age` entirely, and Ultraviolet ignored `Max-Age=0`, so a cookie a site deleted that way was still sent. Both now honour it, and Scramjet drops an expired cookie instead of storing it.
+
 ## What will get in the way
 
 These are limits of proxying, not bugs. Persec doesn't try to get around them.
@@ -118,7 +131,7 @@ What the automated tests cover (no network needed):
 
 - `tests/webai.test.ts`: the ChatGPT and Claude presets are the public home pages, the client and server lists match, the Apps list agrees, the `persec://webai` route exists, and the Web AI page never calls PerSec AI.
 - `tests/tunnel.test.ts`: through the real server and Wisp tunnel, a streamed reply arrives as it's sent, a quiet connection stays open, a 4 MiB reply arrives intact, and a WebSocket opens and keeps working.
-- `tests/vendor.test.ts`: the Scramjet cookie fix applies to the file the build serves, and the build stops if it no longer matches.
+- `tests/vendor.test.ts`: the Scramjet and Ultraviolet cookie fixes apply to the files the build serves (values kept as sent, `Max-Age` and `Max-Age=0` honoured), and the build stops if one no longer matches.
 - `tests/guards.test.ts`, `tests/sw.test.ts`: pop-ups and same-tab opens get a real window, check frames get none of Persec's changes but the chosen user agent, and the page around them still gets the WebRTC guard.
 - `tests/browser.test.ts`: browser mode (see [browser-runtime.md](browser-runtime.md)).
 

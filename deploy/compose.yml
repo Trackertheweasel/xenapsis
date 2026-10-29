@@ -29,6 +29,17 @@ services:
     # Saved-login backups (encrypted in the browser), kept across updates.
     volumes:
       - persec_data:/app/data
+    # On a small server, a runaway Persec is stopped (and restarted by restart: above) before the
+    # system has to kill something else, such as Caddy, Docker or SSH. Sized for a 1 GB server; set
+    # PERSEC_MEMORY_LIMIT in .env on a bigger one. Equal limits mean it can't push the server into swap.
+    mem_limit: ${PERSEC_MEMORY_LIMIT:-640m}
+    memswap_limit: ${PERSEC_MEMORY_LIMIT:-640m}
+    # Docker keeps container logs forever otherwise.
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
   caddy:
     image: caddy:2
@@ -45,6 +56,7 @@ services:
       - caddy_config:/config
     depends_on:
       - persec
+    logging: *logging
 
 volumes:
   persec_data:

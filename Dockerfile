@@ -7,8 +7,10 @@ WORKDIR /app
 # Corepack installs the exact pnpm named in package.json's packageManager field.
 ENV COREPACK_HOME=/usr/local/share/corepack
 RUN corepack enable
-# Install before copying the source so code changes don't redo the install layer.
+# Install before copying the source so code changes don't redo the install layer. patches/ holds
+# Persec's fixes to dependencies, which pnpm applies as it installs.
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile
 COPY . .
 # Baked into the client bundle at build time; the running server reads the same value at runtime.

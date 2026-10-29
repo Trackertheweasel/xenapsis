@@ -4,7 +4,12 @@ import path from 'node:path';
 import type { DeployPaths } from './env';
 
 export function cacheControlFor(clientRoot: string, filePath: string, paths: DeployPaths): string {
-  const rel = path.relative(clientRoot, filePath).split(path.sep).join('/');
+  // The build's compressed copies (build/precompress.ts) are cached like the file they stand for.
+  const rel = path
+    .relative(clientRoot, filePath)
+    .split(path.sep)
+    .join('/')
+    .replace(/\.(br|gz)$/, '');
   if (/\.(html?|astro)$/i.test(rel)) return 'no-cache, no-store, must-revalidate';
   // Astro puts content-hashed files in _astro/, so they never change.
   if (rel.startsWith('_astro/')) return 'public, max-age=31536000, immutable';
@@ -28,6 +33,9 @@ export function staticFileOptions(clientRoot: string, paths: DeployPaths): Fasti
       });
     },
     root: clientRoot,
+    // Sends the .br/.gz copy the build made (build/precompress.ts) when the browser takes it, so
+    // these files are never compressed per request.
+    preCompressed: true,
     // Serves prerendered pages (dist/client/st.html) at their clean URLs (/st).
     extensions: ['html'],
   };

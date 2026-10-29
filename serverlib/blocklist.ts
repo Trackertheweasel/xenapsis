@@ -4,8 +4,8 @@
 // AGPL-3.0 like Persec; this keeps only the list check, as Persec's DNS (serverlib/wisp.ts) already
 // blocks malware.
 //
-// The list is AdGuard DNS filter by default (about 1.5 MB, some 150,000 hosts, around 20 MB of
-// memory once loaded), refreshed once a day. Set PERSEC_WISP_ADBLOCK=off to turn it off, or
+// The list is AdGuard DNS filter by default (about 4.5 MB, some 185,000 hosts, around 70 MB of
+// memory once loaded, measured 2026-10), refreshed once a day. Set PERSEC_WISP_ADBLOCK=off to turn it off, or
 // PERSEC_WISP_BLOCKLIST_URL to use another list in the same (Adblock-style or hosts file) format.
 // When the list can't be fetched nothing is blocked: a missing list never breaks browsing.
 

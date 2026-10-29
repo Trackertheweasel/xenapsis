@@ -1,12 +1,12 @@
 {
   "name": "persec",
   "type": "module",
-  "version": "2.0.1",
+  "version": "2.6.0",
   "packageManager": "pnpm@10.34.9",
   "scripts": {
     "dev": "npx astro dev --host 0.0.0.0",
     "start": "node --trace-warnings --enable-source-maps --import tsx index.ts",
-    "build": "astro telemetry disable && npx astro check && npx astro build && tsx scripts/disguise.ts && pnpm build:server",
+    "build": "astro telemetry disable && npx astro check && npx astro build && tsx scripts/disguise.ts && tsx scripts/precompress.ts && pnpm build:server",
     "build:server": "esbuild index.ts scripts/invite.ts --bundle --platform=node --format=esm --packages=external --target=node22 --sourcemap --outdir=dist --entry-names=[name] --out-extension:.js=.mjs --log-level=warning",
     "test": "node --import tsx --test tests/*.test.ts",
     "invite": "tsx scripts/invite.ts",
@@ -65,6 +65,9 @@
       "sharp@<0.35.4": "^0.35.4",
       "deepmerge-ts@<8.0.0": "^8.0.2",
       "svgo@>=4.0.0 <4.1.0": "^4.1.0"
+    },
+    "patchedDependencies": {
+      "@mercuryworkshop/wisp-js@0.4.1": "patches/@mercuryworkshop__wisp-js@0.4.1.patch"
     }
   }
 }

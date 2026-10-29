@@ -15,6 +15,7 @@ interface Item {
   url: string;
   icon: string;
   logo?: string;
+  section?: string;
 }
 const lists: { aps: Item[]; gms: Item[] } = JSON.parse(await read('public/a/json/lists.json'));
 
@@ -67,4 +68,23 @@ test('Apps open with the engine chosen in Settings', async () => {
     src,
     /const backend = await ConfigAPI\.get\('backend'\);\s*window\.location\.href = encodeProxyUrl\(url, isMirrored\(url\) \? 'sc' : backend\)/,
   );
+});
+
+test('Apps has a Movies & TV section of free streaming services from FMHY, and games have none', async () => {
+  const sections = new Set(lists.aps.map(a => a.section).filter(Boolean));
+  assert.deepEqual([...sections], ['Movies & TV']);
+  assert.ok(lists.gms.every(g => !g.section));
+  const movies = lists.aps.filter(a => a.section === 'Movies & TV').map(a => a.name);
+  for (const name of ['Tubi', 'Pluto TV', 'Plex', 'Netflix', 'Free Media Heck Yeah']) {
+    assert.ok(movies.includes(name), `${name} is missing from Movies & TV`);
+  }
+  // FMHY's own address; fmhy.pages.dev is a mirror of it.
+  assert.equal(lists.aps.find(a => a.name === 'Free Media Heck Yeah')?.url, 'https://fmhy.net');
+
+  // The Apps page shows a button for each section, and the cards carry theirs for the filter.
+  const page = await read('src/components/asset.astro');
+  assert.match(page, /data-sections/);
+  assert.match(page, /data-section=\{g\.section\}/);
+  const script = await read('src/utils/assets.ts');
+  assert.match(script, /!section \|\| el\.dataset\.section === section/);
 });
