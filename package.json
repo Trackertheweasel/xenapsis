@@ -17,7 +17,7 @@
   "dependencies": {
     "@astrojs/node": "^11.1.9",
     "@fastify/compress": "^9.2.2",
-    "@fastify/helmet": "^13.0.2",
+    "@fastify/helmet": "^13.2.0",
     "@fastify/middie": "^9.3.6",
     "@fastify/static": "^10.1.8",
     "@mercuryworkshop/wisp-js": "^0.4.1",
