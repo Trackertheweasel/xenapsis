@@ -43,7 +43,7 @@
     "happy-dom": "^21.0.4",
     "localforage": "^1.10.0",
     "lucide": "^1.61.0",
-    "prettier": "^3.7.4",
+    "prettier": "^3.9.10",
     "prettier-plugin-astro": "^1.1.2",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4.3.3",
