@@ -33,7 +33,7 @@
     "@fontsource/outfit": "^5.3.0",
     "@fontsource/prompt": "^5.3.0",
     "@mercuryworkshop/bare-mux": "^2.1.9",
-    "@mercuryworkshop/libcurl-transport": "^1.5.1",
+    "@mercuryworkshop/libcurl-transport": "^2.0.6",
     "@mercuryworkshop/scramjet": "^1.1.0",
     "@playform/compress": "^0.2.5",
     "@tailwindcss/vite": "^4.1.18",
