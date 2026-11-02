@@ -2,7 +2,7 @@
 # Both images pinned by digest so a rebuild gets the same ones; Dependabot bumps the digests.
 
 # --- Build: needs every dependency, the compilers and the source.
-FROM node:22@sha256:63538dfe497cc29dfafdda25ada09b46db68a3f4cc205abf1f5d6bf0913f3384 AS build
+FROM node:22@sha256:18a6d90fd60542269850c80ca03b29b1d9b14d6b221ac7ee8e35b0d33ef904bd AS build
 WORKDIR /app
 # Corepack installs the exact pnpm named in package.json's packageManager field.
 ENV COREPACK_HOME=/usr/local/share/corepack
